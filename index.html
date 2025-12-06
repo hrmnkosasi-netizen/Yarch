@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TaskFlow x Supabase</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
+                    colors: { brand: '#6366f1', darkBg: '#0f172a', darkCard: '#1e293b' }
+                }
+            }
+        }
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+    <style>
+        body { -webkit-tap-highlight-color: transparent; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
+        .hidden-forced { display: none !important; }
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #6366f1; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-darkBg text-slate-800 dark:text-white font-sans transition-colors duration-300">
+
+    <div id="auth-screen" class="h-screen w-full flex overflow-hidden">
+        <div class="hidden lg:flex w-1/2 bg-indigo-600 relative justify-center items-center overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-br from-indigo-600 to-purple-700 opacity-90"></div>
+            <div class="relative z-10 text-center text-white p-12">
+                <div class="w-20 h-20 bg-white/20 backdrop-blur-md rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-2xl">
+                    <i class="ph-bold ph-asterisk-simple text-5xl text-white"></i>
+                </div>
+                <h2 class="text-5xl font-extrabold mb-4">TaskFlow<br>Cloud.</h2>
+                <p class="text-indigo-100 text-lg">Real-time sync powered by Supabase.</p>
+            </div>
+        </div>
+
+        <div class="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 bg-white dark:bg-darkBg">
+            <div class="w-full max-w-md space-y-8">
+                <div class="text-center">
+                    <h2 id="auth-title" class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Sign In</h2>
+                    <p id="auth-subtitle" class="mt-2 text-sm text-slate-500">Access your cloud workspace.</p>
+                </div>
+
+                <form id="auth-form" onsubmit="handleAuth(event)" class="mt-8 space-y-6">
+                    <div id="error-msg" class="hidden bg-red-50 text-red-500 p-3 rounded-lg text-sm text-center"></div>
+                    
+                    <div>
+                        <label class="block text-sm font-bold mb-1">Email</label>
+                        <input type="email" id="email" required class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-brand">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-1">Password</label>
+                        <input type="password" id="password" required class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-brand">
+                    </div>
+
+                    <button type="submit" id="auth-btn" class="w-full flex justify-center py-3.5 rounded-xl shadow-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition-all">
+                        <span id="btn-text">Sign In</span>
+                    </button>
+                </form>
+
+                <p class="text-center text-sm text-slate-500">
+                    <span id="switch-text">New here?</span>
+                    <button onclick="toggleAuthMode()" class="font-bold text-indigo-600 hover:text-indigo-500 ml-1" id="switch-btn">Create account</button>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-screen" class="hidden-forced h-screen w-full flex flex-col md:flex-row overflow-hidden">
+        
+        <aside class="hidden md:flex flex-col w-[260px] h-full bg-white dark:bg-darkCard border-r border-slate-200 dark:border-slate-700 p-6 z-20 justify-between shrink-0">
+            <div>
+                <div class="flex items-center gap-3 mb-10 px-2">
+                    <div class="w-9 h-9 bg-brand rounded-xl flex items-center justify-center text-white shadow-lg"><i class="ph-bold ph-asterisk-simple text-xl"></i></div>
+                    <span class="font-extrabold text-xl tracking-tight">TaskFlow.</span>
+                </div>
+                <nav class="space-y-1">
+                    <button onclick="switchView('dashboard')" id="nav-dash" class="nav-btn active-nav w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-brand font-bold text-sm transition text-left">
+                        <i class="ph-bold ph-squares-four text-lg"></i> Dashboard
+                    </button>
+                    <button onclick="switchView('kanban')" id="nav-kanban" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 dark:text-slate-400 font-semibold text-sm transition text-left">
+                        <i class="ph-bold ph-kanban text-lg"></i> Board
+                    </button>
+                </nav>
+            </div>
+            
+            <div class="space-y-3 pt-6 border-t border-slate-100 dark:border-slate-700">
+                <div class="flex items-center gap-3 px-2">
+                    <div class="w-8 h-8 rounded-full bg-brand flex items-center justify-center text-white font-bold text-xs" id="user-avatar">U</div>
+                    <div class="flex-1 overflow-hidden">
+                        <p id="user-email-display" class="text-xs font-bold truncate">...</p>
+                    </div>
+                </div>
+                <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-red-200 dark:border-red-900/30 text-red-500 text-xs font-bold hover:bg-red-50 dark:hover:bg-red-900/10 transition">
+                    <i class="ph-bold ph-sign-out"></i> Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <main class="flex-1 h-full flex flex-col relative overflow-hidden bg-slate-50 dark:bg-darkBg">
+            <header class="px-6 py-4 flex justify-between items-center bg-white/80 dark:bg-darkBg/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10">
+                <div class="flex items-center gap-2">
+                    <div id="loading-indicator" class="hidden loader"></div>
+                    <h1 id="pageTitle" class="text-xl font-bold">Dashboard</h1>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="toggleTheme()" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center"><i class="ph-bold ph-moon"></i></button>
+                    <button onclick="openModal()" class="bg-brand text-white px-4 py-2 rounded-full font-bold text-sm shadow-lg hover:scale-105 transition flex items-center gap-2"><i class="ph-bold ph-plus"></i> New</button>
+                </div>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
+                <div id="view-dashboard" class="space-y-6 fade-enter">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2 bg-white dark:bg-darkCard p-6 rounded-[24px] border border-slate-100 dark:border-slate-700">
+                            <h2 class="font-bold mb-4">Overview</h2>
+                            <div id="chart" class="h-[250px]"></div>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="bg-brand text-white p-6 rounded-[24px] shadow-xl relative overflow-hidden">
+                                <i class="ph-fill ph-check-circle absolute right-0 top-0 text-6xl opacity-20 -mr-2 -mt-2"></i>
+                                <p class="text-xs font-bold opacity-80 uppercase">Total Completed</p>
+                                <h3 class="text-4xl font-bold mt-1" id="stat-total-done">0</h3>
+                            </div>
+                            <div class="bg-white dark:bg-darkCard p-6 rounded-[24px] border border-slate-100 dark:border-slate-700">
+                                <p class="text-xs font-bold text-slate-400 uppercase">Pending Tasks</p>
+                                <h3 class="text-3xl font-bold mt-1" id="stat-total-todo">0</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-kanban" class="hidden h-full">
+                    <div class="flex flex-col md:flex-row gap-6 h-full min-w-full md:min-w-[900px]">
+                        <div class="flex-1 bg-slate-100/50 dark:bg-slate-800/30 rounded-[24px] p-4 flex flex-col border border-slate-200 dark:border-slate-700 h-fit md:h-full">
+                            <div class="flex justify-between mb-4 font-bold px-2"><span>To Do</span><span id="c-todo" class="bg-white dark:bg-slate-700 px-2 rounded text-xs py-1">0</span></div>
+                            <div id="col-todo" class="space-y-3 flex-1 overflow-y-auto min-h-[100px] p-1"></div>
+                        </div>
+                        <div class="flex-1 bg-blue-50/50 dark:bg-blue-900/10 rounded-[24px] p-4 flex flex-col border border-blue-100 dark:border-blue-900/30 h-fit md:h-full">
+                            <div class="flex justify-between mb-4 font-bold text-blue-600 px-2"><span>In Progress</span><span id="c-progress" class="bg-white dark:bg-slate-700 px-2 rounded text-xs py-1">0</span></div>
+                            <div id="col-progress" class="space-y-3 flex-1 overflow-y-auto min-h-[100px] p-1"></div>
+                        </div>
+                        <div class="flex-1 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-[24px] p-4 flex flex-col border border-emerald-100 dark:border-emerald-900/30 h-fit md:h-full">
+                            <div class="flex justify-between mb-4 font-bold text-emerald-600 px-2"><span>Done</span><span id="c-done" class="bg-white dark:bg-slate-700 px-2 rounded text-xs py-1">0</span></div>
+                            <div id="col-done" class="space-y-3 flex-1 overflow-y-auto min-h-[100px] p-1"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <nav class="md:hidden fixed bottom-0 w-full bg-white dark:bg-darkCard border-t border-slate-100 dark:border-slate-700 flex justify-between px-6 py-3 z-40">
+            <button onclick="switchView('dashboard')" class="flex flex-col items-center text-brand"><i class="ph-fill ph-squares-four text-2xl"></i></button>
+            <button onclick="openModal()" class="w-12 h-12 bg-slate-900 dark:bg-brand rounded-full text-white flex items-center justify-center -mt-8 shadow-xl"><i class="ph-bold ph-plus text-2xl"></i></button>
+            <button onclick="switchView('kanban')" class="flex flex-col items-center text-slate-400"><i class="ph-bold ph-kanban text-2xl"></i></button>
+        </nav>
+    </div>
+
+    <div id="taskModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal()"></div>
+        <div class="absolute bottom-0 md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 bg-white dark:bg-darkCard w-full md:max-w-lg rounded-t-[32px] md:rounded-2xl p-6 shadow-2xl transition-transform">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold" id="modalTitle">Task</h3>
+                <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center"><i class="ph-bold ph-x"></i></button>
+            </div>
+            <div class="space-y-4">
+                <input type="hidden" id="taskId">
+                <input type="text" id="inTitle" placeholder="Task Title..." class="w-full text-xl font-bold bg-transparent border-none outline-none placeholder-slate-300 dark:text-white">
+                <div class="flex gap-2">
+                    <select id="inStatus" class="bg-slate-50 dark:bg-slate-800 rounded-lg p-2 text-sm font-bold border-none"><option value="todo">To Do</option><option value="progress">In Progress</option><option value="done">Done</option></select>
+                    <select id="inPriority" class="bg-slate-50 dark:bg-slate-800 rounded-lg p-2 text-sm font-bold border-none"><option value="High">🔥 High</option><option value="Medium">⚡ Medium</option><option value="Low">☕ Low</option></select>
+                    <input type="date" id="inDate" class="bg-slate-50 dark:bg-slate-800 rounded-lg p-2 text-sm font-bold border-none dark:[color-scheme:dark]">
+                </div>
+                <textarea id="inDesc" rows="3" class="w-full bg-slate-50 dark:bg-slate-800 rounded-xl p-3 text-sm resize-none outline-none dark:text-white" placeholder="Description..."></textarea>
+                
+                <div class="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl">
+                    <h4 class="text-xs font-bold mb-2">Subtasks (JSON)</h4>
+                    <div id="subtaskList" class="space-y-2 mb-2"></div>
+                    <div class="flex gap-2">
+                        <input type="text" id="newSub" placeholder="Add subtask..." class="flex-1 bg-white dark:bg-slate-900 rounded px-2 text-sm">
+                        <button onclick="addSub()" class="text-xs font-bold bg-brand text-white px-3 rounded">Add</button>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button onclick="deleteTask()" id="btnDelete" class="hidden flex-1 bg-red-50 text-red-500 font-bold py-3 rounded-xl">Delete</button>
+                    <button onclick="saveTask()" class="flex-[2] bg-brand text-white font-bold py-3 rounded-xl shadow-lg">Save Task</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. CONFIGURATION ---
+        // Ganti dengan URL dan KEY kamu yang sebenarnya dari prompt sebelumnya
+        const supabaseUrl = 'https://vwwrfmjgqtcgupopictm.supabase.co' 
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3d3JmbWpncXRjZ3Vwb3BpY3RtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5NjQ3MDAsImV4cCI6MjA4MDU0MDcwMH0.jM2uCvosc36c_YY2g6cTjp3egCVF4gQhW83hJzap3so'
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
+
+        let currentUser = null;
+        let tasks = [];
+        let tempSubtasks = [];
+
+        // --- 2. AUTH SYSTEM ---
+        let isLogin = true;
+
+        async function initApp() {
+            // Check Session
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                currentUser = session.user;
+                showApp();
+            } else {
+                showAuth();
+            }
+
+            // Listener for Auth Changes
+            supabase.auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_IN') {
+                    currentUser = session.user;
+                    showApp();
+                } else if (event === 'SIGNED_OUT') {
+                    currentUser = null;
+                    showAuth();
+                }
+            });
+        }
+
+        function toggleAuthMode() {
+            isLogin = !isLogin;
+            document.getElementById('auth-title').innerText = isLogin ? 'Sign In' : 'Create Account';
+            document.getElementById('btn-text').innerText = isLogin ? 'Sign In' : 'Sign Up';
+            document.getElementById('switch-text').innerText = isLogin ? "New here?" : "Have account?";
+            document.getElementById('switch-btn').innerText = isLogin ? "Create account" : "Sign In";
+        }
+
+        async function handleAuth(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('error-msg');
+            const btn = document.getElementById('auth-btn');
+            
+            btn.innerHTML = '<div class="loader"></div>';
+            errorMsg.classList.add('hidden');
+
+            try {
+                if (isLogin) {
+                    const { error } = await supabase.auth.signInWithPassword({ email, password });
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabase.auth.signUp({ email, password });
+                    if (error) throw error;
+                    alert('Check your email for confirmation link!');
+                }
+            } catch (err) {
+                errorMsg.innerText = err.message;
+                errorMsg.classList.remove('hidden');
+                btn.innerHTML = '<span id="btn-text">' + (isLogin ? 'Sign In' : 'Sign Up') + '</span>';
+            }
+        }
+
+        async function logout() {
+            await supabase.auth.signOut();
+            window.location.reload();
+        }
+
+        function showApp() {
+            document.getElementById('auth-screen').classList.add('hidden-forced');
+            document.getElementById('app-screen').classList.remove('hidden-forced');
+            document.getElementById('user-email-display').innerText = currentUser.email;
+            document.getElementById('user-avatar').innerText = currentUser.email.charAt(0).toUpperCase();
+            loadTasks();
+        }
+
+        function showAuth() {
+            document.getElementById('auth-screen').classList.remove('hidden-forced');
+            document.getElementById('app-screen').classList.add('hidden-forced');
+        }
+
+        // --- 3. DATA & LOGIC ---
+        function setLoading(state) {
+            const el = document.getElementById('loading-indicator');
+            state ? el.classList.remove('hidden') : el.classList.add('hidden');
+        }
+
+        async function loadTasks() {
+            setLoading(true);
+            const { data, error } = await supabase.from('tasks').select('*').order('created_at', { ascending: false });
+            if (error) console.error(error);
+            else {
+                tasks = data;
+                renderBoard();
+                initChart();
+            }
+            setLoading(false);
+        }
+
+        function renderBoard() {
+            ['col-todo', 'col-progress', 'col-done'].forEach(id => document.getElementById(id).innerHTML = '');
+            let counts = {todo:0, progress:0, done:0};
+
+            tasks.forEach(task => {
+                counts[task.status]++;
+                const pColor = task.priority === 'High' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600';
+                
+                const html = `
+                    <div onclick="openModal('${task.id}')" class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 mb-3 cursor-pointer hover:shadow-md transition relative" data-id="${task.id}">
+                        <div class="flex justify-between mb-2">
+                            <span class="${pColor} text-[10px] font-bold px-2 py-0.5 rounded uppercase">${task.priority}</span>
+                            <span class="text-[10px] text-slate-400 font-bold">${task.due_date || ''}</span>
+                        </div>
+                        <h4 class="font-bold text-sm dark:text-slate-200">${task.title}</h4>
+                    </div>
+                `;
+                document.getElementById(`col-${task.status}`).insertAdjacentHTML('beforeend', html);
+            });
+
+            // Update Stats
+            document.getElementById('stat-total-done').innerText = counts.done;
+            document.getElementById('stat-total-todo').innerText = counts.todo;
+            ['todo','progress','done'].forEach(s => document.getElementById('c-'+s).innerText = counts[s]);
+            
+            if(chartInstance) updateChart(counts);
+        }
+
+        // --- 4. CRUD OPERATIONS ---
+        async function saveTask() {
+            const id = document.getElementById('taskId').value;
+            const title = document.getElementById('inTitle').value;
+            
+            if(!title) return alert('Title required');
+
+            const taskData = {
+                title,
+                status: document.getElementById('inStatus').value,
+                priority: document.getElementById('inPriority').value,
+                due_date: document.getElementById('inDate').value,
+                description: document.getElementById('inDesc').value,
+                subtasks: tempSubtasks,
+                user_id: currentUser.id
+            };
+
+            setLoading(true);
+            
+            if (id) {
+                // Update
+                const { error } = await supabase.from('tasks').update(taskData).eq('id', id);
+                if(!error && taskData.status === 'done' && tasks.find(t=>t.id==id).status!=='done') confetti({particleCount:100, spread:70, origin:{y:0.6}});
+            } else {
+                // Create
+                const { error } = await supabase.from('tasks').insert([taskData]);
+            }
+            
+            await loadTasks();
+            closeModal();
+            setLoading(false);
+        }
+
+        async function deleteTask() {
+            const id = document.getElementById('taskId').value;
+            if(confirm('Delete task?')) {
+                setLoading(true);
+                await supabase.from('tasks').delete().eq('id', id);
+                await loadTasks();
+                closeModal();
+                setLoading(false);
+            }
+        }
+
+        // --- 5. UI UTILS ---
+        function openModal(id = null) {
+            document.getElementById('taskModal').classList.remove('hidden');
+            if(id) {
+                const task = tasks.find(t => t.id == id);
+                document.getElementById('modalTitle').innerText = 'Edit Task';
+                document.getElementById('taskId').value = task.id;
+                document.getElementById('inTitle').value = task.title;
+                document.getElementById('inStatus').value = task.status;
+                document.getElementById('inPriority').value = task.priority;
+                document.getElementById('inDate').value = task.due_date;
+                document.getElementById('inDesc').value = task.description || '';
+                document.getElementById('btnDelete').classList.remove('hidden');
+                tempSubtasks = task.subtasks || [];
+            } else {
+                document.getElementById('modalTitle').innerText = 'New Task';
+                document.getElementById('taskId').value = '';
+                document.getElementById('inTitle').value = '';
+                document.getElementById('inDesc').value = '';
+                document.getElementById('inDate').valueAsDate = new Date();
+                document.getElementById('btnDelete').classList.add('hidden');
+                tempSubtasks = [];
+            }
+            renderSubtasks();
+        }
+
+        function closeModal() { document.getElementById('taskModal').classList.add('hidden'); }
+
+        // Subtasks UI
+        function renderSubtasks() {
+            const list = document.getElementById('subtaskList');
+            list.innerHTML = '';
+            tempSubtasks.forEach((sub, idx) => {
+                list.innerHTML += `
+                    <div class="flex items-center gap-2 text-sm">
+                        <input type="checkbox" ${sub.done ? 'checked' : ''} onchange="toggleSub(${idx})">
+                        <span class="${sub.done ? 'line-through opacity-50':''} dark:text-white">${sub.text}</span>
+                        <button onclick="remSub(${idx})" class="ml-auto text-red-500 text-xs">x</button>
+                    </div>
+                `;
+            });
+        }
+        function addSub() {
+            const val = document.getElementById('newSub').value;
+            if(val) { tempSubtasks.push({text:val, done:false}); document.getElementById('newSub').value=''; renderSubtasks(); }
+        }
+        function toggleSub(idx) { tempSubtasks[idx].done = !tempSubtasks[idx].done; renderSubtasks(); }
+        function remSub(idx) { tempSubtasks.splice(idx,1); renderSubtasks(); }
+
+        // Views
+        function switchView(view) {
+            document.getElementById('view-dashboard').classList.add('hidden');
+            document.getElementById('view-kanban').classList.add('hidden');
+            document.getElementById('view-'+view).classList.remove('hidden');
+        }
+
+        // Chart
+        let chartInstance;
+        function initChart() {
+            const counts = [
+                tasks.filter(t => t.status==='todo').length,
+                tasks.filter(t => t.status==='progress').length,
+                tasks.filter(t => t.status==='done').length
+            ];
+            const options = {
+                series: counts,
+                chart: { type: 'donut', height: 250, fontFamily: 'Plus Jakarta Sans', background: 'transparent' },
+                labels: ['Todo', 'Progress', 'Done'],
+                colors: ['#cbd5e1', '#6366f1', '#10b981'],
+                legend: { position: 'bottom', labels: { colors: '#94a3b8' } },
+                stroke: { show: false }
+            };
+            if(chartInstance) chartInstance.updateSeries(counts);
+            else { chartInstance = new ApexCharts(document.querySelector("#chart"), options); chartInstance.render(); }
+        }
+        function updateChart(c) { chartInstance.updateSeries([c.todo, c.progress, c.done]); }
+
+        function toggleTheme() { document.documentElement.classList.toggle('dark'); }
+
+        // Drag & Drop
+        ['col-todo', 'col-progress', 'col-done'].forEach(id => {
+            new Sortable(document.getElementById(id), {
+                group: 'kanban', animation: 150, delay: 100, delayOnTouchOnly: true,
+                onEnd: async (evt) => {
+                    const taskId = evt.item.getAttribute('data-id');
+                    const newStatus = evt.to.id.replace('col-', '');
+                    const task = tasks.find(t => t.id == taskId);
+                    if(task && task.status !== newStatus) {
+                        // Optimistic Update
+                        task.status = newStatus;
+                        renderBoard();
+                        // API Update
+                        await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId);
+                    }
+                }
+            });
+        });
+
+        // Start
+        initApp();
+    </script>
+</body>
+</html>
