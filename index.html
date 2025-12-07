@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="id" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HR Unicorn v8</title>
+    
+    <link rel="manifest" href="manifest.json">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+                    colors: { primary: '#6366f1', dark: '#0f172a' },
+                    animation: {
+                        'slide-up': 'slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'fade-in': 'fadeIn 0.3s ease-out forwards',
+                        'pulse-slow': 'pulse 3s infinite',
+                    },
+                    keyframes: {
+                        slideUp: { '0%': { transform: 'translateY(100px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.4); }
+        .glass-dark { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.05); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .modal { opacity: 0; visibility: hidden; transition: all 0.3s ease; }
+        .modal.open { opacity: 1; visibility: visible; }
+        .modal-content { transform: scale(0.9); transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .modal.open .modal-content { transform: scale(1); }
+        video { transform: scaleX(-1); object-fit: cover; }
+        
+        /* Calendar Grid */
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 h-screen flex flex-col overflow-hidden relative transition-colors duration-500">
+
+    <section id="login-view" class="absolute inset-0 z-50 flex flex-col justify-end pb-10 px-8 transition-all duration-700 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl">
+        <div class="relative z-10 animate-slide-up">
+            <div class="w-20 h-20 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center text-white text-4xl mb-6 shadow-2xl">
+                <i class="ph-fill ph-planet"></i>
+            </div>
+            <h1 class="text-4xl font-extrabold text-slate-800 dark:text-white mb-2 tracking-tight">WorkPlace<br><span class="text-indigo-600">Unicorn v8.</span></h1>
+            <p class="text-slate-500 dark:text-slate-400 mb-8 font-medium">Platform HR Terlengkap: Social Feed, Shift Calendar & Live Support.</p>
+            <button onclick="login()" class="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold py-4 rounded-2xl shadow-xl active:scale-95 transition-transform flex items-center justify-center gap-3">
+                <i class="ph-bold ph-fingerprint"></i> Masuk Aplikasi
+            </button>
+        </div>
+    </section>
+
+    <div id="app-view" class="hidden flex-col h-full relative blur-0 transition-all">
+        
+        <header class="px-6 pt-12 pb-4 flex justify-between items-center z-20 sticky top-0 bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur-md">
+            <div class="flex items-center gap-3">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" class="w-10 h-10 rounded-full bg-indigo-100 border-2 border-white dark:border-slate-800">
+                <div>
+                    <h1 class="text-sm font-bold">Rian Ardianto</h1>
+                    <p class="text-[10px] text-slate-500 dark:text-slate-400">IT Staff • Shift Pagi</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="toggleDarkMode()" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center"><i class="ph-fill ph-moon"></i></button>
+                <button class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center relative">
+                    <i class="ph-fill ph-bell"></i>
+                    <span class="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-slate-800"></span>
+                </button>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto pb-32 px-6 pt-2 no-scrollbar space-y-8">
+            
+            <div id="page-home" class="page-content active space-y-6 animate-fade-in">
+                
+                <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+                    <div class="flex flex-col items-center gap-1 min-w-[64px]">
+                        <div class="w-14 h-14 rounded-full border-2 border-indigo-500 p-0.5"><img src="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=200" class="w-full h-full rounded-full object-cover border-2 border-white dark:border-slate-900"></div>
+                        <span class="text-[10px] font-medium">CEO Talk</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-1 min-w-[64px]">
+                        <div class="w-14 h-14 rounded-full border-2 border-slate-200 dark:border-slate-700 p-0.5"><div class="w-full h-full rounded-full bg-slate-100 flex items-center justify-center text-xl">🎉</div></div>
+                        <span class="text-[10px] font-medium">Events</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-1 min-w-[64px]">
+                        <div class="w-14 h-14 rounded-full border-2 border-slate-200 dark:border-slate-700 p-0.5"><div class="w-full h-full rounded-full bg-slate-100 flex items-center justify-center text-xl">📢</div></div>
+                        <span class="text-[10px] font-medium">Info</span>
+                    </div>
+                </div>
+
+                <div class="relative w-full rounded-[2.5rem] overflow-hidden shadow-2xl shadow-indigo-500/20 bg-slate-900 text-white p-7">
+                    <div class="absolute right-0 top-0 w-48 h-48 bg-indigo-500/30 rounded-full blur-3xl"></div>
+                    <div class="relative z-10 flex justify-between items-start mb-6">
+                        <div>
+                            <p class="text-indigo-200 text-xs font-bold uppercase tracking-widest mb-1">Gaji Bulan Ini</p>
+                            <h2 class="text-4xl font-black">Rp 7.250.000</h2>
+                        </div>
+                        <button onclick="openModal('slipModal')" class="bg-white/20 p-3 rounded-2xl hover:bg-white/30 transition"><i class="ph-bold ph-download-simple"></i></button>
+                    </div>
+                </div>
+
+                <div class="glass dark:glass-dark p-5 rounded-3xl border border-slate-200 dark:border-slate-800">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-sm">Jadwal Shift Minggu Ini</h3>
+                        <span class="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-2 py-1 rounded">Shift Pagi</span>
+                    </div>
+                    <div class="calendar-grid text-center mb-2">
+                        <span class="text-[10px] text-slate-400">Sn</span><span class="text-[10px] text-slate-400">Sl</span><span class="text-[10px] text-slate-400">Rb</span><span class="text-[10px] text-slate-400">Km</span><span class="text-[10px] text-slate-400">Jm</span><span class="text-[10px] text-slate-400">Sb</span><span class="text-[10px] text-slate-400">Mg</span>
+                    </div>
+                    <div class="calendar-grid text-center text-xs font-bold">
+                        <div class="p-2 rounded-lg bg-indigo-100 text-indigo-700">8</div>
+                        <div class="p-2 rounded-lg bg-indigo-100 text-indigo-700">9</div>
+                        <div class="p-2 rounded-lg bg-indigo-100 text-indigo-700">10</div>
+                        <div class="p-2 rounded-lg bg-indigo-100 text-indigo-700">11</div>
+                        <div class="p-2 rounded-lg bg-indigo-100 text-indigo-700">12</div>
+                        <div class="p-2 rounded-lg bg-slate-100 text-slate-400">13</div>
+                        <div class="p-2 rounded-lg bg-slate-100 text-slate-400">14</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-4 gap-3">
+                    <button class="menu-item"><div class="icon-box bg-blue-50 text-blue-600"><i class="ph-fill ph-airplane-tilt"></i></div><span class="text-[10px] font-bold mt-2">Cuti</span></button>
+                    <button class="menu-item"><div class="icon-box bg-orange-50 text-orange-600"><i class="ph-fill ph-receipt"></i></div><span class="text-[10px] font-bold mt-2">Klaim</span></button>
+                    <button class="menu-item"><div class="icon-box bg-teal-50 text-teal-600"><i class="ph-fill ph-clock-afternoon"></i></div><span class="text-[10px] font-bold mt-2">Lembur</span></button>
+                    <button class="menu-item"><div class="icon-box bg-pink-50 text-pink-600"><i class="ph-fill ph-users"></i></div><span class="text-[10px] font-bold mt-2">Tim</span></button>
+                </div>
+            </div>
+
+            <div id="page-feed" class="page-content hidden space-y-6 animate-fade-in">
+                <h2 class="text-xl font-bold px-1">Berita Perusahaan</h2>
+                
+                <div class="bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800">
+                    <div class="p-4 flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-slate-200 overflow-hidden"><img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100" class="w-full h-full object-cover"></div>
+                        <div>
+                            <p class="text-sm font-bold">HR Department</p>
+                            <p class="text-[10px] text-slate-400">2 jam yang lalu</p>
+                        </div>
+                    </div>
+                    <img src="https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&auto=format&fit=crop" class="w-full h-48 object-cover">
+                    <div class="p-4">
+                        <h3 class="font-bold mb-1">Office Gathering 2025 🎉</h3>
+                        <p class="text-sm text-slate-500 leading-relaxed">Terima kasih untuk semua tim yang sudah hadir di acara tahunan kita. Jangan lupa upload foto kalian!</p>
+                        <div class="flex gap-4 mt-4 text-slate-400 text-sm">
+                            <span class="flex items-center gap-1 text-red-500"><i class="ph-fill ph-heart"></i> 45</span>
+                            <span class="flex items-center gap-1"><i class="ph-fill ph-chat-circle"></i> 12</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800">
+                    <div class="p-4 flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">IT</div>
+                        <div>
+                            <p class="text-sm font-bold">System Admin</p>
+                            <p class="text-[10px] text-slate-400">5 jam yang lalu</p>
+                        </div>
+                    </div>
+                    <div class="p-4 pt-0">
+                        <div class="bg-indigo-50 dark:bg-slate-800 p-4 rounded-xl border border-indigo-100 dark:border-slate-700">
+                            <h3 class="font-bold text-indigo-600 mb-1">System Maintenance ⚠️</h3>
+                            <p class="text-xs text-slate-500">Sistem akan mengalami downtime pada hari Sabtu pukul 22:00 - 23:00 WIB untuk pembaruan server.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-absen" class="page-content hidden pt-8 text-center animate-fade-in">
+                <div class="inline-flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-4 py-2 rounded-full text-xs font-bold mb-10 shadow-sm">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    <span>Lokasi: Kantor Pusat</span>
+                </div>
+
+                <div class="relative w-72 h-72 mx-auto mb-10 group cursor-pointer" onclick="initAbsenFlow()">
+                    <div class="absolute inset-0 border-2 border-dashed border-indigo-200 dark:border-slate-600 rounded-full animate-[spin_12s_linear_infinite]"></div>
+                    <div class="absolute inset-5 bg-gradient-to-b from-indigo-500 to-purple-600 rounded-full shadow-2xl flex flex-col items-center justify-center text-white transition-all transform group-active:scale-95 z-10 overflow-hidden border-4 border-white dark:border-slate-800">
+                        <div id="btn-absen-content" class="flex flex-col items-center">
+                            <i id="absen-icon" class="ph-fill ph-camera text-5xl mb-2"></i>
+                            <span id="absen-text" class="font-bold text-lg tracking-wide">TAP TO ABSEN</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="glass dark:glass-dark p-4 rounded-2xl"><p class="text-xs text-slate-400 font-bold uppercase mb-1">Masuk</p><p id="time-in" class="font-black text-xl">-- : --</p></div>
+                    <div class="glass dark:glass-dark p-4 rounded-2xl"><p class="text-xs text-slate-400 font-bold uppercase mb-1">Pulang</p><p id="time-out" class="font-black text-xl">-- : --</p></div>
+                </div>
+            </div>
+
+            <div id="page-profile" class="page-content hidden space-y-6 animate-fade-in">
+                <div class="perspective-1000 w-full h-56 cursor-pointer group" onclick="this.querySelector('.card-inner').classList.toggle('is-flipped')">
+                    <div class="card-inner w-full h-full relative transform-style-3d shadow-2xl rounded-[2rem]">
+                        <div class="absolute inset-0 bg-slate-900 rounded-[2rem] p-6 text-white backface-hidden overflow-hidden border border-slate-700">
+                            <div class="absolute top-0 right-0 p-6 opacity-20"><i class="ph-fill ph-fingerprint text-9xl"></i></div>
+                            <div class="relative z-10 h-full flex flex-col justify-between">
+                                <div class="flex justify-between items-start"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" class="w-16 h-16 rounded-full border-4 border-slate-700 bg-slate-800"><span class="text-xs bg-indigo-500 px-2 py-1 rounded text-white font-bold">IT STAFF</span></div>
+                                <div><h2 class="text-2xl font-bold">Rian Ardianto</h2><p class="text-indigo-400 text-sm">ID: EMP-8829-X</p></div>
+                            </div>
+                        </div>
+                        <div class="absolute inset-0 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-[2rem] p-6 backface-hidden rotate-y-180 flex flex-col items-center justify-center border border-slate-200 dark:border-slate-700">
+                            <h3 class="font-bold text-lg mb-4">Identity QR</h3><div id="qrcode" class="p-2 bg-white rounded-lg"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button onclick="logout()" class="w-full p-4 bg-red-50 text-red-600 rounded-2xl font-bold text-sm flex justify-between items-center"><span>Log Out</span><i class="ph-bold ph-sign-out"></i></button>
+            </div>
+
+        </main>
+
+        <div class="fixed bottom-24 right-6 z-50">
+            <div id="chat-window" class="hidden absolute bottom-16 right-0 w-80 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-slide-up origin-bottom-right">
+                <div class="bg-indigo-600 p-4 text-white flex justify-between items-center">
+                    <h4 class="font-bold text-sm">HR Helpdesk</h4>
+                    <button onclick="toggleChat()"><i class="ph-bold ph-x"></i></button>
+                </div>
+                <div class="h-64 p-4 overflow-y-auto bg-slate-50 dark:bg-slate-950 space-y-3">
+                    <div class="flex gap-2">
+                        <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-[10px]">HR</div>
+                        <div class="bg-white dark:bg-slate-800 p-3 rounded-r-xl rounded-bl-xl text-xs shadow-sm">Halo Rian! Ada yang bisa kami bantu hari ini?</div>
+                    </div>
+                </div>
+                <div class="p-3 border-t border-slate-100 dark:border-slate-800 flex gap-2">
+                    <input type="text" placeholder="Ketik pesan..." class="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full px-4 text-xs outline-none">
+                    <button class="w-8 h-8 bg-indigo-600 rounded-full text-white flex items-center justify-center"><i class="ph-fill ph-paper-plane-right"></i></button>
+                </div>
+            </div>
+            
+            <button onclick="toggleChat()" class="w-14 h-14 rounded-full bg-indigo-600 text-white shadow-xl shadow-indigo-600/40 flex items-center justify-center hover:scale-110 transition active:scale-90">
+                <i class="ph-fill ph-chat-circle-dots text-2xl"></i>
+            </button>
+        </div>
+
+        <nav class="absolute bottom-6 left-6 right-6 h-20 glass dark:glass-dark rounded-[2rem] flex justify-around items-center z-40 shadow-2xl border border-white/20">
+            <button onclick="switchPage('home')" class="nav-btn active group" data-target="home"><div class="icon-container"><i class="ph-fill ph-house text-2xl"></i></div></button>
+            <button onclick="switchPage('feed')" class="nav-btn group" data-target="feed"><div class="icon-container"><i class="ph-fill ph-newspaper text-2xl"></i></div></button>
+            <button onclick="switchPage('absen')" class="nav-btn group" data-target="absen"><div class="icon-container"><i class="ph-fill ph-scan text-2xl"></i></div></button>
+            <button onclick="switchPage('profile')" class="nav-btn group" data-target="profile"><div class="icon-container"><i class="ph-fill ph-user text-2xl"></i></div></button>
+        </nav>
+    </div>
+
+    <div id="cameraModal" class="modal fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-4">
+        <div class="modal-content w-full max-w-md bg-black rounded-3xl overflow-hidden relative border border-slate-800">
+            <video id="camera-stream" autoplay playsinline class="w-full h-[500px] object-cover"></video>
+            <canvas id="camera-canvas" class="hidden"></canvas>
+            <div class="absolute bottom-8 left-0 right-0 flex justify-center gap-8">
+                <button onclick="closeModal('cameraModal')" class="w-12 h-12 bg-white/20 rounded-full text-white"><i class="ph-bold ph-x"></i></button>
+                <button onclick="capturePhoto()" class="w-20 h-20 bg-white rounded-full border-[6px] border-slate-300"></button>
+                <div class="w-12"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="slipModal" class="modal fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
+        <div class="modal-content bg-white dark:bg-slate-900 p-6 rounded-[2rem] w-full max-w-sm">
+             <div id="slip-content" class="bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl mb-4">
+                <h2 class="font-bold text-center mb-4">Slip Gaji Digital</h2>
+                <div class="space-y-2 text-sm"><div class="flex justify-between"><span>Total</span><span class="font-black text-indigo-600">Rp 7.250.000</span></div></div>
+             </div>
+             <button onclick="downloadPDF()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">Download PDF</button>
+             <button onclick="closeModal('slipModal')" class="w-full mt-2 text-slate-500 py-2">Tutup</button>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed top-[-100px] left-1/2 -translate-x-1/2 glass dark:glass-dark px-6 py-3 rounded-full shadow-xl z-[100] flex items-center gap-2 border border-white/20">
+        <i class="ph-fill ph-check-circle text-green-500"></i><span id="toast-msg" class="text-sm font-bold">Berhasil</span>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if(localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
+            checkAttendanceState();
+            new QRCode(document.getElementById("qrcode"), { text: "ID-88291002", width: 100, height: 100 });
+        });
+
+        function login() {
+            document.getElementById('login-view').style.transform = 'translateY(-100%)';
+            setTimeout(() => { document.getElementById('app-view').classList.remove('hidden'); document.getElementById('app-view').classList.add('flex'); }, 500);
+        }
+
+        function switchPage(pageId) {
+            document.querySelectorAll('.page-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById('page-' + pageId).classList.remove('hidden');
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                const active = btn.dataset.target === pageId;
+                const iconContainer = btn.querySelector('.icon-container');
+                const icon = btn.querySelector('i');
+                iconContainer.className = active ? "w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg -translate-y-4 transition-all" : "w-12 h-12 flex items-center justify-center transition-all";
+                icon.className = active ? icon.className.replace('text-slate-400','') : icon.className + ' text-slate-400';
+            });
+        }
+
+        // CHAT WIDGET LOGIC
+        function toggleChat() {
+            const chat = document.getElementById('chat-window');
+            chat.classList.toggle('hidden');
+        }
+
+        // ABSEN LOGIC (PERSISTENT)
+        function checkAttendanceState() {
+            const state = localStorage.getItem('absenState');
+            if(state === 'in') {
+                document.getElementById('time-in').innerText = localStorage.getItem('timeIn');
+                document.getElementById('absen-icon').classList.replace('ph-camera', 'ph-sign-out');
+                document.getElementById('absen-text').innerText = "ABSEN PULANG";
+                document.getElementById('absen-btn-bg').classList.replace('from-indigo-500', 'from-orange-500');
+            } else if (state === 'out') {
+                document.getElementById('time-in').innerText = localStorage.getItem('timeIn');
+                document.getElementById('time-out').innerText = localStorage.getItem('timeOut');
+                document.getElementById('absen-btn-bg').classList.add('grayscale');
+                document.getElementById('absen-text').innerText = "SELESAI";
+            }
+        }
+
+        let videoStream;
+        function initAbsenFlow() {
+            if(localStorage.getItem('absenState') === 'out') return showToast("Selesai untuk hari ini!");
+            openModal('cameraModal');
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } }).then(s => { videoStream = s; document.getElementById('camera-stream').srcObject = s; });
+        }
+
+        function capturePhoto() {
+            if(videoStream) videoStream.getTracks().forEach(t=>t.stop());
+            closeModal('cameraModal');
+            const now = new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+            if(!localStorage.getItem('absenState')) {
+                localStorage.setItem('absenState', 'in'); localStorage.setItem('timeIn', now); showToast("Absen Masuk!");
+            } else {
+                localStorage.setItem('absenState', 'out'); localStorage.setItem('timeOut', now); showToast("Absen Pulang!");
+            }
+            checkAttendanceState();
+        }
+
+        function toggleDarkMode() { document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); }
+        function openModal(id) { document.getElementById(id).classList.add('open'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('open'); if(id==='cameraModal' && videoStream) videoStream.getTracks().forEach(t=>t.stop()); }
+        function showToast(msg) { const t = document.getElementById('toast'); document.getElementById('toast-msg').innerText = msg; t.style.top = '30px'; setTimeout(()=>t.style.top='-100px', 3000); }
+        function downloadPDF() { html2pdf().from(document.getElementById('slip-content')).save(); closeModal('slipModal'); }
+        function logout() { location.reload(); }
+    </script>
+    <style>
+        .icon-box { @apply w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-sm transition duration-300; }
+        .menu-item { @apply flex flex-col items-center justify-center p-2 transition active:scale-95; }
+    </style>
+</body>
+</html>
