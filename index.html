@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TaskFlow V3 Enterprise</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        [x-cloak] { display: none !important; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .modal-enter { animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        /* Checkbox Custom */
+        .cb-custom { accent-color: #4f46e5; width: 16px; height: 16px; cursor: pointer; }
+    </style>
+</head>
+<body class="text-slate-800 h-screen flex flex-col overflow-hidden" x-data="taskApp()" x-init="initApp()">
+
+    <div x-show="isLoading" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-[100] flex flex-col items-center justify-center">
+        <div class="animate-spin text-indigo-600 text-3xl"><i class="fas fa-circle-notch"></i></div>
+    </div>
+
+    <header class="bg-white border-b border-slate-200 h-16 shrink-0 flex items-center justify-between px-4 md:px-6 z-20 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                <i class="fas fa-rocket"></i>
+            </div>
+            <h1 class="font-extrabold text-lg tracking-tight">TaskFlow <span class="text-indigo-600">V3</span></h1>
+        </div>
+        <div class="flex items-center gap-2">
+            <div class="bg-slate-100 p-1 rounded-lg flex border border-slate-200">
+                <button @click="currentView = 'board'" class="px-3 py-1.5 rounded-md text-xs font-bold transition-all" :class="currentView === 'board' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"><i class="fas fa-columns"></i></button>
+                <button @click="currentView = 'analytics'; updateCharts()" class="px-3 py-1.5 rounded-md text-xs font-bold transition-all" :class="currentView === 'analytics' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"><i class="fas fa-chart-pie"></i></button>
+            </div>
+            
+            <button @click="fetchTasks()" class="w-9 h-9 rounded-full bg-slate-50 border border-slate-200 text-slate-500 hover:text-indigo-600 flex items-center justify-center"><i class="fas fa-sync-alt"></i></button>
+            <button @click="showAddModal = true" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-bold text-xs shadow-lg shadow-indigo-500/30 flex items-center gap-2 transform active:scale-95 transition-all">
+                <i class="fas fa-plus"></i> <span class="hidden md:inline">BARU</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-hidden relative">
+        
+        <div x-show="currentView === 'board'" class="h-full overflow-x-auto p-4 md:p-6" x-transition:enter="transition opacity-0 duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+            <div class="flex h-full gap-6 min-w-[900px] md:min-w-0">
+                <template x-for="col in columns" :key="col.id">
+                    <div class="flex-1 flex flex-col min-w-[280px] bg-slate-50 rounded-2xl border border-slate-200 max-h-full">
+                        <div class="p-3 border-b border-slate-200 flex justify-between items-center bg-white rounded-t-2xl">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2.5 h-2.5 rounded-full" :class="col.dotColor"></div>
+                                <h2 class="font-bold text-xs text-slate-600 uppercase tracking-widest" x-text="col.title"></h2>
+                                <span class="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-[10px] font-bold" x-text="getTasksByStatus(col.id).length"></span>
+                            </div>
+                        </div>
+                        <div class="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
+                            <template x-for="task in getTasksByStatus(col.id)" :key="task.id">
+                                <div @click="openTaskDetail(task)" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer group relative">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <div class="flex gap-1">
+                                            <span class="px-2 py-0.5 rounded text-[9px] font-bold border" :class="getLabelColor(task.label)" x-text="task.label || 'General'"></span>
+                                            <span class="px-2 py-0.5 rounded text-[9px] font-bold border" :class="getPriorityColor(task.priority)" x-text="task.priority"></span>
+                                        </div>
+                                    </div>
+                                    <h3 class="font-bold text-slate-800 text-sm mb-1 leading-snug" x-text="task.title"></h3>
+                                    <div class="flex items-center justify-between pt-3 mt-1 border-t border-slate-50">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-6 h-6 rounded-full bg-slate-800 text-white flex items-center justify-center text-[9px] font-bold" x-text="getInitials(task.assignee)"></div>
+                                            <span class="text-[10px] text-slate-400 font-medium" x-text="formatDate(task.dueDate)"></span>
+                                        </div>
+                                        <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" @click.stop>
+                                            <button x-show="col.id !== 'TODO'" @click="moveTask(task.id, getPrevStatus(col.id))" class="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center"><i class="fas fa-chevron-left text-[10px]"></i></button>
+                                            <button x-show="col.id !== 'DONE'" @click="moveTask(task.id, getNextStatus(col.id))" class="w-6 h-6 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-600 flex items-center justify-center"><i class="fas fa-chevron-right text-[10px]"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <div x-show="currentView === 'analytics'" class="h-full overflow-y-auto p-6 bg-white" x-cloak>
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-2xl font-extrabold text-slate-800 mb-6">Laporan Statistik</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 class="font-bold text-sm text-slate-500 uppercase mb-4">Status Tugas</h3>
+                        <div class="h-64"><canvas id="statusChart"></canvas></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 class="font-bold text-sm text-slate-500 uppercase mb-4">Distribusi Prioritas</h3>
+                        <div class="h-64"><canvas id="priorityChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <div x-show="showDetailModal" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" x-cloak x-transition.opacity>
+        <div class="bg-white w-full max-w-2xl h-[85vh] rounded-2xl shadow-2xl modal-enter flex flex-col overflow-hidden relative">
+            
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-start shrink-0 bg-slate-50">
+                <div class="flex-1 mr-4">
+                    <div class="flex gap-2 mb-2">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold border" :class="getLabelColor(activeTask.label)" x-text="activeTask.label"></span>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold border" :class="getPriorityColor(activeTask.priority)" x-text="activeTask.priority"></span>
+                    </div>
+                    <h2 class="text-xl font-extrabold text-slate-800 leading-tight" x-text="activeTask.title"></h2>
+                </div>
+                <button @click="showDetailModal = false" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-6 space-y-6">
+                
+                <div>
+                    <h3 class="text-xs font-bold text-slate-400 uppercase mb-2 flex items-center gap-2"><i class="fas fa-align-left"></i> Deskripsi</h3>
+                    <div class="bg-slate-50 p-4 rounded-xl text-sm text-slate-700 leading-relaxed border border-slate-100" x-text="activeTask.desc || 'Tidak ada deskripsi.'"></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <div>
+                        <h3 class="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2"><i class="fas fa-check-square"></i> Checklist</h3>
+                        <div class="space-y-2 mb-3">
+                            <template x-for="sub in activeSubtasks" :key="sub.id">
+                                <div class="flex items-start gap-3 group">
+                                    <input type="checkbox" class="cb-custom mt-0.5" :checked="sub.isDone" @change="toggleSubtask(sub.id)">
+                                    <span class="text-sm text-slate-700 transition-all" :class="sub.isDone ? 'line-through text-slate-400' : ''" x-text="sub.text"></span>
+                                </div>
+                            </template>
+                            <div x-show="activeSubtasks.length === 0" class="text-xs text-slate-400 italic">Belum ada checklist.</div>
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="text" x-model="newSubtaskText" @keydown.enter="addSubtask()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:border-indigo-500 outline-none" placeholder="+ Tambah item checklist...">
+                            <button @click="addSubtask()" class="bg-indigo-600 text-white rounded-lg px-3 hover:bg-indigo-700"><i class="fas fa-plus text-xs"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col h-64 md:h-auto">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2"><i class="fas fa-comments"></i> Diskusi</h3>
+                        <div class="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-3 overflow-y-auto space-y-3 mb-2 custom-scrollbar">
+                            <template x-for="com in activeComments" :key="com.id">
+                                <div class="flex flex-col">
+                                    <div class="flex items-baseline justify-between">
+                                        <span class="text-[10px] font-bold text-indigo-600" x-text="com.user"></span>
+                                        <span class="text-[9px] text-slate-400" x-text="com.time"></span>
+                                    </div>
+                                    <div class="bg-white p-2 rounded-lg rounded-tl-none border border-slate-100 shadow-sm text-xs text-slate-600 mt-1" x-text="com.text"></div>
+                                </div>
+                            </template>
+                            <div x-show="activeComments.length === 0" class="text-center text-xs text-slate-400 mt-10">Belum ada komentar.</div>
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="text" x-model="newCommentText" @keydown.enter="addComment()" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs focus:border-indigo-500 outline-none" placeholder="Tulis komentar...">
+                            <button @click="addComment()" class="bg-slate-800 text-white rounded-lg px-3 hover:bg-black"><i class="fas fa-paper-plane text-xs"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
+                <button @click="deleteTask(activeTask.id); showDetailModal=false" class="text-red-500 hover:text-red-700 text-xs font-bold px-3 py-2"><i class="fas fa-trash-alt mr-1"></i> HAPUS TUGAS</button>
+                <div class="flex gap-2">
+                    <span class="text-xs text-slate-500 self-center mr-2">Ditugaskan ke: <b x-text="activeTask.assignee"></b></span>
+                    <button @click="showDetailModal = false" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg font-bold text-xs">TUTUP</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div x-show="showAddModal" class="fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm" x-cloak x-transition.opacity>
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 modal-enter relative">
+            <button @click="showAddModal = false" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i class="fas fa-times text-lg"></i></button>
+            <h3 class="font-extrabold text-lg text-slate-800 mb-6">Buat Tugas Baru</h3>
+            <div class="space-y-3">
+                <input type="text" x-model="newTask.title" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold outline-none focus:border-indigo-500" placeholder="Judul Tugas">
+                <textarea x-model="newTask.desc" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs outline-none focus:border-indigo-500" placeholder="Deskripsi"></textarea>
+                <div class="grid grid-cols-2 gap-2">
+                    <select x-model="newTask.label" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold outline-none">
+                        <option value="General">General</option><option value="Marketing">Marketing</option><option value="IT">IT Dev</option><option value="Urgent">Urgent</option>
+                    </select>
+                    <select x-model="newTask.priority" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold outline-none">
+                        <option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <select x-model="newTask.assignee" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold outline-none">
+                        <option value="Admin">Admin</option><option value="Erika">Erika</option><option value="Karyawan 1">Karyawan 1</option>
+                    </select>
+                    <input type="date" x-model="newTask.dueDate" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold outline-none">
+                </div>
+            </div>
+            <button @click="createTask()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3.5 rounded-xl font-bold mt-5 shadow-lg transition-all">SIMPAN TUGAS</button>
+        </div>
+    </div>
+
+    <script>
+        function taskApp() {
+            return {
+                // ==============================
+                // UPDATE URL WEB APP V3 DISINI!!
+                // ==============================
+                apiUrl: 'https://script.google.com/macros/s/AKfycbwVMXjL1wSqlUVH-BqepO4joyKYBES3oqLlrE1a0oDsrr4NioeKLeTLqYzOzjynE5HV/exec', 
+                
+                currentView: 'board',
+                tasks: [],
+                columns: [
+                    {id: 'TODO', title: 'To Do', dotColor: 'bg-slate-400'},
+                    {id: 'DOING', title: 'In Progress', dotColor: 'bg-indigo-500'},
+                    {id: 'DONE', title: 'Completed', dotColor: 'bg-emerald-500'}
+                ],
+                isLoading: false,
+                showAddModal: false,
+                showDetailModal: false,
+                
+                // Active Detail Data
+                activeTask: {},
+                activeSubtasks: [],
+                activeComments: [],
+                newSubtaskText: '',
+                newCommentText: '',
+                
+                newTask: { title: '', desc: '', assignee: 'Admin', priority: 'Medium', label: 'General', dueDate: new Date().toISOString().split('T')[0] },
+                
+                // Charts
+                chartStatus: null, chartPriority: null,
+
+                initApp() { this.fetchTasks(); },
+
+                async fetchTasks() {
+                    this.isLoading = true;
+                    try { const res = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'get_tasks' }) }); const json = await res.json(); if (json.status === 'success') this.tasks = json.data.reverse(); } catch (e) { console.log(e); }
+                    this.isLoading = false;
+                },
+
+                async createTask() {
+                    if (!this.newTask.title) return alert("Isi judul!");
+                    this.isLoading = true;
+                    try { const res = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'create_task', data: this.newTask }) }); const json = await res.json(); if (json.status === 'success') { this.showAddModal = false; this.fetchTasks(); } } catch (e) { alert('Error'); }
+                    this.isLoading = false;
+                },
+
+                async moveTask(id, newStatus) {
+                    const t = this.tasks.find(x => x.id === id); if(!t) return;
+                    t.status = newStatus;
+                    try { await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'move_task', id: id, newStatus: newStatus }) }); } catch (e) {}
+                },
+
+                async deleteTask(id) {
+                    if (!confirm("Hapus?")) return;
+                    this.isLoading = true;
+                    try { await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'delete_task', id: id }) }); this.tasks = this.tasks.filter(t => t.id !== id); } catch (e) {}
+                    this.isLoading = false;
+                },
+
+                // --- DETAIL LOGIC ---
+                async openTaskDetail(task) {
+                    this.activeTask = task;
+                    this.activeSubtasks = [];
+                    this.activeComments = [];
+                    this.showDetailModal = true;
+                    
+                    // Fetch Details
+                    try {
+                        const res = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'get_details', id: task.id }) });
+                        const json = await res.json();
+                        if (json.status === 'success') {
+                            this.activeSubtasks = json.data.subtasks;
+                            this.activeComments = json.data.comments;
+                        }
+                    } catch(e) { console.log(e); }
+                },
+
+                async addSubtask() {
+                    if(!this.newSubtaskText) return;
+                    const text = this.newSubtaskText; this.newSubtaskText = '';
+                    // Optimistic
+                    const tempId = 'TEMP-' + Date.now();
+                    this.activeSubtasks.push({id: tempId, text: text, isDone: false});
+                    try { await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'add_subtask', taskId: this.activeTask.id, text: text }) }); } catch(e){}
+                },
+
+                async toggleSubtask(sid) {
+                    const s = this.activeSubtasks.find(x => x.id === sid); if(s) s.isDone = !s.isDone; // Optimistic toggle
+                    try { await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'toggle_subtask', subId: sid }) }); } catch(e){}
+                },
+
+                async addComment() {
+                    if(!this.newCommentText) return;
+                    const text = this.newCommentText; this.newCommentText = '';
+                    const user = 'Admin'; // Hardcoded for simplicity, or use login logic
+                    const time = new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+                    
+                    this.activeComments.push({id: 'TEMP', user: user, text: text, time: time});
+                    try { await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'add_comment', taskId: this.activeTask.id, text: text, user: user }) }); } catch(e){}
+                },
+
+                // --- UTILS ---
+                getTasksByStatus(s) { return this.tasks.filter(t => t.status === s); },
+                getPrevStatus(s) { return s === 'DOING' ? 'TODO' : (s === 'DONE' ? 'DOING' : 'TODO'); },
+                getNextStatus(s) { return s === 'TODO' ? 'DOING' : (s === 'DOING' ? 'DONE' : 'DONE'); },
+                
+                getLabelColor(l) { return {'Marketing':'bg-purple-50 text-purple-600 border-purple-200','IT':'bg-cyan-50 text-cyan-600 border-cyan-200','Urgent':'bg-rose-50 text-rose-600 border-rose-200'}[l] || 'bg-slate-100 text-slate-500 border-slate-200'; },
+                getPriorityColor(p) { return {'High':'bg-red-50 text-red-600 border-red-200','Medium':'bg-amber-50 text-amber-600 border-amber-200'}[p] || 'bg-blue-50 text-blue-600 border-blue-200'; },
+                getInitials(n) { return n ? n.substring(0,2).toUpperCase() : '?'; },
+                formatDate(d) { if(!d) return '-'; return new Date(d).toLocaleDateString('id-ID', {day:'numeric', month:'short'}); },
+
+                updateCharts() {
+                    this.$nextTick(() => {
+                        const statusCounts = [this.getTasksByStatus('TODO').length, this.getTasksByStatus('DOING').length, this.getTasksByStatus('DONE').length];
+                        const priorityCounts = [this.tasks.filter(t=>t.priority==='High').length, this.tasks.filter(t=>t.priority==='Medium').length, this.tasks.filter(t=>t.priority==='Low').length];
+
+                        if(this.chartStatus) this.chartStatus.destroy();
+                        if(this.chartPriority) this.chartPriority.destroy();
+
+                        this.chartStatus = new Chart(document.getElementById('statusChart'), {
+                            type: 'doughnut', data: { labels: ['To Do','Doing','Done'], datasets: [{ data: statusCounts, backgroundColor: ['#94a3b8','#6366f1','#10b981'] }] }
+                        });
+                        this.chartPriority = new Chart(document.getElementById('priorityChart'), {
+                            type: 'bar', data: { labels: ['High','Medium','Low'], datasets: [{ label:'Jumlah', data: priorityCounts, backgroundColor: ['#ef4444','#f59e0b','#3b82f6'], borderRadius: 5 }] }, options: { scales: { y: { beginAtZero: true } } }
+                        });
+                    });
+                }
+            }
+        }
+    </script>
+</body>
+</html>
