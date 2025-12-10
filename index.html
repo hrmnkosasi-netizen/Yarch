@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Yarch V58 - FINAL SECURE</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { 
+                extend: { 
+                    fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
+                    colors: { 
+                        brand: { 50: '#fff1f2', 100: '#ffe4e6', 500: '#f43f5e', 600: '#e11d48', 700: '#be123c', 900: '#881337' },
+                        darkbg: '#0f172a',
+                    },
+                    animation: { 'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' }
+                } 
+            }
+        }
+    </script>
+    <style>
+        [x-cloak] { display: none !important; }
+        body { background-color: #f8fafc; transition: background-color 0.3s; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+        .dark body { background-color: #020617; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark .custom-scroll::-webkit-scrollbar-thumb { background: #334155; }
+        .card-enter { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes slideUp { from { transform: translateY(15px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .toast-enter { animation: toastIn 0.3s ease-out forwards; }
+        @keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .cb-custom { accent-color: #e11d48; width: 1.2em; height: 1.2em; cursor: pointer; }
+        .draggable-source { opacity: 0.5; border: 2px dashed #e11d48; }
+        .drop-target { background-color: rgba(225, 29, 72, 0.1); border-radius: 1rem; border: 2px dashed #e11d48; }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+        .login-bg { background-image: radial-gradient(circle at center, #f1f5f9 2px, transparent 2.5px); background-size: 24px 24px; }
+        .dark .login-bg { background-image: radial-gradient(circle at center, #1e293b 2px, transparent 2.5px); }
+        .public-badge { background: repeating-linear-gradient(45deg, #f1f5f9, #f1f5f9 10px, #e2e8f0 10px, #e2e8f0 20px); }
+        .chat-container { height: calc(100vh - 180px); }
+    </style>
+</head>
+<body class="text-slate-800 dark:text-slate-200 h-screen flex flex-col overflow-hidden" 
+      x-data="taskApp()" x-init="initApp()" 
+      @keydown.window.prevent.ctrl.k="toggleCmdPalette()" 
+      @keydown.window.prevent.meta.k="toggleCmdPalette()"
+      @keydown.escape="zenMode = false"
+      :class="{ 'dark': isDarkMode, 'zen-active': zenMode }">
+
+    <audio id="doneSound" src="https://assets.mixkit.co/sfx/preview/mixkit-positive-notification-951.mp3" preload="auto"></audio>
+
+    <div x-show="!currentUser && !isPublicView" class="fixed inset-0 z-[1000] bg-white dark:bg-slate-900 flex items-center justify-center p-4 login-bg transition-all duration-500" x-transition.opacity>
+        <div class="w-full max-w-sm bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-brand-500 to-orange-500"></div>
+            
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-orange-600 flex items-center justify-center text-white shadow-lg shadow-brand-500/30 mx-auto mb-4"><i class="fas fa-cubes text-2xl"></i></div>
+                <h1 class="font-extrabold text-2xl text-slate-900 dark:text-white">Yarch V58</h1>
+                <p class="text-sm text-slate-400 font-medium" x-text="authMode === 'login' ? 'Sign in to continue' : 'Create new account'"></p>
+            </div>
+
+            <form @submit.prevent="login()" class="space-y-4" x-show="authMode === 'login'">
+                <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Username</label><input type="text" x-model="loginForm.username" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-bold outline-none focus:border-brand-500 dark:text-white" placeholder="Username"></div>
+                <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Password</label><input type="password" x-model="loginForm.password" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-bold outline-none focus:border-brand-500 dark:text-white" placeholder="Password"></div>
+                <div x-show="loginError" class="text-red-500 text-xs font-bold text-center bg-red-50 dark:bg-red-900/20 py-2 rounded-lg animate-pulse" x-text="loginError"></div>
+                <button type="submit" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-brand-500/30 active:scale-95 transition-all" :disabled="authLoading">
+                    <span x-show="!authLoading">SIGN IN</span>
+                    <i x-show="authLoading" class="fas fa-spinner fa-spin"></i>
+                </button>
+                <div class="text-center mt-4">
+                    <p class="text-xs text-slate-400">Belum punya akun? <a href="#" @click.prevent="authMode = 'register'; loginError=''" class="text-brand-500 font-bold hover:underline">Daftar disini</a></p>
+                </div>
+            </form>
+
+            <form @submit.prevent="register()" class="space-y-4" x-show="authMode === 'register'">
+                <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Nama Lengkap</label><input type="text" x-model="regForm.name" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-bold outline-none focus:border-brand-500 dark:text-white" placeholder="Nama Anda" required></div>
+                <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Username</label><input type="text" x-model="regForm.username" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-bold outline-none focus:border-brand-500 dark:text-white" placeholder="Username (tanpa spasi)" required></div>
+                <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Password</label><input type="password" x-model="regForm.password" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-bold outline-none focus:border-brand-500 dark:text-white" placeholder="Password" required></div>
+                <div x-show="loginError" class="text-red-500 text-xs font-bold text-center bg-red-50 dark:bg-red-900/20 py-2 rounded-lg" x-text="loginError"></div>
+                <button type="submit" class="w-full py-3.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold text-sm shadow-lg active:scale-95 transition-all" :disabled="authLoading">
+                    <span x-show="!authLoading">DAFTAR SEKARANG</span>
+                    <i x-show="authLoading" class="fas fa-spinner fa-spin"></i>
+                </button>
+                <div class="text-center mt-4">
+                    <p class="text-xs text-slate-400">Sudah punya akun? <a href="#" @click.prevent="authMode = 'login'; loginError=''" class="text-brand-500 font-bold hover:underline">Login disini</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div x-show="globalLoading" class="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center text-white transition-opacity" x-transition.opacity><div class="relative"><div class="w-16 h-16 border-4 border-brand-500/30 border-t-brand-500 rounded-full animate-spin"></div><div class="absolute inset-0 flex items-center justify-center"><i class="fas fa-bolt text-brand-500"></i></div></div><p class="font-bold text-xs tracking-[0.2em] mt-4 animate-pulse">PROCESSING</p></div>
+    <div x-show="zenMode" class="fixed inset-0 z-[200] bg-slate-900 flex flex-col items-center justify-center p-8 text-center text-white space-y-8" x-transition.opacity><div class="space-y-4 max-w-3xl"><span class="inline-block px-4 py-1 rounded-full text-xs font-bold bg-brand-900/50 text-brand-400 border border-brand-800 tracking-wider animate-pulse">ZEN FOCUS MODE</span><h1 class="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight" x-text="activeTask.title"></h1><p class="text-xl text-slate-400 max-w-2xl mx-auto" x-text="activeTask.desc || 'No additional details provided.'"></p></div><div class="flex gap-8 md:gap-16"><div class="text-center"><div class="text-3xl md:text-4xl font-bold text-emerald-400" x-text="activeTask.status"></div><div class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Status</div></div><div class="w-[1px] h-14 bg-slate-700"></div><div class="text-center"><div class="text-3xl md:text-4xl font-bold text-blue-400" x-text="getDaysLeft(activeTask.dueDate).text"></div><div class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Due Date</div></div></div><button @click="zenMode = false" class="mt-8 px-8 py-3 rounded-full border border-slate-600 hover:bg-slate-800 transition-colors text-sm text-slate-400 tracking-widest uppercase">Exit Focus Mode</button></div>
+    <div class="fixed top-5 right-5 z-[110] space-y-3 pointer-events-none"><template x-for="toast in toasts" :key="toast.id"><div class="pointer-events-auto bg-white dark:bg-slate-800 border-l-4 rounded shadow-2xl p-4 min-w-[300px] flex items-center gap-4 toast-enter" :class="toast.type === 'success' ? 'border-emerald-500' : 'border-red-500'"><div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" :class="toast.type === 'success' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'"><i class="fas" :class="toast.type === 'success' ? 'fa-check' : 'fa-exclamation'"></i></div><div><h4 class="font-bold text-xs uppercase" :class="toast.type === 'success' ? 'text-emerald-600' : 'text-red-600'" x-text="toast.type === 'success' ? 'Success' : 'Error'"></h4><p class="text-xs font-medium text-slate-600 dark:text-slate-300" x-text="toast.message"></p></div></div></template></div>
+    <div x-show="showCmd" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[200] flex items-start justify-center pt-20 px-4" x-transition.opacity x-cloak><div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700 card-enter" @click.outside="showCmd = false"><div class="p-4 border-b border-slate-100 dark:border-slate-700 flex items-center gap-3"><i class="fas fa-search text-slate-400"></i><input type="text" x-model="cmdQuery" class="flex-1 bg-transparent outline-none font-bold text-lg dark:text-white placeholder:text-slate-300" placeholder="Type command..." autofocus><span class="text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-slate-500">ESC</span></div><div class="max-h-[300px] overflow-y-auto p-2"><template x-for="cmd in filteredCommands" :key="cmd.text"><button @click="runCommand(cmd.action)" class="w-full text-left px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-between group transition-colors"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-500 flex items-center justify-center group-hover:bg-brand-50 group-hover:text-brand-600"><i class="fas" :class="cmd.icon"></i></div><span class="font-bold text-sm text-slate-700 dark:text-slate-200" x-text="cmd.text"></span></div><i class="fas fa-chevron-right text-slate-300 text-xs"></i></button></template></div></div></div>
+
+    <header class="h-16 shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-3 md:px-4 z-20 shadow-sm relative" :class="isPublicView ? 'public-badge' : ''">
+        <div class="flex items-center gap-2 md:gap-3 shrink-0"><div class="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-gradient-to-br from-brand-500 to-orange-600 flex items-center justify-center text-white shadow-lg shadow-brand-500/30 shrink-0"><i class="fas fa-cubes text-xs md:text-sm"></i></div><div class="hidden md:block"><h1 class="font-extrabold text-base tracking-tight leading-none text-slate-900 dark:text-white">Yarch</h1><p class="text-[10px] text-slate-400 font-bold uppercase tracking-wide" x-text="isPublicView ? 'Read-Only' : (currentUser ? 'Hi, ' + currentUser.name.split(' ')[0] : 'V58')"></p></div></div>
+        <div class="flex flex-1 max-w-sm mx-2 relative" x-show="!isPublicView"><i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i><input type="text" x-model="searchQuery" class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-full py-2 pl-9 pr-2 md:pr-4 text-[10px] md:text-xs font-bold focus:ring-2 focus:ring-brand-500 transition-all dark:text-white placeholder:text-slate-400" placeholder="Search tasks..."></div>
+        <div class="flex items-center gap-1.5 md:gap-2 shrink-0">
+            <template x-if="currentUser && !isPublicView"><div class="flex items-center gap-1.5 md:gap-2">
+                <button @click="myTasksOnly = !myTasksOnly" class="md:hidden w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center transition-all" :class="myTasksOnly ? 'bg-brand-500 text-white border-brand-500' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400'"><i class="fas fa-user-check text-xs"></i></button>
+                <button @click="exportTasks()" x-show="isAdmin()" class="hidden md:flex bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg px-3 py-2 font-bold text-[10px] items-center gap-2 transition-colors border border-slate-200 dark:border-slate-700"><i class="fas fa-file-export"></i> <span>Export</span></button>
+                <button @click="switchView('analytics')" class="w-8 h-8 md:w-9 md:h-9 rounded-full bg-slate-50 dark:bg-slate-800 text-brand-500 hover:bg-slate-100 flex items-center justify-center border border-slate-200 dark:border-slate-700 transition-all" :class="currentView === 'analytics' ? 'bg-brand-50 border-brand-200' : ''"><i class="fas fa-chart-pie text-xs md:text-sm"></i></button>
+                <button @click="toggleDarkMode()" class="w-8 h-8 md:w-9 md:h-9 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-yellow-400 hover:bg-slate-100 transition-all flex items-center justify-center border border-slate-200 dark:border-slate-700"><i class="fas text-xs md:text-sm" :class="isDarkMode ? 'fa-sun' : 'fa-moon'"></i></button>
+                <button @click="logout()" class="ml-1 w-8 h-8 md:w-9 md:h-9 rounded-full bg-red-50 hover:bg-red-100 text-red-500 flex items-center justify-center border border-red-100 transition-all"><i class="fas fa-sign-out-alt text-xs md:text-sm"></i></button>
+            </div></template>
+            <template x-if="isPublicView"><button @click="toggleDarkMode()" class="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-yellow-400 hover:bg-slate-100 transition-all flex items-center justify-center border border-slate-200 dark:border-slate-700"><i class="fas" :class="isDarkMode ? 'fa-sun' : 'fa-moon'"></i></button></template>
+        </div>
+    </header>
+
+    <div class="toolbar-area hidden md:flex items-center gap-2 px-6 py-2 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800" x-show="currentUser && !isPublicView">
+        <template x-for="v in ['board', 'feed', 'discuss', 'calendar', 'analytics']"><button @click="switchView(v)" class="px-4 py-1.5 rounded-md text-xs font-bold transition-all uppercase tracking-wide" :class="currentView === v ? 'bg-white dark:bg-slate-800 text-brand-600 dark:text-white shadow-sm border border-slate-200 dark:border-slate-700' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'"><i class="fas mr-1" :class="getViewIcon(v)"></i> <span x-text="v"></span></button></template>
+        <button @click="switchView('trash')" class="px-4 py-1.5 rounded-md text-xs font-bold transition-all uppercase tracking-wide text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20" :class="currentView === 'trash' ? 'bg-red-50 dark:bg-red-900/20' : ''"><i class="fas fa-trash-alt mr-1"></i> Bin</button>
+        <div class="flex-1"></div>
+        <div class="flex items-center gap-2">
+             <button @click="cycleSort()" class="px-3 py-1 rounded-full text-[10px] font-bold border transition-all flex items-center gap-1 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 hover:text-brand-500"><i class="fas" :class="getSortIcon()"></i> <span x-text="getSortLabel()"></span></button>
+            <button @click="myTasksOnly = !myTasksOnly" class="px-3 py-1 rounded-full text-[10px] font-bold border transition-all flex items-center gap-1" :class="myTasksOnly ? 'bg-brand-100 text-brand-700 border-brand-200' : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'"><i class="fas fa-user-circle"></i> My Tasks</button>
+        </div>
+    </div>
+
+    <main class="flex-1 overflow-hidden relative pb-20 md:pb-0" x-show="currentUser">
+        
+        <div x-show="currentView === 'board'" class="h-full overflow-hidden flex flex-col p-4 md:p-6" x-transition.opacity>
+            <div class="flex gap-2 mb-4 overflow-x-auto hide-scroll items-center pb-1 flex-shrink-0" x-show="!isPublicView">
+                <button @click="switchView('trash')" class="md:hidden px-3 py-1.5 rounded-full text-[10px] font-bold border bg-white dark:bg-slate-800 border-red-200 text-red-500 whitespace-nowrap"><i class="fas fa-trash-alt"></i> Bin</button>
+                <button @click="activeFilter='ALL'" class="px-3 py-1.5 rounded-full text-[10px] font-bold border transition-all whitespace-nowrap" :class="activeFilter==='ALL' ? 'bg-slate-800 text-white dark:bg-white dark:text-slate-900' : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'">All</button>
+                <button @click="activeFilter='High'" class="px-3 py-1.5 rounded-full text-[10px] font-bold border border-transparent bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400 whitespace-nowrap">🔥 High</button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full overflow-y-auto md:overflow-hidden pb-20 md:pb-0" :class="isPublicView ? 'blur-sm pointer-events-none' : ''">
+                <template x-for="col in columns" :key="col.id">
+                    <div class="flex flex-col h-full rounded-2xl bg-slate-100/50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700 backdrop-blur-sm transition-colors duration-200 max-h-[500px] md:max-h-full" @dragover.prevent="dragOverColumn($event)" @dragleave="dragLeaveColumn($event)" @drop="dropTask($event, col.id)">
+                        <div class="p-3 border-b border-slate-200/50 dark:border-slate-700/50 flex justify-between items-center bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur z-10 rounded-t-2xl flex-shrink-0">
+                            <div class="flex items-center gap-2"><div class="w-2.5 h-2.5 rounded-full" :class="col.accentColor"></div><h2 class="font-extrabold text-xs text-slate-600 dark:text-slate-300 uppercase tracking-widest" x-text="col.title"></h2><span class="bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300 px-1.5 py-0.5 rounded text-[9px] font-bold shadow-sm" x-text="getTasksByStatus(col.id).length"></span></div>
+                        </div>
+                        <div class="flex-1 p-2 overflow-y-auto custom-scroll grid grid-cols-2 md:grid-cols-1 gap-2">
+                            <template x-for="task in getTasksByStatus(col.id)" :key="task.id">
+                                <div draggable="true" @dragstart="dragStart($event, task.id)" @click="openTaskDetail(task)" class="bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border active:scale-95 transition-all duration-200 cursor-pointer card-enter relative overflow-hidden group hover:shadow-md h-full flex flex-col" :class="isOverdue(task) && task.status !== 'DONE' ? 'border-red-400 dark:border-red-500 shadow-red-100' : 'border-slate-200 dark:border-slate-700'">
+                                    <div x-show="task.priority === 'High'" class="absolute left-0 top-0 bottom-0 w-1 bg-rose-500 animate-pulse-slow"></div>
+                                    <div class="flex justify-between items-start mb-1.5 pl-2">
+                                        <div class="flex gap-1"><span class="px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase tracking-wide border dark:border-slate-600" :class="getPriorityColor(task.priority)" x-text="task.priority"></span><span x-show="task.recurring" class="text-[9px] text-slate-400 px-1"><i class="fas fa-sync-alt"></i></span></div>
+                                        <div class="relative" x-data="{ openMenu: false }"><button @click.stop="openMenu = !openMenu" class="text-slate-300 px-1"><i class="fas fa-ellipsis-v text-xs"></i></button><div x-show="openMenu" @click.outside="openMenu = false" class="absolute right-0 top-full mt-1 bg-white dark:bg-slate-700 shadow-xl border dark:border-slate-600 rounded-lg z-20 w-32 py-1">
+                                            <button x-show="currentUser && (currentUser.role === 'Admin' || (task.assignee && task.assignee.includes(currentUser.name)))" @click.stop="openTaskDetail(task); isEditMode=true" class="w-full text-left px-3 py-2 text-[10px] font-bold text-slate-600 dark:text-slate-200 hover:bg-slate-50">Edit</button>
+                                            <button x-show="currentUser && (currentUser.role === 'Admin' || (task.assignee && task.assignee.includes(currentUser.name)))" @click.stop="moveToTrash(task.id)" class="w-full text-left px-3 py-2 text-[10px] font-bold text-red-500 hover:bg-red-50">Delete</button>
+                                        </div></div>
+                                    </div>
+                                    <h3 class="font-bold text-slate-800 dark:text-slate-100 text-xs mb-1 leading-snug pl-2 line-clamp-2" :class="col.id === 'DONE' ? 'line-through text-slate-400' : ''" x-text="task.title"></h3>
+                                    <div class="pl-2 mb-2 flex flex-wrap gap-1"><template x-for="tag in (task.tags || '').split(',').slice(0, 1)"><span x-show="tag.trim()" class="text-[8px] px-1.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500 border border-slate-200 dark:border-slate-600 truncate max-w-[60px]" x-text="tag.trim()"></span></template><span x-show="(task.tags || '').split(',').length > 1" class="text-[8px] text-slate-400">+1</span></div>
+                                    <div class="mt-auto flex items-center justify-between pl-2"><div class="flex items-center gap-1 text-[8px] font-bold" :class="getDaysLeft(task.dueDate).color"><i :class="getDaysLeft(task.dueDate).icon"></i> <span x-text="getDaysLeft(task.dueDate).text.replace(' Late','').replace('Today','Tdy')"></span></div><div class="flex -space-x-1"><template x-for="assigneeName in (task.assignee || 'Unassigned').split(',').slice(0,1)"><img :src="'https://ui-avatars.com/api/?name='+assigneeName.trim()+'&background=random&color=fff&size=20'" class="w-4 h-4 rounded-full border border-white dark:border-slate-800" :title="assigneeName.trim()"></template></div></div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <div x-show="currentView === 'feed'" class="h-full overflow-y-auto p-4 md:p-8 bg-white dark:bg-slate-900" x-cloak>
+            <div class="max-w-xl mx-auto space-y-4 pb-20">
+                <div class="text-xs text-brand-500 font-bold uppercase tracking-wider mb-2 flex justify-between"><span>Projects Feed</span> <button @click="fetchFeed()" class="text-[10px] text-slate-400"><i class="fas fa-sync"></i> Refresh</button></div>
+                <template x-for="item in feedItems" :key="item.id">
+                    <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                        <div class="flex items-start gap-3">
+                            <img :src="'https://ui-avatars.com/api/?name='+item.user+'&background=random&color=fff&size=40'" class="w-10 h-10 rounded-full border-2 border-white dark:border-slate-700 shadow-sm">
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start"><div><span class="font-bold text-sm text-slate-800 dark:text-white" x-text="item.user"></span> <span class="text-xs text-slate-500 dark:text-slate-400" x-text="item.action"></span></div><span class="text-[10px] text-slate-400" x-text="item.time"></span></div>
+                                <div class="mt-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-700">
+                                    
+                                    <template x-if="item.details && item.details.startsWith('IMG||')">
+                                        <div class="mt-1 relative group">
+                                            <img :src="'https://wsrv.nl/?url=' + encodeURIComponent(item.details.split('||')[1])" 
+                                                 referrerpolicy="no-referrer" 
+                                                 loading="lazy"
+                                                 onerror="this.style.opacity='0.5'"
+                                                 class="w-full rounded-lg shadow-sm border dark:border-slate-700 object-cover max-h-[300px] cursor-pointer" 
+                                                 @click="window.open(item.details.split('||')[1], '_blank')"
+                                                 alt="uploaded image">
+                                            <div class="text-[10px] text-slate-400 mt-1" x-text="item.details.split('||')[2]"></div>
+                                        </div>
+                                    </template>
+                                    
+                                    <template x-if="!item.details.startsWith('IMG||')">
+                                        <div>
+                                            <template x-if="item.details.includes('||')">
+                                                <div>
+                                                    <h4 class="font-bold text-xs text-slate-700 dark:text-slate-200 mb-1" x-text="item.details.split('||')[0]"></h4>
+                                                    <div class="text-[10px] text-slate-500 mt-1 pt-1 border-t border-slate-200 dark:border-slate-700 font-bold flex items-center gap-1">
+                                                        <i class="fas fa-tasks text-brand-500"></i> <span x-text="item.details.split('||')[1]"></span>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                            <template x-if="!item.details.includes('||')">
+                                                <h4 class="font-bold text-xs text-slate-700 dark:text-slate-200 mb-1" x-text="item.details"></h4>
+                                            </template>
+                                        </div>
+                                    </template>
+
+                                </div>
+                                <button x-show="item.taskId && !item.taskId.startsWith('DISCUSS')" @click="openTaskDetail(tasks.find(t=>t.id===item.taskId), 'chat')" class="mt-3 text-xs font-bold text-brand-500 hover:text-brand-600 flex items-center gap-1"><i class="fas fa-comment-alt"></i> Add comment</button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+                <div x-show="feedItems.length === 0" class="text-center py-10 text-slate-400 italic text-sm">No recent activity.</div>
+            </div>
+        </div>
+
+        <div x-show="currentView === 'discuss'" class="h-full overflow-y-auto p-0 bg-white dark:bg-slate-900" x-cloak>
+            <div class="max-w-2xl mx-auto h-full flex flex-col">
+                <div class="p-4 border-b border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-10 flex justify-between items-center">
+                    <h2 class="font-bold text-lg text-slate-800 dark:text-white">Discuss</h2>
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 rounded-full px-3 py-1.5 transition-all w-32 focus-within:w-48"><i class="fas fa-search text-slate-400 text-xs"></i><input type="text" x-model="discussSearchQuery" placeholder="Search..." class="bg-transparent border-none outline-none text-xs text-slate-700 dark:text-white w-full"></div>
+                        <button @click="showDiscussModal=true" class="w-8 h-8 rounded-full bg-brand-500 text-white flex items-center justify-center shadow hover:bg-brand-600"><i class="fas fa-plus text-xs"></i></button>
+                    </div>
+                </div>
+                <div class="flex-1 pb-24">
+                    <template x-for="chat in filteredDiscussions" :key="chat.id">
+                        <div @click="openChatModal(chat)" class="px-4 py-4 border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors flex items-start gap-4 group">
+                            
+                            <div class="flex -space-x-3 mr-2 shrink-0 items-center">
+                                <template x-for="(user, index) in (chat.activeParticipants || [chat.createdBy]).slice(0, 3)">
+                                    <div class="w-10 h-10 rounded-full border-2 border-white dark:border-slate-800 shadow-sm z-10 bg-slate-200 overflow-hidden relative">
+                                         <img :src="'https://ui-avatars.com/api/?name='+user+'&background=random&color=fff&size=48'" class="w-full h-full object-cover">
+                                    </div>
+                                </template>
+                                <div x-show="(chat.activeParticipants || []).length > 3" class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-500 border-2 border-white dark:border-slate-800 z-0">
+                                    +<span x-text="(chat.activeParticipants.length - 3)"></span>
+                                </div>
+                            </div>
+                            
+                            <div class="flex-1 min-w-0 pt-1">
+                                <div class="flex justify-between items-start mb-0.5"><h3 class="font-bold text-sm text-slate-800 dark:text-white truncate pr-2" x-text="chat.topic"></h3><span class="text-[10px] text-slate-400" x-text="chat.messages.length > 0 ? 'now' : ''"></span></div>
+                                <p class="text-xs text-slate-500 mb-2 truncate" x-text="chat.messages.length > 0 ? (chat.messages[chat.messages.length-1].isImage ? 'Sent an image' : chat.messages[chat.messages.length-1].text) : 'No messages yet'"></p>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-bold" x-text="chat.project"></span>
+                                    <button x-show="currentUser && (currentUser.role === 'Admin' || currentUser.name === chat.createdBy)" @click.stop="deleteDiscussion(chat.id)" class="text-xs text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity p-1"><i class="fas fa-trash-alt"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                    <div x-show="filteredDiscussions.length === 0" class="text-center p-8 text-slate-400 text-xs">No discussions found.</div>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="currentView === 'calendar'" class="h-full overflow-hidden flex flex-col md:flex-row p-4 gap-4 bg-white dark:bg-slate-900">
+            <div class="w-full md:w-2/3 bg-slate-50 dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-bold text-lg dark:text-white" x-text="calendarTitle"></h2>
+                    <div class="flex gap-2"><button @click="changeMonth(-1)" class="w-8 h-8 bg-white dark:bg-slate-700 rounded-full flex items-center justify-center shadow-sm"><i class="fas fa-chevron-left"></i></button><button @click="changeMonth(1)" class="w-8 h-8 bg-white dark:bg-slate-700 rounded-full flex items-center justify-center shadow-sm"><i class="fas fa-chevron-right"></i></button></div>
+                </div>
+                <div class="grid grid-cols-7 gap-1 mb-2 text-center text-[10px] font-bold text-slate-400"><div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div></div>
+                <div class="grid grid-cols-7 gap-1 flex-1">
+                    <template x-for="day in calendarDays"><div @click="day.date ? selectedDate = day.fullDate : null" class="rounded-lg flex flex-col items-center justify-start p-1 cursor-pointer border relative" :class="[!day.date ? 'border-transparent pointer-events-none' : (day.fullDate === selectedDate ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-700 hover:border-brand-300')]"><span class="text-xs font-bold" :class="day.isToday ? 'text-brand-600 font-extrabold' : 'text-slate-600 dark:text-slate-300'" x-text="day.date"></span><div class="flex gap-0.5 mt-1 flex-wrap justify-center"><template x-for="t in day.tasks.slice(0,4)"><div class="w-1.5 h-1.5 rounded-full" :class="t.status==='DONE'?'bg-emerald-400':(t.status==='DOING'?'bg-blue-400':'bg-slate-300')"></div></template></div></div></template>
+                </div>
+            </div>
+            <div class="w-full md:w-1/3 bg-slate-50 dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 flex flex-col h-[40vh] md:h-auto">
+                <h3 class="font-bold text-sm uppercase text-slate-500 mb-3">Agenda: <span x-text="selectedDate"></span></h3>
+                <div class="flex-1 overflow-y-auto space-y-2 custom-scroll pb-20 md:pb-0">
+                    <template x-for="task in getTasksBySelectedDate()" :key="task.id">
+                        <div @click="openTaskDetail(task)" class="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm cursor-pointer hover:border-brand-500">
+                            <div class="flex justify-between items-start mb-2"><div><div class="text-xs font-bold dark:text-white" x-text="task.title"></div><span class="text-[9px] px-1.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500" x-text="task.status"></span></div><i class="fas fa-chevron-right text-xs text-slate-300"></i></div>
+                            <div class="pl-2 border-l-2 border-slate-100 dark:border-slate-700" x-show="task.subtasks && task.subtasks.length > 0">
+                                <template x-for="sub in task.subtasks">
+                                    <div class="flex items-center gap-2 mb-1" @click.stop="toggleSubtask(sub.id)"><i class="fas" :class="sub.isDone ? 'fa-check-circle text-emerald-500' : 'fa-circle text-slate-300'" style="font-size: 8px;"></i><span class="text-[9px] text-slate-500 dark:text-slate-400" :class="sub.isDone ? 'line-through opacity-50' : ''" x-text="sub.text"></span></div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                    <div x-show="getTasksBySelectedDate().length === 0" class="text-center py-10 text-slate-400 text-xs italic">No tasks.</div>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="currentView === 'analytics'" class="h-full overflow-y-auto p-4 md:p-8" x-cloak><div class="max-w-5xl mx-auto space-y-6"><div class="grid grid-cols-3 gap-3 md:gap-6"><div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700"><p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase">Total</p><h3 class="text-xl md:text-3xl font-extrabold text-brand-600 dark:text-brand-400" x-text="tasks.length"></h3></div><div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700"><p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase">Done</p><h3 class="text-xl md:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400" x-text="getTasksByStatus('DONE').length"></h3></div><div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700"><p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase">Doing</p><h3 class="text-xl md:text-3xl font-extrabold text-indigo-600 dark:text-indigo-400" x-text="getTasksByStatus('DOING').length"></h3></div></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700"><h3 class="font-bold text-sm text-slate-500 dark:text-slate-400 uppercase mb-4">Status</h3><div class="relative h-56 w-full"><canvas id="statusChart"></canvas></div></div><div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700"><h3 class="font-bold text-sm text-slate-500 dark:text-slate-400 uppercase mb-4">Workload</h3><div class="relative h-56 w-full"><canvas id="workloadChart"></canvas></div></div></div></div></div>
+    </main>
+
+    <div x-show="activeDiscussion" class="fixed inset-0 z-[200] bg-white dark:bg-slate-900 flex flex-col" x-transition.opacity x-cloak>
+        <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 bg-white dark:bg-slate-900 shadow-sm">
+            <button @click="activeDiscussion = null" class="text-slate-400"><i class="fas fa-arrow-left"></i></button>
+            <div class="flex-1"><h3 class="font-bold text-sm text-slate-800 dark:text-white" x-text="activeDiscussion ? activeDiscussion.topic : ''"></h3><p class="text-[10px] text-slate-500">online</p></div>
+            <i @click="startVideoCall()" class="fas fa-video text-brand-500 cursor-pointer"></i>
+        </div>
+        <div class="flex-1 bg-slate-50 dark:bg-slate-950 p-4 space-y-4 overflow-y-auto chat-container" id="chatContainer">
+            <template x-if="activeDiscussion"><template x-for="(msg, index) in activeDiscussion.messages" :key="index"><div class="flex gap-2" :class="msg.isMe ? 'flex-row-reverse' : ''"><img :src="'https://ui-avatars.com/api/?name='+msg.sender+'&background='+(msg.isMe?'e11d48':'3b82f6')+'&color=fff&size=32'" class="w-8 h-8 rounded-full shadow-sm"><div class="p-3 rounded-2xl shadow-sm max-w-[80%]" :class="msg.isMe ? 'bg-brand-500 text-white rounded-tr-none' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-tl-none'"><p class="text-xs font-bold text-xs mb-1 opacity-75" x-text="msg.sender"></p>
+                <div x-show="msg.isImage || (msg.text.startsWith('http') && msg.text.includes('drive.google.com'))">
+                    <img :src="'https://wsrv.nl/?url=' + encodeURIComponent(msg.imgSrc || msg.text)" 
+                         referrerpolicy="no-referrer" 
+                         class="rounded-lg mb-1 w-full cursor-pointer hover:opacity-90 transition-opacity" 
+                         @click="window.open(msg.imgSrc || msg.text, '_blank')"
+                         onerror="this.style.opacity='0.5'">
+                </div>
+                <p class="text-xs" x-text="msg.isImage ? '' : msg.text"></p></div></div></template></template>
+        </div>
+        <div class="p-3 border-t border-slate-100 dark:border-slate-800 flex gap-2 items-center bg-white dark:bg-slate-900 pb-safe chat-input-area" id="chatInputArea">
+            <input type="file" x-ref="chatFile" class="hidden" @change="handleChatUpload($event)">
+            <button class="text-slate-400 hover:text-brand-500" @click="$refs.chatFile.click()"><i class="fas fa-plus"></i></button>
+            <input type="text" x-model="chatInput" @keydown.enter="sendMessage()" class="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full px-4 py-2 text-xs outline-none dark:text-white" placeholder="Type a message...">
+            <button @click="sendMessage()" class="w-8 h-8 bg-brand-500 rounded-full text-white flex items-center justify-center"><i class="fas fa-paper-plane text-xs"></i></button>
+        </div>
+    </div>
+
+    <div x-show="showDiscussModal" class="fixed inset-0 bg-black/50 z-[210] flex items-center justify-center p-4 backdrop-blur-sm" x-cloak x-transition.opacity>
+        <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl shadow-2xl p-6">
+            <h3 class="font-bold text-lg mb-4 dark:text-white">Start New Discussion</h3>
+            <input type="text" x-model="newDiscussTopic" class="w-full bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 text-sm mb-3 outline-none dark:text-white" placeholder="Topic Title">
+            <input type="text" x-model="newDiscussProject" class="w-full bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 text-sm mb-4 outline-none dark:text-white" placeholder="Project Name">
+            <div class="flex gap-2">
+                <button @click="showDiscussModal = false" class="flex-1 py-2 bg-slate-100 text-slate-500 rounded-lg font-bold text-xs">CANCEL</button>
+                <button @click="createDiscussion()" class="flex-1 py-2 bg-brand-500 text-white rounded-lg font-bold text-xs">CREATE</button>
+            </div>
+        </div>
+    </div>
+
+    <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex justify-around items-center h-16 z-40 pb-safe shadow-lg" x-show="currentUser && !isPublicView">
+        <button @click="switchView('board')" class="flex flex-col items-center gap-1 w-14 transition-colors" :class="currentView==='board'?'text-brand-600 dark:text-brand-400':'text-slate-400'"><i class="fas fa-columns text-lg"></i><span class="text-[9px] font-bold">Board</span></button>
+        <button @click="switchView('feed')" class="flex flex-col items-center gap-1 w-14 transition-colors" :class="currentView==='feed'?'text-brand-600 dark:text-brand-400':'text-slate-400'"><i class="fas fa-rss text-lg"></i><span class="text-[9px] font-bold">Feed</span></button>
+        <div class="relative -top-5"><button @click="openCreateModal()" class="w-14 h-14 rounded-full bg-brand-600 text-white shadow-xl flex items-center justify-center active:scale-90 transition-all border-4 border-slate-50 dark:border-slate-900"><i class="fas fa-plus text-xl"></i></button></div>
+        <button @click="switchView('discuss')" class="flex flex-col items-center gap-1 w-14 transition-colors" :class="currentView==='discuss'?'text-brand-600 dark:text-brand-400':'text-slate-400'"><i class="fas fa-comments text-lg"></i><span class="text-[9px] font-bold">Discuss</span></button>
+        <button @click="switchView('calendar')" class="flex flex-col items-center gap-1 w-14 transition-colors" :class="currentView==='calendar'?'text-brand-600 dark:text-brand-400':'text-slate-400'"><i class="far fa-calendar-alt text-lg"></i><span class="text-[9px] font-bold">Date</span></button>
+    </nav>
+
+    <div x-show="showModal" class="fixed inset-0 bg-black/50 z-[60] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm" x-cloak x-transition.opacity> <div class="bg-white dark:bg-slate-800 w-full md:max-w-md rounded-t-3xl md:rounded-3xl shadow-2xl p-6 relative h-[85vh] md:h-auto overflow-y-auto"> <div x-show="modalLoading" class="loading-overlay rounded-3xl"><i class="fas fa-spinner fa-spin text-brand-500 text-2xl"></i></div> <div class="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-6 md:hidden"></div> <div class="flex justify-between items-center mb-6"> <h3 class="font-extrabold text-xl dark:text-white" x-text="isEditMode ? 'Edit Task' : 'New Task'"></h3> <select x-show="!isEditMode" @change="applyTemplate($event.target.value)" class="text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 bg-slate-50 dark:bg-slate-900 text-slate-500 outline-none"> <option value="">Templates...</option> <template x-for="tpl in taskTemplates" :key="tpl.name"><option :value="tpl.name" x-text="tpl.name"></option></template> </select> <button @click="showModal=false" class="text-slate-400 md:block hidden"><i class="fas fa-times"></i></button> </div> <div class="space-y-4"> <input type="text" x-model="form.title" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-bold outline-none focus:border-brand-500 dark:text-white" placeholder="Task Title"> <textarea x-model="form.desc" rows="3" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs outline-none focus:border-brand-500 dark:text-white" placeholder="Description"></textarea> <input type="text" x-model="form.tags" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs outline-none focus:border-brand-500 dark:text-white" placeholder="Tags (comma separated)"> <div class="grid grid-cols-2 gap-3"> <select x-model="form.priority" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-bold outline-none dark:text-white"><option>Medium</option><option>High</option><option>Low</option></select> <input type="date" x-model="form.dueDate" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-bold outline-none dark:text-white"> </div> <div class="relative"> <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Assignees</label> <input type="text" x-model="form.assignee" :disabled="!isAdmin()" class="w-full mt-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-bold outline-none dark:text-white disabled:opacity-50" placeholder="user@gmail.com..."> </div> <div class="flex items-center gap-3 bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700"> <input type="checkbox" x-model="form.recurring" class="cb-custom"> <span class="text-xs font-bold text-slate-600 dark:text-slate-300">Recurring?</span> <select x-show="form.recurring" x-model="form.frequency" class="ml-auto text-xs bg-white dark:bg-slate-800 border rounded px-2 py-1 outline-none dark:text-white"><option value="Daily">Daily</option><option value="Weekly">Weekly</option><option value="Monthly">Monthly</option></select> </div> </div> <div class="flex gap-3 mt-8"> <button @click="showModal=false" class="flex-1 py-3 rounded-xl font-bold text-xs bg-slate-100 text-slate-500">CANCEL</button> <button @click="saveTask()" class="flex-[2] bg-brand-600 text-white py-3 rounded-xl font-bold text-xs shadow-lg flex justify-center items-center gap-2"> <span x-text="isEditMode ? 'UPDATE' : 'CREATE'"></span> </button> </div> </div> </div>
+    <div x-show="showDetail" class="fixed inset-0 bg-black/50 z-[70] flex flex-col md:fixed md:inset-0 md:backdrop-blur-sm md:items-center md:justify-center md:p-4" x-cloak x-transition.opacity> <div class="flex-1 flex flex-col w-full md:max-w-3xl md:h-[85vh] md:bg-white md:dark:bg-slate-800 md:rounded-2xl md:shadow-2xl overflow-hidden relative"> <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900"> <button @click="showDetail=false" class="md:hidden w-8 h-8 rounded-full bg-white dark:bg-slate-800 shadow flex items-center justify-center"><i class="fas fa-arrow-left"></i></button> <div class="flex gap-2 items-center flex-1 justify-end md:justify-start ml-4"> <button @click="shareTask()" class="text-xs font-bold text-brand-600 bg-brand-50 px-3 py-1 rounded-full hover:bg-brand-100 transition-colors flex items-center gap-1"><i class="fas fa-share-alt"></i> Share</button> <button @click="zenMode=true; showDetail=false" class="text-xs font-bold text-slate-400 hover:text-brand-500 flex items-center gap-1"><i class="fas fa-eye"></i> Focus</button> <div class="flex gap-2 items-center" x-show="!isPublicView"> <div class="w-[1px] h-4 bg-slate-300 mx-2"></div> <button @click="copyTask()" class="text-xs font-bold text-slate-400 hover:text-brand-500"><i class="far fa-copy"></i></button> 
+    <button x-show="currentUser && (currentUser.role === 'Admin' || (activeTask.assignee && activeTask.assignee.includes(currentUser.name)))" @click="editFromDetail()" class="text-xs font-bold text-slate-400 hover:text-brand-500"><i class="fas fa-pen"></i> Edit</button> 
+    </div> </div> <button @click="isPublicView ? null : showDetail=false" class="hidden md:block ml-4 text-slate-400" :class="isPublicView ? 'opacity-0 pointer-events-none' : ''"><i class="fas fa-times text-xl"></i></button> </div> <div class="flex-1 overflow-y-auto p-5 bg-white dark:bg-slate-800 relative"> <div x-show="detailLoading" class="absolute inset-0 bg-white/50 dark:bg-slate-900/50 z-20 flex items-center justify-center"><i class="fas fa-spinner fa-spin text-brand-500 text-2xl"></i></div> <h2 class="text-2xl font-extrabold dark:text-white mb-2" x-text="activeTask.title"></h2> <div class="flex gap-1 mb-4 flex-wrap" x-show="activeTask.tags"><template x-for="tag in (activeTask.tags || '').split(',')"><span x-show="tag.trim()" class="text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded font-bold text-slate-500" x-text="tag.trim()"></span></template></div> <div class="flex border-b border-slate-100 dark:border-slate-700 mb-6 overflow-x-auto"><button @click="detailTab='info'" class="flex-1 pb-2 text-xs font-bold border-b-2" :class="detailTab==='info'?'border-brand-500 text-brand-600':'border-transparent text-slate-400'">Details</button><button @click="detailTab='chat'" class="flex-1 pb-2 text-xs font-bold border-b-2" :class="detailTab==='chat'?'border-brand-500 text-brand-600':'border-transparent text-slate-400'">Chat</button><button @click="detailTab='files'" class="flex-1 pb-2 text-xs font-bold border-b-2" :class="detailTab==='files'?'border-brand-500 text-brand-600':'border-transparent text-slate-400'">Files</button><button @click="detailTab='log'" class="flex-1 pb-2 text-xs font-bold border-b-2" :class="detailTab==='log'?'border-brand-500 text-brand-600':'border-transparent text-slate-400'">Log</button></div> <div x-show="detailTab === 'info'" class="space-y-6"> <p class="text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border dark:border-slate-700" x-text="activeTask.desc || 'No description provided.'"></p> <div> <h3 class="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2"><i class="fas fa-check-square"></i> Subtasks</h3> <div class="space-y-2"> <template x-for="sub in activeSubtasks" :key="sub.id"> <div class="flex items-center gap-3 p-2 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700 group hover:border-brand-200"> <input type="checkbox" class="cb-custom" :checked="sub.isDone" @change="!isPublicView && toggleSubtask(sub.id)" :disabled="isPublicView"> <span class="text-sm flex-1 dark:text-slate-200" :class="sub.isDone ? 'line-through text-slate-400' : ''" x-text="sub.text"></span> <button x-show="!isPublicView" @click="deleteSubtask(sub.id)" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><i class="fas fa-trash"></i></button> </div> </template> </div> <div class="mt-3 flex gap-2" x-show="!isPublicView"> <input type="text" x-model="newSubtask" @keydown.enter="addSubtask()" class="flex-1 bg-slate-100 dark:bg-slate-900 rounded-lg px-3 py-2 text-xs outline-none dark:text-white" placeholder="Add subtask..."> <button @click="addSubtask()" class="bg-slate-800 text-white rounded-lg px-3"><i class="fas fa-plus"></i></button> </div> </div> </div> <div x-show="detailTab === 'files'" class="space-y-4"> <div x-show="!isPublicView" class="relative border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-6 text-center hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"> <div x-show="fileUploading" class="absolute inset-0 bg-white/80 dark:bg-slate-900/80 flex items-center justify-center"><i class="fas fa-spinner fa-spin text-brand-500"></i></div> <i class="fas fa-cloud-upload-alt text-2xl text-slate-400 mb-2"></i> <p class="text-xs font-bold text-slate-500">Click to Upload</p> <input type="file" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer" @change="uploadFile($event)"> </div> <div class="space-y-2"> <template x-for="f in activeAttachments" :key="f.id"> <div class="flex justify-between items-center p-2 bg-white dark:bg-slate-700 border dark:border-slate-600 rounded-lg"> <div class="flex items-center gap-2 overflow-hidden"> <div class="w-8 h-8 bg-blue-100 text-blue-500 rounded flex items-center justify-center shrink-0"><i class="fas fa-file"></i></div> <div class="truncate"> <div class="text-xs font-bold truncate dark:text-white" x-text="f.name"></div> <div class="text-[9px] text-slate-400" x-text="f.uploader"></div> </div> </div> <button @click="window.open(f.url, '_blank')" class="text-xs font-bold text-brand-500 hover:underline">Open</button> </div> </template> </div> </div> <div x-show="detailTab === 'chat'" class="flex flex-col h-[300px]"> <div class="flex-1 overflow-y-auto space-y-2 mb-2 custom-scroll"><template x-for="c in activeComments"><div class="bg-slate-50 dark:bg-slate-900 p-2 rounded"><div class="flex justify-between text-[10px] text-slate-400"><span class="font-bold text-brand-500" x-text="c.user"></span><span x-text="c.time"></span></div><p class="text-xs mt-1 dark:text-white" x-text="c.text"></p></div></template></div> <div class="flex gap-2" x-show="!isPublicView"><input x-model="newComment" @keydown.enter="addComment()" class="flex-1 bg-slate-100 dark:bg-slate-900 rounded px-3 py-2 text-xs" placeholder="Comment..."><button @click="addComment()" class="text-brand-500 font-bold px-2">Send</button></div> </div> <div x-show="detailTab === 'log'" class="space-y-3 pl-2"><button @click="refreshTaskDetail(activeTask.id)" class="text-[10px] text-brand-500 font-bold mb-2">Refresh Log</button><template x-for="l in activeLogs"><div class="text-xs text-slate-500"><span class="font-bold dark:text-white" x-text="l.user"></span> <span x-text="l.action"></span> <span class="text-[10px] opacity-50 block" x-text="l.time"></span></div></template></div> </div> <div class="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex gap-3" x-show="!isPublicView && detailTab !== 'chat'"> <button x-show="activeTask.status==='TODO' || activeTask.status==='DONE'" @click="moveTask(activeTask.id, 'DOING'); showDetail=false" class="flex-1 p-3 rounded-xl bg-blue-50 text-blue-600 font-bold border border-blue-100"><i class="fas fa-play mr-1"></i> Start Doing</button> <button x-show="activeTask.status==='TODO' || activeTask.status==='DOING'" @click="moveTask(activeTask.id, 'DONE'); showDetail=false" class="flex-1 bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-emerald-500/30">MARK COMPLETE</button> <button x-show="activeTask.status==='DONE'" @click="moveTask(activeTask.id, 'TODO'); showDetail=false" class="flex-1 bg-slate-200 text-slate-600 rounded-xl font-bold text-xs">REOPEN</button> </div> </div> </div>
+
+    <script>
+        function taskApp() {
+            return {
+                apiUrl: 'https://script.google.com/macros/s/AKfycbzZnnmuuAE902kv5D7tB89P3XJhnOWxlplePxX5Oya5qh7Ic9DI96XRcmntJx_Tr5yO/exec', // GANTI URL DEPLOY
+                
+                // STATE LOGIN & USER
+                currentUser: null, 
+                isPublicView: false, 
+                publicTaskId: null, 
+                authMode: 'login', // 'login' or 'register'
+                authLoading: false,
+                loginForm: { username: '', password: '' }, 
+                regForm: { name: '', username: '', password: '' },
+                loginError: '',
+
+                currentView: 'board', tasks: [], feedItems: [], allSubtasks: [], searchQuery: '', activeFilter: 'ALL', myTasksOnly: false,
+                globalLoading: false, modalLoading: false, detailLoading: false, fileUploading: false,
+                isDarkMode: localStorage.getItem('tf_dark') === 'true',
+                toasts: [], showModal: false, showDetail: false, showCmd: false, zenMode: false,
+                isEditMode: false, detailTab: 'info', cmdQuery: '',
+                
+                activeDiscussion: null, chatInput: '', discussSearchQuery: '',
+                showDiscussModal: false, newDiscussTopic: '', newDiscussProject: '',
+                discussions: [],
+
+                form: { id: null, title: '', desc: '', assignee: '', priority: 'Medium', project: 'Main', dueDate: '', tags: '', recurring: false, frequency: 'Weekly' },
+                activeTask: {}, activeSubtasks: [], activeComments: [], activeAttachments: [], activeLogs: [],
+                newSubtask: '', newComment: '',
+                
+                columns: [ {id: 'TODO', title: 'To Do', accentColor: 'bg-slate-400'}, {id: 'DOING', title: 'Doing', accentColor: 'bg-brand-500'}, {id: 'DONE', title: 'Done', accentColor: 'bg-emerald-500'} ],
+                taskTemplates: [ { name: 'Bug Report', title: '[BUG] ', desc: 'Steps:\n1.\n2.\n\nResult:', priority: 'High', project: 'IT' }, { name: 'Daily Standup', title: 'Daily Update', desc: '- Yesterday:\n- Today:\n- Blockers:', priority: 'Medium', project: 'Main' }, { name: 'Client Meeting', title: 'Meeting: ', desc: 'Agenda:\n- \n- \n\nAttendees:', priority: 'High', project: 'Sales' } ],
+                
+                calendarDays: [], calendarTitle: '', currentDate: new Date(), selectedDate: new Date().toISOString().split('T')[0],
+                chartStatus: null, chartWorkload: null, sortBy: 'newest',
+                commands: [ { text: 'Create New Task', icon: 'fa-plus', action: 'create' }, { text: 'Export Data', icon: 'fa-file-export', action: 'export' }, { text: 'View Trash Bin', icon: 'fa-trash-alt', action: 'trash' }, { text: 'Toggle Dark Mode', icon: 'fa-moon', action: 'dark' } ],
+
+                initApp() { 
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if(urlParams.get('view') === 'public' && urlParams.get('id')) {
+                        this.isPublicView = true; this.publicTaskId = urlParams.get('id'); this.currentUser = { name: 'Guest Client', role: 'Guest' };
+                        this.fetchTasks();
+                    } else {
+                        const savedUser = localStorage.getItem('tf_user');
+                        if(savedUser) { 
+                            this.currentUser = JSON.parse(savedUser); 
+                            this.fetchTasks(); 
+                            this.fetchDiscussions(); 
+                            this.fetchFeed();
+                            this.fetchSubtasks();
+                        }
+                    }
+                    this.generateCalendar(); 
+                    this.$watch('isDarkMode', v => localStorage.setItem('tf_dark', v)); 
+                    this.$watch('myTasksOnly', v => this.generateCalendar());
+                    
+                    if(window.visualViewport) {
+                        window.visualViewport.addEventListener('resize', () => {
+                            if(window.visualViewport.height < window.innerHeight) {
+                                document.getElementById('chatInputArea').style.paddingBottom = '10px';
+                                window.scrollTo(0, document.body.scrollHeight);
+                            } else {
+                                document.getElementById('chatInputArea').style.paddingBottom = 'env(safe-area-inset-bottom)';
+                            }
+                        });
+                    }
+                },
+
+                // LOGIN API
+                async login() {
+                    if(!this.loginForm.username || !this.loginForm.password) { this.loginError = 'Isi username & password'; return; }
+                    this.authLoading = true;
+                    try {
+                        const r = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'login_user', username: this.loginForm.username, password: this.loginForm.password }) });
+                        const j = await r.json();
+                        if (j.status === 'success') {
+                            this.currentUser = j.user; 
+                            localStorage.setItem('tf_user', JSON.stringify(j.user)); 
+                            this.loginForm = { username: '', password: '' }; 
+                            this.loginError = ''; 
+                            this.authMode = 'login';
+                            this.fetchTasks(); this.fetchDiscussions(); this.fetchFeed(); this.fetchSubtasks(); 
+                            this.showToast(`Welcome back, ${j.user.name}!`);
+                        } else { this.loginError = j.message || 'Login gagal'; }
+                    } catch(e) { this.loginError = 'Koneksi Error'; }
+                    this.authLoading = false;
+                },
+
+                // REGISTER API
+                async register() {
+                    if(!this.regForm.name || !this.regForm.username || !this.regForm.password) { this.loginError = 'Semua field wajib diisi'; return; }
+                    this.authLoading = true;
+                    try {
+                        const r = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'register_user', name: this.regForm.name, username: this.regForm.username, password: this.regForm.password }) });
+                        const j = await r.json();
+                        if (j.status === 'success') {
+                            this.showToast('Akun berhasil dibuat! Silakan Login.');
+                            this.authMode = 'login'; 
+                            this.loginForm.username = this.regForm.username; 
+                            this.regForm = { name: '', username: '', password: '' };
+                            this.loginError = '';
+                        } else { this.loginError = j.message || 'Gagal mendaftar'; }
+                    } catch(e) { this.loginError = 'Koneksi Error'; }
+                    this.authLoading = false;
+                },
+
+                logout() { this.currentUser = null; localStorage.removeItem('tf_user'); this.tasks = []; },
+                isAdmin() { return this.currentUser && this.currentUser.role === 'Admin'; },
+                
+                shareTask() { const url = window.location.origin + window.location.pathname + '?view=public&id=' + this.activeTask.id; navigator.clipboard.writeText(url).then(() => { this.showToast('Client Link Copied!'); }); },
+                toggleDarkMode() { this.isDarkMode = !this.isDarkMode; },
+                switchView(v) { this.currentView = v; if(v==='calendar') this.generateCalendar(); if(v==='analytics') this.updateCharts(); if(v==='feed') this.fetchFeed(); },
+                showToast(msg, type='success') { const id = Date.now(); this.toasts.push({id, message: msg, type}); setTimeout(() => { this.toasts = this.toasts.filter(t => t.id !== id) }, 3000); },
+                getViewIcon(v) { const icons = { 'board': 'fa-columns', 'feed': 'fa-rss', 'discuss': 'fa-comments', 'calendar': 'fa-calendar-alt', 'analytics': 'fa-chart-pie', 'trash': 'fa-trash' }; return icons[v] || 'fa-circle'; },
+                openChatModal(chat) { this.activeDiscussion = chat; this.scrollChat(); },
+                
+                scrollChat() { setTimeout(() => { const el = document.getElementById('chatContainer'); if(el) el.scrollTop = el.scrollHeight; }, 100); },
+
+                async fetchSubtasks() {
+                    try {
+                        const r = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'get_all_subtasks' }) });
+                        const j = await r.json();
+                        if (j.status === 'success') { this.allSubtasks = j.data; }
+                    } catch(e) {}
+                },
+
+                async fetchDiscussions() {
+                    try {
+                        const r = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'get_discussions' }) });
+                        const j = await r.json();
+                        if (j.status === 'success') {
+                            this.discussions = j.data.map(d => ({
+                                ...d,
+                                messages: d.messages.map((m, idx) => {
+                                    let foundLink = m.imgSrc || m.ImgSrc || m.imgsrc;
+                                    if (!foundLink && (m.isImage === true || m.isImage === "TRUE")) {
+                                        Object.values(m).forEach(val => {
+                                            if (typeof val === 'string' && val.includes('drive.google.com') && val.includes('id=')) { foundLink = val; }
+                                        });
+                                    }
+                                    return {
+                                        id: m.id || idx,
+                                        text: m.text,
+                                        sender: m.sender,
+                                        isMe: this.currentUser && m.sender === this.currentUser.name,
+                                        isImage: m.isImage === true || m.isImage === "TRUE",
+                                        imgSrc: foundLink
+                                    };
+                                }),
+                                activeParticipants: d.activeParticipants || [d.createdBy] 
+                            }));
+                            if(this.activeDiscussion) {
+                                const updated = this.discussions.find(d => d.id === this.activeDiscussion.id);
+                                if(updated) this.activeDiscussion = updated;
+                                this.scrollChat();
+                            }
+                        }
+                    } catch (e) { console.error("Error fetching discussions", e); }
+                },
+
+                async createDiscussion() {
+                    if(!this.newDiscussTopic || !this.newDiscussProject) return this.showToast('Please fill all fields', 'error');
+                    this.modalLoading = true;
+                    try {
+                        const payload = { action: 'create_discussion', topic: this.newDiscussTopic, project: this.newDiscussProject, user: this.currentUser.name };
+                        const r = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify(payload) });
+                        const j = await r.json();
+                        if (j.status === 'success') {
+                            this.showToast('Discussion created');
+                            this.showDiscussModal = false;
+                            this.newDiscussTopic = '';
+                            this.newDiscussProject = '';
+                            await this.fetchDiscussions(); 
+                        }
+                    } catch(e) { this.showToast('Failed to create', 'error'); }
+                    this.modalLoading = false;
+                },
+
+                // DELETE DISCUSSION (SECURE)
+                async deleteDiscussion(id) {
+                    if(!confirm('Delete this discussion?')) return;
+                    try {
+                        const r = await fetch(this.apiUrl, { 
+                            method: 'POST', 
+                            body: JSON.stringify({ 
+                                action: 'delete_discussion', 
+                                id: id,
+                                role: this.currentUser.role,      // KIRIM ROLE
+                                requestUser: this.currentUser.name // KIRIM NAMA
+                            }) 
+                        });
+                        const j = await r.json();
+                        if (j.status === 'success') {
+                            this.discussions = this.discussions.filter(d => d.id !== id);
+                            this.showToast('Discussion deleted');
+                        } else {
+                            this.showToast(j.message || 'Gagal hapus', 'error');
+                        }
+                    } catch(e) { this.showToast('Failed to delete', 'error'); }
+                },
+
+                async sendMessage() { 
+                    if(!this.chatInput.trim() || !this.activeDiscussion) return; 
+                    const txt = this.chatInput;
+                    const currentDiscId = this.activeDiscussion.id;
+                    this.chatInput = ''; 
+                    
+                    if (!this.activeDiscussion.messages) this.activeDiscussion.messages = [];
+                    this.activeDiscussion.messages.push({text: txt, sender: this.currentUser.name, isMe: true});
+                    this.scrollChat();
+                    
+                    await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'send_chat_message', discussionId: currentDiscId, text: txt, sender: this.currentUser.name, isImage: false }) });
+                },
+                
+                handleChatUpload(e) {
+                    const file = e.target.files[0]; 
+                    if (!file || !this.activeDiscussion) return;
+                    
+                    if (file.size > 5 * 1024 * 1024) { this.showToast('File too large (Max 5MB)', 'error'); return; }
+
+                    const reader = new FileReader(); 
+                    reader.readAsDataURL(file);
+                    reader.onload = async () => {
+                        const base64 = reader.result;
+                        const currentDiscId = this.activeDiscussion.id;
+                        this.showToast('Uploading image...', 'info');
+                        
+                        if (!this.activeDiscussion.messages) this.activeDiscussion.messages = [];
+                        this.activeDiscussion.messages.push({ text: 'Uploading...', sender: this.currentUser.name, isMe: true, isImage: true, imgSrc: base64 });
+                        this.scrollChat();
+
+                        const r = await fetch(this.apiUrl, { 
+                            method: 'POST', 
+                            body: JSON.stringify({ 
+                                action: 'send_chat_message', 
+                                discussionId: currentDiscId, 
+                                text: 'Sent an image', 
+                                sender: this.currentUser.name, 
+                                isImage: true, 
+                                imgData: base64,
+                                mimeType: file.type
+                            }) 
+                        });
+                        
+                        const j = await r.json();
+                        if(j.status === 'success') {
+                             this.showToast('Image uploaded');
+                             this.fetchDiscussions();
+                        } else {
+                            this.showToast('Upload failed', 'error');
+                        }
+                    };
+                },
+
+                startVideoCall() { window.open('https://wa.me/?text=Lets+join+video+call+meeting', '_blank'); },
+                
+                async fetchFeed() {
+                    try {
+                        const r = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'get_feed' }) });
+                        const j = await r.json();
+                        if (j.status === 'success') {
+                            this.feedItems = j.data.map(item => ({
+                                id: item.id,
+                                taskId: item.taskId, 
+                                user: item.user,
+                                action: item.action,
+                                details: item.details,
+                                taskTitle: item.taskTitle,
+                                time: item.createdAt
+                            }));
+                        }
+                    } catch(e) {}
+                },
+
+                toggleCmdPalette() { this.showCmd = !this.showCmd; this.cmdQuery = ''; },
+                get filteredCommands() { return this.commands.filter(c => c.text.toLowerCase().includes(this.cmdQuery.toLowerCase())); },
+                runCommand(action) { this.showCmd = false; if(action === 'create') this.openCreateModal(); if(action === 'export') this.exportTasks(); if(action === 'trash') this.switchView('trash'); if(action === 'dark') this.toggleDarkMode(); },
+                dragStart(e, id) { e.dataTransfer.setData('text/plain', id); e.target.classList.add('draggable-source'); },
+                dragOverColumn(e) { e.currentTarget.classList.add('drop-target'); },
+                dragLeaveColumn(e) { e.currentTarget.classList.remove('drop-target'); },
+                dropTask(e, newStatus) { e.currentTarget.classList.remove('drop-target'); const id = e.dataTransfer.getData('text/plain'); const task = this.tasks.find(t => t.id === id); if(task && task.status !== newStatus) { this.moveTask(id, newStatus); } document.querySelectorAll('.draggable-source').forEach(el => el.classList.remove('draggable-source')); },
+                cycleSort() { const modes = ['newest', 'priority', 'date']; this.sortBy = modes[(modes.indexOf(this.sortBy) + 1) % modes.length]; this.showToast('Sorted by ' + this.getSortLabel()); },
+                getSortLabel() { return {'newest':'Newest', 'priority':'Priority', 'date':'Date'}[this.sortBy]; },
+                getSortIcon() { return {'newest':'fa-sort-amount-down', 'priority':'fa-flag', 'date':'fa-clock'}[this.sortBy]; },
+                get filteredTasks() { const s = this.searchQuery.toLowerCase(); return this.getActiveTasks().filter(t => { const currentName = this.currentUser ? this.currentUser.name.toLowerCase() : ''; const currentUsername = this.currentUser ? this.currentUser.username.toLowerCase() : ''; const assignee = (t.assignee || '').toLowerCase(); const matchOwner = this.myTasksOnly ? (assignee.includes(currentName) || assignee.includes(currentUsername)) : true; const matchSearch = t.title.toLowerCase().includes(s) || (t.tags || '').toLowerCase().includes(s); return matchOwner && matchSearch; }).sort((a, b) => { if (this.sortBy === 'priority') { const p = { 'High': 3, 'Medium': 2, 'Low': 1 }; return (p[b.priority] || 0) - (p[a.priority] || 0); } else if (this.sortBy === 'date') { return new Date(a.dueDate) - new Date(b.dueDate); } return 0; }); },
+                get filteredDiscussions() { if(!this.discussSearchQuery) return this.discussions; const q = this.discussSearchQuery.toLowerCase(); return this.discussions.filter(d => d.topic.toLowerCase().includes(q) || d.project.toLowerCase().includes(q)); },
+                getTasksByStatus(status) { return this.filteredTasks.filter(t => t.status === status); },
+                
+                getTasksBySelectedDate() { 
+                    const selectedTasks = this.filteredTasks.filter(t => (t.dueDate || '').substring(0, 10) === this.selectedDate); 
+                    selectedTasks.forEach(t => {
+                        t.subtasks = this.allSubtasks.filter(s => String(s.taskId) === String(t.id));
+                    });
+                    return selectedTasks;
+                },
+                getTrashTasks() { return this.tasks.filter(t => t.status === 'TRASH'); },
+                getActiveTasks() { return this.tasks.filter(t => t.status !== 'TRASH'); },
+                
+                // MOVE TO TRASH (SECURE)
+                moveToTrash(id) { 
+                    const t = this.tasks.find(x => x.id === id);
+                    const isOwner = t.assignee && t.assignee.includes(this.currentUser.name);
+                    
+                    if(this.currentUser.role !== 'Admin' && !isOwner) {
+                        return this.showToast('Access Denied', 'error');
+                    }
+
+                    if(confirm('Move to Trash?')) { 
+                        this.moveTask(id, 'TRASH'); 
+                        fetch(this.apiUrl, { 
+                            method: 'POST', 
+                            body: JSON.stringify({ 
+                                action: 'trash_task', 
+                                id: id,
+                                role: this.currentUser.role,
+                                requestUser: this.currentUser.name
+                            }) 
+                        }).then(r => r.json()).then(j => {
+                            if(j.status === 'error') this.showToast(j.message, 'error');
+                            else {
+                                this.tasks.find(x=>x.id===id).status = 'TRASH';
+                                this.showToast('Moved to Trash');
+                            }
+                        });
+                    } 
+                },
+                
+                async fetchTasks() { 
+                    if(!this.currentUser && !this.isPublicView) return; 
+                    this.globalLoading = true; 
+                    try { 
+                        const r = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'get_tasks' }) }); 
+                        const j = await r.json(); 
+                        this.tasks = (j.data || []).reverse(); 
+                        if(this.isPublicView && this.publicTaskId) { const task = this.tasks.find(t => t.id === this.publicTaskId); if(task) { this.openTaskDetail(task); } else { this.showToast('Shared task not found', 'error'); } } 
+                        this.generateCalendar(); 
+                    } catch (e) { this.showToast('Connection Failed', 'error'); } 
+                    this.globalLoading = false; 
+                },
+
+                openCreateModal() { this.isEditMode = false; const defaultAssignee = this.isAdmin() ? '' : this.currentUser.name; this.form = { id: null, title: '', desc: '', assignee: defaultAssignee, priority: 'Medium', project: 'Main', dueDate: new Date().toISOString().split('T')[0], tags: '', recurring: false, frequency: 'Weekly' }; this.showModal = true; },
+                applyTemplate(name) { const tpl = this.taskTemplates.find(t => t.name === name); if(tpl) { this.form.title=tpl.title; this.form.desc=tpl.desc; this.form.priority=tpl.priority; this.form.project=tpl.project; } },
+                editFromDetail() { this.showDetail = false; this.isEditMode = true; this.form = { ...this.activeTask }; this.showModal = true; },
+                
+                // SAVE TASK / EDIT (SECURE)
+                async saveTask() { 
+                    if(!this.form.title) return this.showToast('Title required', 'error'); 
+                    this.modalLoading = true; 
+                    const action = this.isEditMode ? 'edit_task' : 'create_task'; 
+                    
+                    if(!this.isAdmin() && !this.isEditMode) { this.form.assignee = this.currentUser.name; } 
+                    
+                    try { 
+                        await fetch(this.apiUrl, { 
+                            method: 'POST', 
+                            body: JSON.stringify({ 
+                                action: action, 
+                                data: this.form,
+                                role: this.currentUser.role,       // KIRIM ROLE
+                                requestUser: this.currentUser.name // KIRIM NAMA
+                            }) 
+                        }); 
+                        this.showModal=false; 
+                        await this.fetchTasks(); 
+                        this.showToast(this.isEditMode ? 'Task Updated' : 'Task Created!'); 
+                    } catch (e) { this.showToast('Failed', 'error'); } 
+                    this.modalLoading = false; 
+                },
+
+                async moveTask(id, stat) { const t = this.tasks.find(x=>x.id===id); if(t) { t.status=stat; if(stat==='DONE') { confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } }); document.getElementById('doneSound').play(); } } await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'move_task', id: id, newStatus: stat }) }); if(this.showDetail && this.activeTask.id === id) { this.refreshTaskDetail(id); } if(this.currentView === 'analytics') this.updateCharts(); },
+                
+                // DELETE TASK PERMANENT (SECURE)
+                async deleteTask(id) { 
+                    if(!this.isAdmin()) return this.showToast('Only Admin can delete', 'error');
+                    if(!confirm('Delete Permanently?')) return; 
+                    this.tasks = this.tasks.filter(t=>t.id!==id); 
+                    await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'delete_task', id: id, role: this.currentUser.role }) }); 
+                    this.showToast('Deleted'); 
+                },
+
+                async openTaskDetail(t, tab='info') { this.activeTask = t; this.detailTab=tab; this.activeSubtasks=[]; this.activeComments=[]; this.activeAttachments=[]; this.activeLogs=[]; this.showDetail=true; this.detailLoading = true; await this.refreshTaskDetail(t.id); this.detailLoading = false; },
+                
+                async refreshTaskDetail(taskId) { 
+                    try { 
+                        const r = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'get_details', id: taskId }) }); 
+                        const j = await r.json(); 
+                        if(j.status==='success') { 
+                            this.activeSubtasks = j.data.subtasks; 
+                            this.activeComments = j.data.comments; 
+                            this.activeAttachments = j.data.attachments; 
+                            this.activeLogs = j.data.logs; 
+                            const localTask = this.tasks.find(t=>t.id===taskId);
+                            if(localTask) localTask.subtasks = this.activeSubtasks;
+                            this.fetchSubtasks(); 
+                        } 
+                    } catch(e) {} 
+                },
+                
+                async addSubtask() { 
+                    if(!this.newSubtask) return; const txt = this.newSubtask; this.newSubtask = ''; 
+                    this.activeSubtasks.push({id: 'TEMP', text: txt, isDone: false}); 
+                    const mainTask = this.tasks.find(t=>t.id===this.activeTask.id);
+                    if(mainTask) { if(!mainTask.subtasks) mainTask.subtasks=[]; mainTask.subtasks.push({text:txt, isDone:false}); }
+                    
+                    await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'add_subtask', taskId: this.activeTask.id, text: txt }) }); 
+                    this.refreshTaskDetail(this.activeTask.id); 
+                },
+                
+                async deleteSubtask(sid) { this.activeSubtasks = this.activeSubtasks.filter(s => s.id !== sid); await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'delete_subtask', subId: sid }) }); },
+                
+                async toggleSubtask(sid) { 
+                    const s = this.activeSubtasks.find(x=>x.id===sid); 
+                    if(s) s.isDone=!s.isDone; 
+                    
+                    const parentTask = this.tasks.find(t => t.id === this.activeTask.id);
+                    if (parentTask && parentTask.subtasks) {
+                        const sub = parentTask.subtasks.find(x => x.id === sid);
+                        if (sub) sub.isDone = s.isDone;
+                    }
+                    this.generateCalendar();
+
+                    await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'toggle_subtask', subId: sid }) }); 
+                },
+                
+                async addComment() { if(!this.newComment) return; const txt = this.newComment; this.newComment = ''; const username = this.currentUser ? this.currentUser.name : 'Unknown'; this.activeComments.push({user: username, text:txt, time:'Just now'}); await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'add_comment', taskId: this.activeTask.id, text: txt, user: username }) }); },
+                async uploadFile(event) { const file = event.target.files[0]; if(!file) return; this.fileUploading = true; const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = async () => { try { const res = await fetch(this.apiUrl, { method: 'POST', body: JSON.stringify({ action: 'upload_file', taskId: this.activeTask.id, fileName: file.name, fileData: reader.result, mimeType: file.type }) }); const json = await res.json(); if(json.status === 'success') { this.showToast('Upload Success'); await this.refreshTaskDetail(this.activeTask.id); } else { this.showToast('Upload Failed', 'error'); } } catch(e) { this.showToast('Error', 'error'); } this.fileUploading = false; }; },
+                exportTasks() { let csv = 'ID,Title,Assignee,Priority,Status,Tags,Recurring\n'; this.tasks.forEach(t => { csv += `"${t.id}","${t.title}","${t.assignee}","${t.priority}","${t.status}","${t.tags||''}","${t.recurring?'Yes':'No'}"\n`; }); const blob = new Blob([csv], { type: 'text/csv' }); const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'taskflow_export.csv'; a.click(); this.showToast('Data Exported!'); },
+                isOverdue(task) { if(!task.dueDate) return false; return new Date(task.dueDate).setHours(0,0,0,0) < new Date().setHours(0,0,0,0); },
+                getDaysLeft(d) { if(!d) return {text:'-', color:'text-slate-400', icon:''}; const days = Math.ceil((new Date(d) - new Date()) / (86400000)); if(days < 0) return {text: Math.abs(days)+'d Late', color:'text-red-500 font-bold', icon:'fas fa-fire'}; if(days === 0) return {text:'Today', color:'text-amber-500 font-bold', icon:'fas fa-bell'}; return {text: days+'d', color:'text-slate-400', icon:'far fa-clock'}; },
+                getPriorityColor(p) { return p==='High'?'bg-rose-50 text-rose-600 border-rose-100':'bg-blue-50 text-blue-600 border-blue-100'; },
+                copyTask() { const t = this.activeTask; navigator.clipboard.writeText(`${t.title}\n${t.desc}`); this.showToast('Copied!'); },
+                changeMonth(offset) { this.currentDate.setMonth(this.currentDate.getMonth() + offset); this.generateCalendar(); },
+                
+                generateCalendar() { 
+                    const y = this.currentDate.getFullYear(), m = this.currentDate.getMonth(); 
+                    this.calendarTitle = new Date(y, m).toLocaleString('default', { month: 'long', year: 'numeric' }); 
+                    const first = new Date(y, m, 1).getDay(), days = new Date(y, m+1, 0).getDate(); 
+                    this.calendarDays = Array(first).fill({date:''}).concat([...Array(days).keys()].map(i => { 
+                        const dStr = `${y}-${String(m+1).padStart(2,'0')}-${String(i+1).padStart(2,'0')}`; 
+                        const dayTasks = this.filteredTasks.filter(t=>(t.dueDate || '').substring(0, 10)===dStr); 
+                        return { date: i+1, fullDate: dStr, isToday: dStr === new Date().toISOString().split('T')[0], tasks: dayTasks }; 
+                    })); 
+                },
+                updateCharts() { setTimeout(() => { const ctx1 = document.getElementById('statusChart'); const ctx2 = document.getElementById('workloadChart'); if(this.chartStatus) this.chartStatus.destroy(); if(this.chartWorkload) this.chartWorkload.destroy(); if(ctx1) { this.chartStatus = new Chart(ctx1, { type: 'doughnut', data: { labels: ['To Do','Doing','Done'], datasets: [{ data: [this.getTasksByStatus('TODO').length, this.getTasksByStatus('DOING').length, this.getTasksByStatus('DONE').length], backgroundColor: ['#94a3b8','#ec4899','#10b981'], borderWidth:0 }] }, options: { cutout: '70%', plugins: { legend: { position:'bottom' } } } }); } if(ctx2) { const assignees = {}; this.tasks.forEach(t => { assignees[t.assignee] = (assignees[t.assignee] || 0) + 1; }); this.chartWorkload = new Chart(ctx2, { type: 'bar', data: { labels: Object.keys(assignees), datasets: [{ label:'Tasks', data: Object.values(assignees), backgroundColor: '#0ea5e9', borderRadius: 6 }] }, options: { scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } } }); } }, 200); }
+            }
+        }
+    </script>
+</body>
+</html>
