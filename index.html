@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+                        <!DOCTYPE html>
 <html lang="id" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Yarch V52 - STABLE IMAGE</title>
+    <title>Yarch V53 - PROXY FIX</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -149,19 +149,13 @@
                                     
                                     <template x-if="item.details && item.details.startsWith('IMG||')">
                                         <div class="mt-1 relative group">
-                                            <img :src="item.details.split('||')[1]" 
+                                            <img :src="'https://wsrv.nl/?url=' + encodeURIComponent(item.details.split('||')[1])" 
                                                  referrerpolicy="no-referrer" 
                                                  loading="lazy"
-                                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block'"
+                                                 onerror="this.style.opacity='0.5'"
                                                  class="w-full rounded-lg shadow-sm border dark:border-slate-700 object-cover max-h-[300px] cursor-pointer" 
                                                  @click="window.open(item.details.split('||')[1], '_blank')"
                                                  alt="uploaded image">
-                                            
-                                            <div class="hidden bg-red-50 dark:bg-red-900/20 p-4 rounded-lg text-center cursor-pointer border border-red-200 dark:border-red-800" @click="window.open(item.details.split('||')[1], '_blank')">
-                                                <i class="fas fa-exclamation-triangle text-red-500 mb-1"></i>
-                                                <p class="text-[10px] font-bold text-red-500">Image Error. Click to View</p>
-                                            </div>
-
                                             <div class="text-[10px] text-slate-400 mt-1" x-text="item.details.split('||')[2]"></div>
                                         </div>
                                     </template>
@@ -273,16 +267,11 @@
         <div class="flex-1 bg-slate-50 dark:bg-slate-950 p-4 space-y-4 overflow-y-auto chat-container" id="chatContainer">
             <template x-if="activeDiscussion"><template x-for="msg in activeDiscussion.messages" :key="msg.text"><div class="flex gap-2" :class="msg.isMe ? 'flex-row-reverse' : ''"><img :src="'https://ui-avatars.com/api/?name='+msg.sender+'&background='+(msg.isMe?'e11d48':'3b82f6')+'&color=fff&size=32'" class="w-8 h-8 rounded-full shadow-sm"><div class="p-3 rounded-2xl shadow-sm max-w-[80%]" :class="msg.isMe ? 'bg-brand-500 text-white rounded-tr-none' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-tl-none'"><p class="text-xs font-bold text-xs mb-1 opacity-75" x-text="msg.sender"></p>
                 <div x-show="msg.isImage || (msg.text.startsWith('http') && msg.text.includes('drive.google.com'))">
-                    <img :src="msg.imgSrc || msg.text" 
+                    <img :src="'https://wsrv.nl/?url=' + encodeURIComponent(msg.imgSrc || msg.text)" 
                          referrerpolicy="no-referrer" 
                          class="rounded-lg mb-1 w-full cursor-pointer hover:opacity-90 transition-opacity" 
-                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block'"
-                         @click="window.open(msg.imgSrc || msg.text, '_blank')">
-                    
-                    <div class="hidden bg-red-100 dark:bg-red-900/50 p-2 rounded text-center cursor-pointer border border-red-200" @click="window.open(msg.imgSrc || msg.text, '_blank')">
-                        <i class="fas fa-exclamation-triangle text-red-500 mb-1"></i>
-                        <p class="text-[9px] font-bold text-red-500">⚠️ Error. Click to View</p>
-                    </div>
+                         @click="window.open(msg.imgSrc || msg.text, '_blank')"
+                         onerror="this.style.opacity='0.5'">
                 </div>
                 <p class="text-xs" x-text="msg.isImage ? '' : msg.text"></p></div></div></template></template>
         </div>
@@ -643,4 +632,4 @@
         }
     </script>
 </body>
-</html>
+</html>        
