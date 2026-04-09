@@ -108,7 +108,7 @@
         </div>
     </div>
 
-    <main class="flex-1 overflow-hidden relative" x-show="currentUser">
+    <main class="flex-1 overflow-hidden relative" x-show="currentUser" x-cloak>
         
         <div x-show="currentView === 'board'" class="h-full overflow-y-auto custom-scroll pb-24 bg-sky-50/50 dark:bg-slate-900 px-6 pt-8" x-transition.opacity>
             <div class="flex justify-between items-start mb-6 sticky top-0 z-30 bg-sky-50/90 dark:bg-slate-900/90 backdrop-blur-sm py-2" x-data="{ profileOpen: false }">
@@ -136,7 +136,6 @@
                 </div>
                 <div class="flex gap-2">
                      <button @click="switchView('analytics')" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-brand-500 border border-slate-200 dark:border-slate-700 shadow-sm active:scale-90 transition-transform"><i class="fas fa-chart-pie"></i></button>
-                     <button @click="toggleCmdPalette()" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-slate-400 border border-slate-200 dark:border-slate-700 shadow-sm active:scale-90 transition-transform"><i class="fas fa-search"></i></button>
                 </div>
             </div>
 
@@ -205,6 +204,7 @@
                          <div class="flex justify-between items-center mt-3"><div class="text-[10px] font-bold text-slate-400" x-text="task.status"></div></div>
                      </div>
                  </template>
+                 <div x-show="activeListTasks.length === 0" class="text-center p-10 text-slate-400">No tasks found.</div>
             </div>
         </div>
 
@@ -307,9 +307,6 @@
             </div>
         </div>
 
-        <div x-show="currentView === 'calendar'" class="h-full p-4 bg-sky-50/50 dark:bg-slate-900 pb-24" x-cloak>
-            <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm"><h2 class="font-bold text-xl dark:text-white mb-4">Calendar Syncing...</h2><p class="text-sm text-slate-500">Tasks with due dates will appear here automatically based on your real-time data.</p></div>
-        </div>
         <div x-show="currentView === 'analytics'" class="h-full overflow-y-auto p-4 md:p-8 pb-24" x-cloak>
             <div class="max-w-5xl mx-auto space-y-6">
                 <div class="grid grid-cols-3 gap-3 md:gap-6"><div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700"><p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase">Total</p><h3 class="text-xl md:text-3xl font-extrabold text-brand-600 dark:text-brand-400" x-text="tasks.length"></h3></div><div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700"><p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase">Done</p><h3 class="text-xl md:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400" x-text="getTasksByStatus('DONE').length"></h3></div><div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700"><p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase">Doing</p><h3 class="text-xl md:text-3xl font-extrabold text-indigo-600 dark:text-indigo-400" x-text="getTasksByStatus('DOING').length"></h3></div></div>
@@ -317,7 +314,7 @@
         </div>
     </main>
 
-    <nav class="fixed bottom-0 left-0 w-full z-40 pb-safe" x-show="currentUser && !isPublicView">
+    <nav class="fixed bottom-0 left-0 w-full z-40 pb-safe" x-show="currentUser && !isPublicView" x-cloak>
         <div class="nav-bar-blur w-full flex justify-around items-center h-16 px-2 shadow-[0_-5px_10px_rgba(0,0,0,0.02)]">
             <button @click="switchView('board')" class="flex flex-col items-center gap-1 p-2 w-16" :class="currentView==='board' ? 'text-brand-600' : 'text-slate-400'"><i class="fas fa-home text-lg"></i><span class="text-[10px] font-bold">Home</span></button>
             <button @click="switchView('feed')" class="flex flex-col items-center gap-1 p-2 w-16" :class="currentView==='feed' ? 'text-brand-600' : 'text-slate-400'"><i class="fas fa-rss text-lg"></i><span class="text-[10px] font-bold">Feed</span></button>
@@ -447,15 +444,27 @@
 
                 initApp() {
                     this.$watch('isDarkMode', v => localStorage.setItem('tf_dark', v)); 
-                    // Firebase Auth State Observer
-                    window.fb.onAuthStateChanged(window.fb.auth, (user) => {
-                        if (user) {
-                            this.currentUser = { name: user.displayName || 'User', email: user.email, uid: user.uid };
-                            this.setupRealtimeData();
-                        } else {
-                            this.currentUser = null;
+                    
+                    // FIXED: Wait for Firebase to load before setting up observer
+                    const checkFb = setInterval(() => {
+                        if (window.fb && window.fb.auth) {
+                            clearInterval(checkFb); 
+                            
+                            window.fb.onAuthStateChanged(window.fb.auth, (user) => {
+                                if (user) {
+                                    this.currentUser = { 
+                                        name: user.displayName || 'User', 
+                                        email: user.email, 
+                                        uid: user.uid 
+                                    };
+                                    this.currentView = 'board'; 
+                                    this.setupRealtimeData();
+                                } else {
+                                    this.currentUser = null;
+                                }
+                            });
                         }
-                    });
+                    }, 100);
                 },
 
                 // --- AUTHENTICATION ---
@@ -465,8 +474,7 @@
                         await window.fb.signInWithEmailAndPassword(window.fb.auth, this.loginForm.email, this.loginForm.password);
                         this.loginForm = { email: '', password: '' };
                         this.showToast('Login Success!');
-                        setTimeout(() => { location.reload(); }, 500);
-                    } catch(e) { this.loginError = e.message; }
+                    } catch(e) { this.loginError = "Gagal Login: " + e.message; }
                     this.authLoading = false;
                 },
                 async register() {
@@ -476,7 +484,7 @@
                         await window.fb.updateProfile(userCred.user, { displayName: this.regForm.name });
                         this.regForm = { name: '', email: '', password: '' };
                         this.showToast('Account Created!');
-                    } catch(e) { this.loginError = e.message; }
+                    } catch(e) { this.loginError = "Gagal Register: " + e.message; }
                     this.authLoading = false;
                 },
                 async logout() { await window.fb.signOut(window.fb.auth); this.tasks=[]; this.feedItems=[]; this.discussions=[]; this.showToast('Logged out'); },
