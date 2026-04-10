@@ -3,29 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Yarch V73 - Firebase Edition</title>
-    
+    <title>Yarch V73 - Ultimate Social & Video</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: { 
-                extend: { 
-                    fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
-                    colors: { 
-                        brand: { 50: '#f0f9ff', 100: '#e0f2fe', 200: '#bae6fd', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1', 900: '#0c4a6e' },
-                        darkbg: '#0f172a',
-                    },
-                    boxShadow: { 'dock': '0 -4px 20px rgba(0,0,0,0.05)', 'card-soft': '0 8px 30px rgba(0,0,0,0.04)', }
-                } 
-            }
-        }
+        tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] }, colors: { brand: { 50: '#f0f9ff', 100: '#e0f2fe', 200: '#bae6fd', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1', 900: '#0c4a6e' } }, boxShadow: { 'card-soft': '0 8px 30px rgba(0,0,0,0.04)' } } } }
     </script>
     <style>
         [x-cloak] { display: none !important; }
@@ -34,616 +20,667 @@
         .hide-scroll::-webkit-scrollbar { display: none; }
         .custom-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .card-enter { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .nav-bar-blur { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border-top: 1px solid rgba(0,0,0,0.05); }
         .dark .nav-bar-blur { background: rgba(15, 23, 42, 0.9); border-top: 1px solid rgba(255,255,255,0.05); }
         .cb-custom { accent-color: #0ea5e9; width: 1.3em; height: 1.3em; cursor: pointer; }
         .progress-bar { transition: width 1s ease-in-out; }
         .snap-x-mandatory { scroll-snap-type: x mandatory; }
         .snap-center { scroll-snap-align: center; }
-        .chat-image { max-width: 100%; border-radius: 0.5rem; margin-top: 0.25rem; display: block; }
-        .like-anim { animation: likeBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        @keyframes likeBounce { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
     </style>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyBR9Fn4fUPmJDFRufysD36fWHDrq5Am_oo",
-            authDomain: "yarch-v73.firebaseapp.com",
-            projectId: "yarch-v73",
-            storageBucket: "yarch-v73.firebasestorage.app",
-            messagingSenderId: "684931554564",
-            appId: "1:684931554564:web:9392fe77035a599ac20451"
-        };
-
+        import { getFirestore, collection, addDoc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+        
+        const firebaseConfig = { apiKey: "AIzaSyBR9Fn4fUPmJDFRufysD36fWHDrq5Am_oo", authDomain: "yarch-v73.firebaseapp.com", projectId: "yarch-v73", storageBucket: "yarch-v73.firebasestorage.app", messagingSenderId: "684931554564", appId: "1:684931554564:web:9392fe77035a599ac20451" };
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        // Expose to window for AlpineJS
-        window.fb = {
-            auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, signOut,
-            collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, arrayUnion, arrayRemove
-        };
+        window.fb = { auth: getAuth(app), db: getFirestore(app), storage: getStorage(app), signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, signOut, collection, addDoc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, arrayUnion, arrayRemove, ref, uploadBytes, getDownloadURL };
     </script>
 </head>
-<body class="text-slate-800 dark:text-slate-200 h-screen flex flex-col overflow-hidden bg-sky-50/50" 
-      x-data="taskApp()" x-init="initApp()" 
-      @keydown.escape="zenMode = false"
-      :class="{ 'dark': isDarkMode, 'zen-active': zenMode }">
+<body class="text-slate-800 dark:text-slate-200 h-screen flex flex-col overflow-hidden bg-sky-50/50" x-data="taskApp()" x-init="initApp()" @keydown.escape="showCmd = false" :class="{ 'dark': isDarkMode }">
 
-    <audio id="doneSound" src="https://assets.mixkit.co/sfx/preview/mixkit-positive-notification-951.mp3" preload="auto"></audio>
+    <div x-show="showWelcome" class="fixed inset-0 z-[2000] bg-brand-600 flex flex-col items-center justify-center text-white transition-opacity duration-500" x-transition.opacity x-cloak>
+        <div class="w-24 h-24 rounded-3xl bg-white text-brand-600 flex items-center justify-center shadow-2xl mb-6 transform rotate-3 animate-pulse">
+            <i class="fas fa-cubes text-5xl"></i>
+        </div>
+        <h1 class="font-extrabold text-3xl mb-2 tracking-tight">Yarch V73</h1>
+        <div class="flex items-center gap-2 opacity-80 mt-2">
+            <i class="fas fa-circle-notch fa-spin text-sm"></i>
+            <p class="text-sm font-medium" x-text="currentUser ? 'Loading workspace...' : 'Starting up...'"></p>
+        </div>
+    </div>
 
-    <div x-show="!currentUser && !isPublicView" class="fixed inset-0 z-[1000] bg-sky-50 dark:bg-slate-900 flex items-center justify-center p-6 transition-all duration-500" x-transition.opacity>
+    <div x-show="!currentUser && !showWelcome" class="fixed inset-0 z-[1000] bg-sky-50 dark:bg-slate-900 flex items-center justify-center p-6 transition-all duration-500" x-transition.opacity x-cloak>
         <div class="w-full max-w-sm">
-            <div class="text-center mb-10">
-                <div class="w-20 h-20 rounded-3xl bg-gradient-to-br from-brand-500 to-blue-600 flex items-center justify-center text-white shadow-xl shadow-brand-500/30 mx-auto mb-6 transform rotate-3"><i class="fas fa-cubes text-3xl"></i></div>
-                <h1 class="font-extrabold text-3xl text-slate-900 dark:text-white mb-2">Yarch V73</h1>
-                <p class="text-sm text-brand-500 font-bold mb-2">Powered by Firebase</p>
-                <p class="text-sm text-slate-400 font-medium" x-text="authMode === 'login' ? 'Welcome back, please sign in' : 'Create your account'"></p>
-            </div>
-            
-            <form @submit.prevent="login()" class="space-y-5" x-show="authMode === 'login'">
-                <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Email</label><input type="email" x-model="loginForm.email" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm font-bold outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all dark:text-white" placeholder="email@domain.com" required></div>
-                <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Password</label><input type="password" x-model="loginForm.password" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm font-bold outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all dark:text-white" placeholder="••••••••" required></div>
-                <div x-show="loginError" class="text-red-500 text-xs font-bold text-center bg-red-50 dark:bg-red-900/20 py-3 rounded-xl animate-pulse" x-text="loginError"></div>
-                <button type="submit" class="w-full py-4 bg-brand-600 hover:bg-brand-700 text-white rounded-2xl font-bold text-sm shadow-xl shadow-brand-500/30 active:scale-95 transition-all flex justify-center items-center gap-2" :disabled="authLoading"><span x-show="!authLoading">Sign In</span><i x-show="authLoading" class="fas fa-spinner fa-spin"></i></button>
-                <div class="text-center mt-6"><p class="text-xs text-slate-400 font-medium">Don't have an account? <a href="#" @click.prevent="authMode = 'register'; loginError=''" class="text-brand-600 font-bold hover:underline">Sign up</a></p></div>
+            <div class="text-center mb-10"><div class="w-20 h-20 rounded-3xl bg-gradient-to-br from-brand-500 to-blue-600 flex items-center justify-center text-white shadow-xl mx-auto mb-6 transform rotate-3"><i class="fas fa-cubes text-3xl"></i></div><h1 class="font-extrabold text-3xl text-slate-900 dark:text-white mb-2">Yarch V73</h1><p class="text-sm text-slate-400 font-medium" x-text="authMode === 'login' ? 'Welcome back, please sign in' : 'Create your account'"></p></div>
+            <form @submit.prevent="login()" class="space-y-4" x-show="authMode === 'login'">
+                <input type="email" x-model="loginForm.email" class="w-full bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-2xl p-4 text-sm outline-none dark:text-white" placeholder="Email" required>
+                <input type="password" x-model="loginForm.password" class="w-full bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-2xl p-4 text-sm outline-none dark:text-white" placeholder="Password" required>
+                <div x-show="loginError" class="text-red-500 text-xs text-center font-bold px-2" x-text="loginError"></div>
+                <button type="submit" class="w-full py-4 bg-brand-600 text-white rounded-2xl font-bold shadow-xl flex justify-center items-center gap-2" :disabled="authLoading"><span x-show="!authLoading">Sign In</span><i x-show="authLoading" class="fas fa-spinner fa-spin"></i></button>
+                <div class="text-center mt-6"><p class="text-xs text-slate-400">Don't have an account? <a href="#" @click.prevent="authMode = 'register'; loginError=''" class="text-brand-600 font-bold">Sign up</a></p></div>
             </form>
-
-            <form @submit.prevent="register()" class="space-y-5" x-show="authMode === 'register'">
-                <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Full Name</label><input type="text" x-model="regForm.name" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm font-bold outline-none focus:border-brand-500 dark:text-white" placeholder="Nama Anda" required></div>
-                <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Email</label><input type="email" x-model="regForm.email" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm font-bold outline-none focus:border-brand-500 dark:text-white" placeholder="email@domain.com" required></div>
-                <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Password</label><input type="password" x-model="regForm.password" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm font-bold outline-none focus:border-brand-500 dark:text-white" placeholder="Min. 6 karakter" minlength="6" required></div>
-                <div x-show="loginError" class="text-red-500 text-xs font-bold text-center bg-red-50 dark:bg-red-900/20 py-3 rounded-xl" x-text="loginError"></div>
-                <button type="submit" class="w-full py-3.5 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-bold text-sm shadow-lg active:scale-95 transition-all" :disabled="authLoading"><span x-show="!authLoading">DAFTAR SEKARANG</span><i x-show="authLoading" class="fas fa-spinner fa-spin"></i></button>
-                <div class="text-center mt-6"><p class="text-xs text-slate-400 font-medium">Already have an account? <a href="#" @click.prevent="authMode = 'login'; loginError=''" class="text-brand-600 font-bold hover:underline">Login disini</a></p></div>
+            <form @submit.prevent="register()" class="space-y-4" x-show="authMode === 'register'">
+                <input type="text" x-model="regForm.name" class="w-full bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-2xl p-4 text-sm outline-none dark:text-white" placeholder="Username" required>
+                <input type="email" x-model="regForm.email" class="w-full bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-2xl p-4 text-sm outline-none dark:text-white" placeholder="Email" required>
+                <input type="password" x-model="regForm.password" class="w-full bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-2xl p-4 text-sm outline-none dark:text-white" placeholder="Password (Min. 6)" minlength="6" required>
+                <div x-show="loginError" class="text-red-500 text-xs text-center font-bold px-2" x-text="loginError"></div>
+                <button type="submit" class="w-full py-4 bg-slate-800 text-white rounded-2xl font-bold shadow-xl flex justify-center items-center gap-2" :disabled="authLoading"><span x-show="!authLoading">Register</span><i x-show="authLoading" class="fas fa-spinner fa-spin"></i></button>
+                <div class="text-center mt-6"><p class="text-xs text-slate-400">Already have an account? <a href="#" @click.prevent="authMode = 'login'; loginError=''" class="text-brand-600 font-bold">Login</a></p></div>
             </form>
         </div>
     </div>
 
     <main class="flex-1 overflow-hidden relative" x-show="currentUser" x-cloak>
         
-        <div x-show="currentView === 'board'" class="h-full overflow-y-auto custom-scroll pb-24 bg-sky-50/50 dark:bg-slate-900 px-6 pt-8" x-transition.opacity>
-            <div class="flex justify-between items-start mb-6 sticky top-0 z-30 bg-sky-50/90 dark:bg-slate-900/90 backdrop-blur-sm py-2" x-data="{ profileOpen: false }">
-                <div class="flex gap-4 items-center">
-                    <div class="relative cursor-pointer" @click="profileOpen = !profileOpen">
-                        <img :src="'https://ui-avatars.com/api/?name='+(currentUser?.name||'U')+'&background=random&color=fff&size=56'" class="w-14 h-14 rounded-full border-2 border-white dark:border-slate-800 shadow-lg hover:scale-105 transition-transform">
-                        <div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
-                        <div x-show="profileOpen" @click.outside="profileOpen = false" class="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 p-2 z-50 card-enter">
-                            <div class="px-3 py-2 border-b border-slate-50 dark:border-slate-700 mb-1">
-                                <p class="text-[10px] font-bold text-slate-400 uppercase">Signed in as</p>
-                                <p class="text-xs font-bold truncate dark:text-white" x-text="currentUser?.email"></p>
-                            </div>
-                            <button @click="toggleDarkMode()" class="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
-                                <i class="fas" :class="isDarkMode ? 'fa-sun' : 'fa-moon'"></i> <span x-text="isDarkMode ? 'Light Mode' : 'Dark Mode'"></span>
-                            </button>
-                            <button @click="logout()" class="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2">
-                                <i class="fas fa-sign-out-alt"></i> Logout
-                            </button>
-                        </div>
-                    </div>
-                    <div>
-                        <h2 class="font-extrabold text-xl text-slate-900 dark:text-white leading-tight" x-text="currentUser?.name"></h2>
-                        <p class="text-sm text-slate-400 font-medium">Welcome back!</p>
-                    </div>
+        <div x-show="currentView === 'board'" class="h-full overflow-y-auto custom-scroll pb-24 bg-sky-50/50 dark:bg-slate-900 px-6 pt-8">
+            <div class="flex justify-between items-start mb-6 sticky top-0 z-30 bg-sky-50/90 dark:bg-slate-900/90 backdrop-blur-sm py-2">
+                <div class="flex gap-4 items-center cursor-pointer" @click="openMyProfile()">
+                    <img :src="getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-14 h-14 rounded-full border-2 border-white shadow-lg object-cover">
+                    <div><h2 class="font-extrabold text-xl dark:text-white" x-text="currentUser?.name"></h2><p class="text-sm text-slate-400">Welcome back!</p></div>
                 </div>
                 <div class="flex gap-2">
-                     <button @click="switchView('analytics')" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-brand-500 border border-slate-200 dark:border-slate-700 shadow-sm active:scale-90 transition-transform"><i class="fas fa-chart-pie"></i></button>
+                     <button @click="switchView('calendar')" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-brand-500 border dark:border-slate-700 shadow-sm"><i class="far fa-calendar-alt"></i></button>
+                     <button @click="switchView('analytics')" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-brand-500 border dark:border-slate-700 shadow-sm"><i class="fas fa-chart-pie"></i></button>
+                     <button @click="toggleCmdPalette()" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-400 border dark:border-slate-700 shadow-sm"><i class="fas fa-search"></i></button>
                 </div>
             </div>
 
-            <div class="flex justify-between items-end mb-4"><h3 class="font-bold text-lg text-slate-800 dark:text-white">My Active Tasks</h3></div>
-            <div x-show="getMyActiveTasks().length === 0" class="w-full bg-white dark:bg-slate-800/50 rounded-2xl p-8 text-center border border-dashed border-slate-300 dark:border-slate-700 mb-8">
-                <i class="fas fa-check-circle text-4xl text-emerald-300 mb-3 block"></i>
-                <p class="text-sm font-bold text-slate-400">Great! No pending tasks.</p>
-            </div>
-            <div x-show="getMyActiveTasks().length > 0" class="flex overflow-x-auto gap-4 pb-8 -mx-6 px-6 hide-scroll snap-x-mandatory">
+            <div class="flex justify-between items-end mb-4"><h3 class="font-bold text-lg dark:text-white">Your Visible Tasks</h3></div>
+            <div class="flex overflow-x-auto gap-4 pb-8 -mx-6 px-6 hide-scroll snap-x-mandatory">
                 <template x-for="task in getMyActiveTasks()" :key="task.id">
-                    <div class="relative min-w-[85%] md:min-w-[45%] bg-gradient-to-br rounded-[2rem] p-6 snap-center shadow-lg shadow-brand-500/30 overflow-hidden group cursor-pointer shrink-0" 
-                         :class="getCardColor(task)" @click="openTaskDetail(task)">
-                        <div class="relative z-10 text-white">
-                            <div class="flex justify-between items-start mb-4">
-                                <span class="px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-[10px] font-extrabold rounded-full uppercase tracking-wider" x-text="task.priority + ' Priority'"></span>
-                                <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center"><i class="fas" :class="task.status==='DOING'?'fa-play':'fa-list'"></i></div>
-                            </div>
-                            <h2 class="text-2xl font-extrabold mb-2 leading-snug line-clamp-2" x-text="task.title"></h2>
-                            <p class="text-sm text-white/70 mb-6 line-clamp-1" x-text="task.desc || 'No description'"></p>
-                            <div class="mb-6">
-                                <div class="flex justify-between text-xs font-bold text-white/80 mb-2">
-                                    <span>Status: <span x-text="task.status"></span></span>
-                                    <span x-text="task.status==='DOING'?'50%':'0%'"></span>
-                                </div>
-                                <div class="w-full h-2 bg-black/20 rounded-full overflow-hidden">
-                                    <div class="h-full bg-white rounded-full progress-bar" :style="'width: ' + (task.status==='DONE'?'100%':(task.status==='DOING'?'50%':'5%'))"></div>
-                                </div>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <div class="flex -space-x-2"><img :src="'https://ui-avatars.com/api/?name='+(currentUser?.name||'U')+'&background=random'" class="w-8 h-8 rounded-full border-2 border-white/50"></div>
-                                <div class="flex gap-2 text-xs font-bold text-white/90 bg-black/10 px-3 py-1 rounded-full"><i class="far fa-clock"></i> <span x-text="getDaysLeft(task.dueDate).text"></span></div>
-                            </div>
-                        </div>
+                    <div class="min-w-[85%] md:min-w-[45%] bg-gradient-to-br rounded-[2rem] p-6 snap-center shadow-lg text-white" :class="getCardColor(task)" @click="openTaskDetail(task)">
+                        <div class="flex justify-between items-start mb-4"><span class="px-3 py-1 bg-white/20 text-[10px] font-extrabold rounded-full uppercase" x-text="task?.priority + ' Priority'"></span><div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center"><i class="fas" :class="task?.status==='DOING'?'fa-play':'fa-list'"></i></div></div>
+                        <h2 class="text-2xl font-extrabold mb-2 leading-snug line-clamp-2" x-text="task?.title"></h2><p class="text-sm text-white/70 mb-4 line-clamp-1" x-text="task?.desc || 'No description'"></p>
+                        <div class="mb-4"><div class="flex justify-between text-xs font-bold text-white/80 mb-2"><span>Status: <span x-text="task?.status"></span></span><span x-text="task?.status==='DOING'?'50%':'0%'"></span></div><div class="w-full h-2 bg-black/20 rounded-full overflow-hidden"><div class="h-full bg-white rounded-full progress-bar" :style="'width: ' + (task?.status==='DOING'?'50%':'5%')"></div></div></div>
+                        <div class="flex justify-between items-center text-xs font-bold text-white/90"><span class="bg-black/10 px-3 py-1 rounded-full"><i class="fas fa-users mr-1"></i><span x-text="(task?.members ? task.members.length : 1) + ' Team'"></span></span><span class="bg-black/10 px-3 py-1 rounded-full"><i class="far fa-clock mr-1"></i><span x-text="getDaysLeft(task?.dueDate).text"></span></span></div>
                     </div>
                 </template>
+                <div x-show="getMyActiveTasks().length===0" class="text-slate-400 p-5 w-full text-center border-2 border-dashed rounded-2xl border-slate-300 dark:border-slate-700">No active tasks.</div>
             </div>
-
-            <div class="flex justify-between items-end mb-4"><h3 class="font-bold text-lg text-slate-800 dark:text-white">Team Overview</h3></div>
+            
+            <div class="flex justify-between items-end mb-4"><h3 class="font-bold text-lg dark:text-white">Task Overview</h3></div>
             <div class="grid grid-cols-2 gap-4 mb-8">
-                <div @click="setGlobalFilter('HIGH')" class="bg-white dark:bg-rose-900/20 p-5 rounded-[1.5rem] border border-slate-100 dark:border-rose-900/30 cursor-pointer hover:scale-[1.02] shadow-sm">
-                    <div class="flex justify-between items-start mb-2"><div class="w-10 h-10 rounded-full bg-rose-50 dark:bg-slate-800 flex items-center justify-center text-rose-500"><i class="fas fa-fire"></i></div><span class="text-xl font-extrabold text-slate-900 dark:text-white" x-text="getGlobalCount('HIGH')"></span></div>
-                    <h4 class="font-bold text-sm text-slate-700 dark:text-slate-300 mb-4">High Prio</h4>
-                </div>
-                <div @click="setGlobalFilter('TODO')" class="bg-white dark:bg-sky-900/20 p-5 rounded-[1.5rem] border border-slate-100 dark:border-sky-900/30 cursor-pointer hover:scale-[1.02] shadow-sm">
-                     <div class="flex justify-between items-start mb-2"><div class="w-10 h-10 rounded-full bg-sky-50 dark:bg-slate-800 flex items-center justify-center text-sky-500"><i class="fas fa-list-ul"></i></div><span class="text-xl font-extrabold text-slate-900 dark:text-white" x-text="getGlobalCount('TODO')"></span></div>
-                    <h4 class="font-bold text-sm text-slate-700 dark:text-slate-300 mb-4">To Do</h4>
-                </div>
-                <div @click="setGlobalFilter('DOING')" class="bg-white dark:bg-indigo-900/20 p-5 rounded-[1.5rem] border border-slate-100 dark:border-indigo-900/30 cursor-pointer hover:scale-[1.02] shadow-sm">
-                    <div class="flex justify-between items-start mb-2"><div class="w-10 h-10 rounded-full bg-indigo-50 dark:bg-slate-800 flex items-center justify-center text-indigo-500"><i class="fas fa-spinner"></i></div><span class="text-xl font-extrabold text-slate-900 dark:text-white" x-text="getGlobalCount('DOING')"></span></div>
-                    <h4 class="font-bold text-sm text-slate-700 dark:text-slate-300 mb-4">In Process</h4>
-                </div>
-                <div @click="setGlobalFilter('DONE')" class="bg-white dark:bg-emerald-900/20 p-5 rounded-[1.5rem] border border-slate-100 dark:border-emerald-900/30 cursor-pointer hover:scale-[1.02] shadow-sm">
-                    <div class="flex justify-between items-start mb-2"><div class="w-10 h-10 rounded-full bg-emerald-50 dark:bg-slate-800 flex items-center justify-center text-emerald-500"><i class="fas fa-check"></i></div><span class="text-xl font-extrabold text-slate-900 dark:text-white" x-text="getGlobalCount('DONE')"></span></div>
-                    <h4 class="font-bold text-sm text-slate-700 dark:text-slate-300 mb-4">Complete</h4>
-                </div>
+                <div @click="setGlobalFilter('HIGH')" class="bg-white dark:bg-rose-900/20 p-5 rounded-[1.5rem] shadow-sm cursor-pointer border border-transparent dark:border-rose-900/30"><div class="flex justify-between mb-2"><div class="w-10 h-10 rounded-full bg-rose-50 dark:bg-slate-800 text-rose-500 flex items-center justify-center"><i class="fas fa-fire"></i></div><span class="text-xl font-extrabold dark:text-white" x-text="getGlobalCount('HIGH')"></span></div><h4 class="font-bold text-sm text-slate-700 dark:text-slate-300">High Prio</h4></div>
+                <div @click="setGlobalFilter('TODO')" class="bg-white dark:bg-sky-900/20 p-5 rounded-[1.5rem] shadow-sm cursor-pointer border border-transparent dark:border-sky-900/30"><div class="flex justify-between mb-2"><div class="w-10 h-10 rounded-full bg-sky-50 dark:bg-slate-800 text-sky-500 flex items-center justify-center"><i class="fas fa-list-ul"></i></div><span class="text-xl font-extrabold dark:text-white" x-text="getGlobalCount('TODO')"></span></div><h4 class="font-bold text-sm text-slate-700 dark:text-slate-300">To Do</h4></div>
+                <div @click="setGlobalFilter('DOING')" class="bg-white dark:bg-indigo-900/20 p-5 rounded-[1.5rem] shadow-sm cursor-pointer border border-transparent dark:border-indigo-900/30"><div class="flex justify-between mb-2"><div class="w-10 h-10 rounded-full bg-indigo-50 dark:bg-slate-800 text-indigo-500 flex items-center justify-center"><i class="fas fa-spinner"></i></div><span class="text-xl font-extrabold dark:text-white" x-text="getGlobalCount('DOING')"></span></div><h4 class="font-bold text-sm text-slate-700 dark:text-slate-300">Doing</h4></div>
+                <div @click="setGlobalFilter('DONE')" class="bg-white dark:bg-emerald-900/20 p-5 rounded-[1.5rem] shadow-sm cursor-pointer border border-transparent dark:border-emerald-900/30"><div class="flex justify-between mb-2"><div class="w-10 h-10 rounded-full bg-emerald-50 dark:bg-slate-800 text-emerald-500 flex items-center justify-center"><i class="fas fa-check"></i></div><span class="text-xl font-extrabold dark:text-white" x-text="getGlobalCount('DONE')"></span></div><h4 class="font-bold text-sm text-slate-700 dark:text-slate-300">Complete</h4></div>
             </div>
         </div>
 
         <div x-show="openListView" class="fixed inset-0 z-50 bg-white dark:bg-slate-900 flex flex-col" x-transition.opacity x-cloak>
-            <div class="p-6 border-b dark:border-slate-800 flex items-center gap-4"><button @click="openListView = false; activeFilter='ALL'" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center"><i class="fas fa-arrow-left"></i></button><h2 class="font-bold text-xl dark:text-white" x-text="activeListTitle"></h2></div>
+            <div class="p-6 border-b dark:border-slate-800 flex items-center gap-4"><button @click="openListView = false" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 dark:text-white"><i class="fas fa-arrow-left"></i></button><h2 class="font-bold text-xl dark:text-white" x-text="activeListTitle"></h2></div>
             <div class="flex-1 overflow-y-auto p-4 space-y-3">
                  <template x-for="task in activeListTasks" :key="task.id">
-                     <div @click="openTaskDetail(task)" class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm cursor-pointer">
-                         <div class="flex justify-between mb-2"><span class="text-[10px] font-bold px-2 py-1 rounded bg-slate-100 dark:bg-slate-700 text-slate-500" x-text="task.priority"></span><span class="text-[10px] text-slate-400" x-text="getDaysLeft(task.dueDate).text"></span></div>
-                         <h3 class="font-bold text-sm dark:text-white mb-1" x-text="task.title"></h3>
-                         <div class="flex justify-between items-center mt-3"><div class="text-[10px] font-bold text-slate-400" x-text="task.status"></div></div>
-                     </div>
+                     <div @click="openTaskDetail(task)" class="bg-white dark:bg-slate-800 p-4 rounded-2xl border dark:border-slate-700 shadow-sm cursor-pointer"><div class="flex justify-between mb-2"><span class="text-[10px] font-bold px-2 py-1 rounded bg-slate-100 dark:bg-slate-700 text-slate-500" x-text="task?.priority"></span><span class="text-[10px] text-slate-400" x-text="getDaysLeft(task?.dueDate).text"></span></div><h3 class="font-bold text-sm dark:text-white mb-1" x-text="task?.title"></h3><div class="flex justify-between items-center mt-3"><div class="text-[10px] font-bold text-slate-400"><i class="far fa-user mr-1"></i> <span x-text="task?.createdByName || 'Unknown'"></span></div><div class="text-[10px] font-bold text-slate-400" x-text="task?.status"></div></div></div>
                  </template>
                  <div x-show="activeListTasks.length === 0" class="text-center p-10 text-slate-400">No tasks found.</div>
             </div>
         </div>
 
-        <div x-show="currentView === 'feed'" class="h-full overflow-y-auto bg-sky-50/50 dark:bg-slate-950 pb-24" x-cloak>
-            <div class="max-w-xl mx-auto">
-                <div class="px-5 pt-6 pb-2 flex justify-between items-center"><h2 class="font-extrabold text-xl text-slate-800 dark:text-white">Explore your day!</h2></div>
-                <div class="px-5 mb-6">
-                    <form @submit.prevent="createPost" class="bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-card-soft border border-slate-100 dark:border-slate-700">
-                        <div class="flex gap-3 mb-4">
-                            <img :src="'https://ui-avatars.com/api/?name='+(currentUser?.name||'U')+'&background=random'" class="w-10 h-10 rounded-full">
-                            <div class="flex-1">
-                                <input type="text" x-model="newPostText" class="w-full bg-slate-50 dark:bg-slate-900 rounded-2xl px-4 py-2.5 text-sm text-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-brand-500/20 placeholder:text-slate-400" placeholder="What's on your mind?">
-                                <div x-show="postFile" class="text-xs text-brand-500 mt-2 flex items-center gap-1 font-bold">
-                                    <i class="fas fa-paperclip"></i> <span x-text="postFile ? postFile.name : ''"></span> <button @click.prevent="postFile=null" class="text-slate-400 hover:text-red-500"><i class="fas fa-times"></i></button>
-                                </div>
-                            </div>
-                            <button type="submit" :disabled="!newPostText && !postFile" class="w-10 h-10 rounded-full bg-brand-500 flex items-center justify-center text-white shrink-0 disabled:opacity-50"><i class="fas fa-paper-plane"></i></button>
-                        </div>
-                        <div class="flex gap-2">
-                            <input type="file" x-ref="photoInput" class="hidden" accept="image/*" @change="handleFeedImage($event)">
-                            <button type="button" @click="$refs.photoInput.click()" class="flex-1 py-2.5 rounded-xl bg-blue-50 text-blue-600 font-bold text-xs flex items-center justify-center gap-2"><i class="fas fa-camera"></i> Image</button>
-                        </div>
-                    </form>
+        <div x-show="currentView === 'feed'" class="h-full flex flex-col bg-sky-50/50 dark:bg-slate-950 pb-24" x-cloak>
+            
+            <div class="px-4 pt-4 pb-2 sticky top-0 z-20 bg-sky-50/90 dark:bg-slate-950/90 backdrop-blur-md border-b dark:border-slate-800">
+                <div class="bg-slate-200 dark:bg-slate-800 rounded-xl flex p-1 relative max-w-sm mx-auto">
+                    <div class="absolute inset-y-1 left-1 w-[calc(50%-4px)] bg-white dark:bg-slate-700 rounded-lg shadow-sm transition-transform duration-300" :class="feedTab === 'explore' ? 'translate-x-full' : ''"></div>
+                    <button @click="feedTab = 'feed'" class="flex-1 py-2 text-xs font-bold z-10 transition-colors" :class="feedTab === 'feed' ? 'text-brand-600 dark:text-white' : 'text-slate-500'">Feed</button>
+                    <button @click="feedTab = 'explore'" class="flex-1 py-2 text-xs font-bold z-10 transition-colors" :class="feedTab === 'explore' ? 'text-brand-600 dark:text-white' : 'text-slate-500'">Explore</button>
                 </div>
-                <div class="px-5 space-y-6">
-                     <template x-for="item in feedItems" :key="item.id">
-                        <div x-data="{expanded: false, replyText: ''}" class="bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-card-soft border border-slate-100 dark:border-slate-700">
-                            <div class="flex justify-between items-start mb-4">
-                                <div class="flex gap-3">
-                                    <img :src="'https://ui-avatars.com/api/?name='+item.user+'&background=random'" class="w-10 h-10 rounded-full border border-slate-100 dark:border-slate-700">
-                                    <div>
-                                        <h4 class="font-bold text-sm text-slate-900 dark:text-white" x-text="item.user"></h4>
-                                        <div class="flex items-center gap-1 text-[10px] text-slate-400"><i class="fas fa-globe-americas"></i><span x-text="new Date(item.time).toLocaleString()"></span></div>
-                                    </div>
+            </div>
+
+            <div x-show="feedTab === 'feed'" class="flex-1 overflow-y-auto w-full custom-scroll">
+                <div class="max-w-xl mx-auto">
+                    <div class="px-5 pt-4 pb-2">
+                        <h3 class="font-bold text-xs text-slate-500 uppercase tracking-wider mb-4">Discover People</h3>
+                        <div class="flex overflow-x-auto gap-4 hide-scroll pb-4 snap-x-mandatory">
+                            <template x-for="user in getSuggestedUsers()" :key="user.uid">
+                                <div class="bg-white dark:bg-slate-800 p-4 rounded-3xl shadow-sm border dark:border-slate-700 min-w-[130px] flex flex-col items-center text-center shrink-0 snap-center cursor-pointer" @click="openProfile(user)">
+                                    <img :src="getAvatarByUid(user.uid, user.name)" class="w-14 h-14 rounded-full mb-3 shadow-sm object-cover">
+                                    <h4 class="font-bold text-sm dark:text-white line-clamp-1 mb-1" x-text="user.name"></h4>
+                                    <p class="text-[10px] text-slate-400 mb-3" x-text="(user.followers ? user.followers.length : 0) + ' Followers'"></p>
+                                    <button @click.stop="toggleFollowUser(user.uid)" class="w-full py-1.5 text-xs font-bold rounded-xl transition-colors" :class="getFollowBtnClass(user.uid)" x-text="getFollowBtnText(user.uid)"></button>
                                 </div>
-                                <div class="relative" x-data="{ menuOpen: false }">
-                                    <button @click="menuOpen = !menuOpen" @click.outside="menuOpen = false" class="text-slate-400 w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"><i class="fas fa-ellipsis-h"></i></button>
-                                    <div x-show="menuOpen" class="absolute right-0 top-8 w-32 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700 z-10 py-1" x-transition>
-                                        <button x-show="item.user === currentUser.name" @click="deletePost(item.id); menuOpen = false" class="w-full text-left px-4 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"><i class="fas fa-trash"></i> Delete</button>
-                                    </div>
-                                </div>
+                            </template>
+                            <div x-show="getSuggestedUsers().length === 0" class="text-xs text-slate-400 italic">No other users yet.</div>
+                        </div>
+                    </div>
+
+                    <div class="px-5 mb-6 mt-2 pt-4 border-t dark:border-slate-800">
+                        <form @submit.prevent="createPost" class="bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-card-soft border dark:border-slate-700 relative">
+                            <div x-show="isUploadingMedia" class="absolute inset-0 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-3xl">
+                                <i class="fas fa-spinner fa-spin text-brand-500 text-2xl mb-2"></i>
+                                <span class="text-xs font-bold text-slate-700 dark:text-white">Uploading media...</span>
                             </div>
-                            <div class="mb-4">
-                                <p class="text-sm text-slate-800 dark:text-slate-200 leading-relaxed mb-3" x-text="item.content"></p>
-                                <template x-if="item.media">
-                                    <div class="rounded-2xl overflow-hidden shadow-sm mt-2"><img :src="item.media" class="w-full object-cover"></div>
+
+                            <div class="flex gap-3 mb-2"><img :src="getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-10 h-10 rounded-full object-cover"><input type="text" x-model="newPostText" class="w-full bg-slate-50 dark:bg-slate-900 rounded-2xl px-4 py-2 text-sm outline-none dark:text-white" placeholder="What's on your mind?"></div>
+                            
+                            <div x-show="postFilePreview" class="relative mt-3 mb-3 inline-block">
+                                <template x-if="postFileType === 'video'"><video :src="postFilePreview" class="h-40 w-auto object-cover rounded-xl shadow bg-black" controls></video></template>
+                                <template x-if="postFileType === 'image'"><img :src="postFilePreview" class="h-40 w-auto object-cover rounded-xl shadow"></template>
+                                <button type="button" @click.prevent="postFileRaw=null; postFilePreview=null; postFileType=''" class="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center shadow z-20"><i class="fas fa-times text-xs"></i></button>
+                            </div>
+                            
+                            <div class="flex justify-between items-center mt-3 border-t dark:border-slate-700 pt-3">
+                                <input type="file" x-ref="mediaInput" class="hidden" accept="image/*,video/*" @change="handleFeedMedia($event)">
+                                <button type="button" @click="$refs.mediaInput.click()" class="text-brand-500 font-bold text-sm flex items-center gap-2 px-2 hover:bg-brand-50 dark:hover:bg-brand-900/20 py-1.5 rounded-lg transition-colors"><i class="fas fa-photo-video text-lg"></i> Photo / Video</button>
+                                <button type="submit" :disabled="!newPostText && !postFileRaw" class="bg-brand-500 px-6 py-2 rounded-xl text-white font-bold text-sm disabled:opacity-50">Post</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="px-5 space-y-6 pb-6">
+                         <template x-for="item in feedItems" :key="item.id">
+                            <div x-data="{expanded: false, replyText: ''}" class="bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-card-soft border dark:border-slate-700">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="flex gap-3 items-center cursor-pointer" @click="openProfile(item)"><img :src="getAvatarByUid(item?.uid, item?.user)" class="w-10 h-10 rounded-full object-cover"><div><h4 class="font-bold text-sm dark:text-white hover:underline" x-text="item?.user"></h4><div class="text-[10px] text-slate-400" x-text="new Date(item?.time).toLocaleString()"></div></div></div>
+                                    <button x-show="item?.uid === currentUser?.uid" @click="deletePost(item?.id)" class="text-slate-400 hover:text-red-500"><i class="fas fa-trash"></i></button>
+                                </div>
+                                <p class="text-sm dark:text-slate-200 mb-3 whitespace-pre-wrap" x-text="item?.content"></p>
+                                
+                                <template x-if="item?.mediaType === 'video' || item?.media?.includes('.mp4')">
+                                    <video :src="item?.media" controls class="w-full object-cover rounded-2xl mt-2 max-h-96 bg-black"></video>
                                 </template>
+                                <template x-if="item?.mediaType !== 'video' && item?.media && !item?.media?.includes('.mp4')">
+                                    <img :src="item?.media" class="w-full object-cover rounded-2xl mt-2 max-h-96 cursor-pointer" @click="openPostDetail(item)">
+                                </template>
+
+                                <div class="flex items-center justify-between pt-4 border-t dark:border-slate-700 mt-4"><span class="text-xs text-slate-400" x-text="(item?.likes ? item.likes.length : 0) + ' likes'"></span><div class="flex gap-4"><button @click="toggleLike(item)" class="flex items-center gap-1 text-xs font-bold" :class="(item?.likes && (item.likes.includes(currentUser?.uid) || item.likes.includes(currentUser?.name))) ? 'text-red-500 like-anim' : 'text-slate-400 hover:text-brand-500'"><i class="fas fa-heart"></i> Like</button><button @click="expanded = !expanded" class="flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-brand-500"><i class="far fa-comment-alt"></i> Comment</button></div></div>
+                                <div x-show="expanded || (item?.comments && item.comments.length > 0)" class="mt-4 pt-4 border-t dark:border-slate-700" x-transition><div class="space-y-3 mb-3 max-h-40 overflow-y-auto custom-scroll"><template x-for="msg in (item?.comments || [])"><div class="flex gap-2"><img :src="getAvatarByUid(null, msg.sender)" class="w-6 h-6 rounded-full mt-1 object-cover"><div class="bg-slate-50 dark:bg-slate-900 rounded-2xl rounded-tl-none px-3 py-2 text-xs"><span class="font-bold dark:text-white block text-[10px]" x-text="msg.sender"></span><span class="text-slate-600 dark:text-slate-300" x-text="msg.text"></span></div></div></template></div><div class="flex gap-2 items-center"><input type="text" x-model="replyText" @keydown.enter="sendPostComment(item?.id, replyText, $data)" class="flex-1 bg-slate-100 dark:bg-slate-900 rounded-full px-3 py-1.5 text-xs outline-none dark:text-white" placeholder="Comment..."><button @click="sendPostComment(item?.id, replyText, $data)" class="text-brand-500 font-bold text-xs">Post</button></div></div>
                             </div>
-                            <div class="flex items-center justify-between pt-4 border-t border-slate-50 dark:border-slate-700/50">
-                                <span class="text-xs text-slate-400 pl-3 transition-all" x-text="(item.likes ? item.likes.length : 0) + ' likes'"></span>
-                                <div class="flex gap-4 text-slate-400">
-                                    <button @click="toggleLike(item)" class="flex items-center gap-1 text-xs font-bold transition-colors" :class="(item.likes && item.likes.includes(currentUser.name)) ? 'text-red-500 like-anim' : 'hover:text-brand-500'"><i class="fas fa-heart"></i> Like</button>
-                                    <button @click="expanded = !expanded" class="flex items-center gap-1 text-xs font-bold hover:text-brand-500"><i class="far fa-comment-alt"></i> Comment</button>
-                                </div>
-                            </div>
-                            <div x-show="expanded || (item.comments && item.comments.length > 0)" class="mt-4 pt-4 border-t border-slate-50 dark:border-slate-800" x-transition>
-                                <div class="space-y-3 mb-3 max-h-40 overflow-y-auto custom-scroll">
-                                    <template x-for="msg in (item.comments || [])">
-                                        <div class="flex gap-2">
-                                            <img :src="'https://ui-avatars.com/api/?name='+msg.sender+'&background=random&color=fff&size=24'" class="w-6 h-6 rounded-full mt-1">
-                                            <div class="bg-slate-50 dark:bg-slate-900 rounded-2xl rounded-tl-none px-3 py-2 text-xs">
-                                                <span class="font-bold text-slate-800 dark:text-white block text-[10px]" x-text="msg.sender"></span>
-                                                <span class="text-slate-600 dark:text-slate-300" x-text="msg.text"></span>
-                                            </div>
-                                        </div>
-                                    </template>
-                                </div>
-                                <div class="flex gap-2 items-center">
-                                    <input type="text" x-model="replyText" @keydown.enter="sendPostComment(item.id, replyText, $data)" class="flex-1 bg-slate-100 dark:bg-slate-900 rounded-full px-3 py-1.5 text-xs outline-none dark:text-white" placeholder="Write a comment...">
-                                    <button @click="sendPostComment(item.id, replyText, $data)" class="text-brand-500 font-bold text-xs">Post</button>
-                                </div>
+                         </template>
+                    </div>
+                </div>
+            </div>
+
+            <div x-show="feedTab === 'explore'" class="flex-1 overflow-y-auto w-full custom-scroll">
+                <div class="grid grid-cols-3 gap-0.5">
+                    <template x-for="post in feedItems.filter(p => p.media)" :key="post.id">
+                        <div class="aspect-square bg-slate-100 dark:bg-slate-800 relative cursor-pointer group" @click="openPostDetail(post)">
+                            <template x-if="post?.mediaType === 'video' || post?.media?.includes('.mp4')">
+                                <video :src="post?.media" class="w-full h-full object-cover" muted></video>
+                            </template>
+                            <template x-if="post?.mediaType !== 'video' && !post?.media?.includes('.mp4')">
+                                <img :src="post?.media" class="w-full h-full object-cover">
+                            </template>
+                            <div x-show="post?.mediaType === 'video' || post?.media?.includes('.mp4')" class="absolute top-2 right-2 text-white bg-black/60 w-6 h-6 rounded-full flex items-center justify-center text-[10px] shadow">
+                                <i class="fas fa-play ml-0.5"></i>
                             </div>
                         </div>
-                     </template>
+                    </template>
+                </div>
+                <div x-show="feedItems.filter(p => p.media).length === 0" class="text-center p-10 text-slate-400">No media to explore yet.</div>
+            </div>
+        </div>
+
+        <div x-show="showPostModal" class="fixed inset-0 bg-black/95 z-[300] flex items-center justify-center p-0 md:p-10" x-cloak x-transition.opacity>
+            <div class="bg-white dark:bg-slate-900 w-full h-full md:h-auto md:max-h-[90vh] md:max-w-xl md:rounded-3xl relative overflow-hidden flex flex-col" @click.outside="showPostModal=false">
+               <div class="flex justify-between items-center p-4 border-b dark:border-slate-800 sticky top-0 z-20 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm">
+                   <h3 class="font-bold text-sm dark:text-white">Post Detail</h3>
+                   <button @click="showPostModal=false" class="w-8 h-8 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
+               </div>
+               <div class="overflow-y-auto custom-scroll flex-1 p-0" x-data="{replyText: ''}">
+                    <template x-if="activePost?.id">
+                        <div class="p-5">
+                            <div class="flex gap-3 items-center cursor-pointer mb-4" @click="openProfile(activePost); showPostModal=false">
+                                <img :src="getAvatarByUid(activePost?.uid, activePost?.user)" class="w-10 h-10 rounded-full object-cover">
+                                <div><h4 class="font-bold text-sm dark:text-white hover:underline" x-text="activePost?.user"></h4><div class="text-[10px] text-slate-400" x-text="new Date(activePost?.time).toLocaleString()"></div></div>
+                            </div>
+                            
+                            <template x-if="activePost?.mediaType === 'video' || activePost?.media?.includes('.mp4')">
+                                <video :src="activePost?.media" controls class="w-full rounded-2xl object-cover mb-3 bg-black max-h-[60vh]"></video>
+                            </template>
+                            <template x-if="activePost?.mediaType !== 'video' && activePost?.media && !activePost?.media?.includes('.mp4')">
+                                <img :src="activePost?.media" class="w-full rounded-2xl object-cover mb-3">
+                            </template>
+
+                            <p class="text-sm dark:text-slate-200 mb-3 whitespace-pre-wrap" x-text="activePost?.content"></p>
+                            <div class="flex items-center justify-between pt-4 border-t dark:border-slate-700 mt-4"><span class="text-xs text-slate-400" x-text="(activePost?.likes ? activePost.likes.length : 0) + ' likes'"></span><button @click="toggleLike(activePost); activePost = feedItems.find(f=>f.id===activePost?.id) || activePost" class="flex items-center gap-1 text-xs font-bold" :class="(activePost?.likes && (activePost.likes.includes(currentUser?.uid) || activePost.likes.includes(currentUser?.name))) ? 'text-red-500' : 'text-slate-400 hover:text-brand-500'"><i class="fas fa-heart"></i> Like</button></div>
+                            <div class="mt-4 pt-4 border-t dark:border-slate-700"><div class="space-y-3 mb-3 max-h-40 overflow-y-auto custom-scroll"><template x-for="msg in (activePost?.comments || [])"><div class="flex gap-2"><img :src="getAvatarByUid(null, msg.sender)" class="w-6 h-6 rounded-full mt-1 object-cover"><div class="bg-slate-50 dark:bg-slate-900 rounded-2xl rounded-tl-none px-3 py-2 text-xs"><span class="font-bold dark:text-white block text-[10px]" x-text="msg.sender"></span><span class="text-slate-600 dark:text-slate-300" x-text="msg.text"></span></div></div></template></div><div class="flex gap-2 items-center"><input type="text" x-model="replyText" @keydown.enter="sendPostComment(activePost?.id, replyText, $data); activePost = feedItems.find(f=>f.id===activePost?.id) || activePost" class="flex-1 bg-slate-100 dark:bg-slate-900 rounded-full px-4 py-2 text-xs outline-none dark:text-white" placeholder="Comment..."><button @click="sendPostComment(activePost?.id, replyText, $data); activePost = feedItems.find(f=>f.id===activePost?.id) || activePost" class="text-brand-500 font-bold text-xs ml-1">Post</button></div></div>
+                        </div>
+                    </template>
+               </div>
+            </div>
+        </div>
+
+        <div x-show="currentView === 'profile'" class="h-full overflow-y-auto bg-white dark:bg-slate-900 pb-24" x-cloak>
+            <div class="flex justify-between items-center p-4 border-b dark:border-slate-800 sticky top-0 z-20 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm"><button @click="switchView('board')" class="text-xl px-2 dark:text-white"><i class="fas fa-arrow-left"></i></button><h2 class="font-bold text-base dark:text-white" x-text="viewedProfile?.name || currentUser?.name || ''"></h2><button @click="toggleDarkMode()" class="text-xl dark:text-white"><i class="fas" :class="isDarkMode ? 'fa-sun' : 'fa-moon'"></i></button></div>
+            <div class="px-5 pt-4">
+                <div class="flex justify-between items-center mb-5"><img :src="getAvatarByUid(viewedProfile?.uid || currentUser?.uid, viewedProfile?.name || currentUser?.name)" class="w-20 h-20 rounded-full border shadow-sm object-cover"><div class="flex gap-6 text-center flex-1 justify-end pr-2"><div><div class="font-bold text-lg dark:text-white" x-text="getUserPosts().length"></div><div class="text-xs text-slate-500">Posts</div></div><div @click="openFollowList('Followers')" class="cursor-pointer"><div class="font-bold text-lg dark:text-white" x-text="getFollowersCount()"></div><div class="text-xs text-slate-500">Followers</div></div><div @click="openFollowList('Following')" class="cursor-pointer"><div class="font-bold text-lg dark:text-white" x-text="getFollowingCount()"></div><div class="text-xs text-slate-500">Following</div></div></div></div>
+                <div class="mb-4"><h1 class="font-bold text-lg dark:text-white" x-text="viewedProfile?.name || currentUser?.name || ''"></h1><p class="text-sm dark:text-slate-300 mt-1 whitespace-pre-wrap" x-text="viewedProfile?.bio || myProfileData?.bio || 'No bio yet.'"></p><a x-show="viewedProfile?.website || myProfileData?.website" :href="viewedProfile?.website || myProfileData?.website" target="_blank" class="text-xs text-brand-500 font-bold block mt-1" x-text="viewedProfile?.website || myProfileData?.website"></a></div>
+                <div class="flex gap-2 mb-6">
+                    <button x-show="!viewedProfile?.uid || viewedProfile?.uid === currentUser?.uid" @click="openEditProfile()" class="flex-1 py-2 bg-slate-100 dark:bg-slate-800 font-bold text-sm rounded-lg dark:text-white">Edit Profile</button>
+                    <button x-show="viewedProfile?.uid && viewedProfile?.uid !== currentUser?.uid" @click="toggleFollowUser(viewedProfile?.uid)" class="flex-1 py-2 font-bold text-sm rounded-lg transition-colors" :class="getFollowBtnClass(viewedProfile?.uid)" x-text="getFollowBtnText(viewedProfile?.uid)"></button>
+                    <button x-show="!viewedProfile?.uid || viewedProfile?.uid === currentUser?.uid" @click="showLogoutConfirm = true" class="py-2 px-4 bg-red-50 dark:bg-red-900/20 text-red-500 font-bold text-sm rounded-lg"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </div>
+            <div class="flex border-t border-b dark:border-slate-800"><button @click="activeProfileTab = 'posts'" class="flex-1 py-3" :class="activeProfileTab === 'posts' ? 'text-brand-500 border-b-2 border-brand-500' : 'text-slate-400'"><i class="fas fa-th text-lg"></i></button><button @click="activeProfileTab = 'likes'" class="flex-1 py-3" :class="activeProfileTab === 'likes' ? 'text-brand-500 border-b-2 border-brand-500' : 'text-slate-400'"><i class="far fa-heart text-lg"></i></button></div>
+            <div class="grid grid-cols-3 gap-0.5 mt-0.5">
+                <template x-for="post in getProfileGridItems()" :key="post.id">
+                    <div class="aspect-square bg-slate-100 dark:bg-slate-800 relative cursor-pointer group" @click="openPostDetail(post)">
+                        <template x-if="post?.mediaType === 'video' || post?.media?.includes('.mp4')">
+                            <video :src="post?.media" class="w-full h-full object-cover" muted></video>
+                        </template>
+                        <template x-if="post?.mediaType !== 'video' && !post?.media?.includes('.mp4')">
+                            <img x-show="post?.media" :src="post?.media" class="w-full h-full object-cover">
+                        </template>
+                        <div x-show="!post?.media" class="w-full h-full p-2 flex items-center justify-center text-center"><p class="text-[9px] dark:text-slate-300 line-clamp-4" x-text="post?.content"></p></div>
+                        <div x-show="post?.mediaType === 'video' || post?.media?.includes('.mp4')" class="absolute top-2 right-2 text-white bg-black/60 w-6 h-6 rounded-full flex items-center justify-center text-[10px] shadow">
+                            <i class="fas fa-play ml-0.5"></i>
+                        </div>
+                    </div>
+                </template>
+                <div x-show="getProfileGridItems().length === 0" class="col-span-3 text-center py-10 text-slate-400 text-sm">Nothing to see here yet.</div>
+            </div>
+        </div>
+
+        <div x-show="showFollowModal" class="fixed inset-0 bg-black/50 z-[250] flex items-center justify-center p-4" x-cloak x-transition.opacity>
+            <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl p-6" @click.outside="showFollowModal = false">
+                <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg dark:text-white" x-text="followListTitle"></h3><button @click="showFollowModal=false" class="text-slate-400"><i class="fas fa-times"></i></button></div>
+                <div class="max-h-60 overflow-y-auto space-y-2">
+                    <template x-for="user in followListData" :key="user.uid">
+                        <div class="flex justify-between items-center p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg cursor-pointer" @click="openProfile(user); showFollowModal=false">
+                            <div class="flex items-center gap-2"><img :src="getAvatarByUid(user.uid, user.name)" class="w-8 h-8 rounded-full object-cover"><span class="text-sm font-bold dark:text-white" x-text="user.name"></span></div>
+                            <button x-show="currentUser && user.uid !== currentUser.uid" @click.stop="toggleFollowUser(user.uid); updateFollowListData()" class="text-[10px] px-3 py-1.5 rounded-lg font-bold transition-colors" :class="getFollowBtnClass(user.uid)" x-text="getFollowBtnText(user.uid)"></button>
+                        </div>
+                    </template>
+                    <div x-show="followListData.length === 0" class="text-center text-sm text-slate-400 py-4">No users found.</div>
                 </div>
             </div>
         </div>
 
-        <div x-show="currentView === 'discuss'" class="h-full overflow-y-auto p-0 bg-white dark:bg-slate-900 pb-24" x-cloak>
-            <div class="max-w-2xl mx-auto h-full flex flex-col">
-                <div class="p-4 border-b border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-10 flex justify-between items-center">
-                    <h2 class="font-bold text-xl text-slate-800 dark:text-white">Discuss</h2>
-                    <button @click="showDiscussModal=true" class="w-10 h-10 rounded-full bg-brand-500 text-white flex items-center justify-center shadow hover:bg-brand-600"><i class="fas fa-plus text-sm"></i></button>
+        <div x-show="showLogoutConfirm" class="fixed inset-0 bg-black/60 z-[400] flex items-center justify-center p-4" x-cloak x-transition.opacity>
+            <div class="bg-white dark:bg-slate-800 w-full max-w-xs rounded-3xl p-6 text-center" @click.outside="showLogoutConfirm=false">
+                <div class="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 text-red-500 flex items-center justify-center text-2xl mx-auto mb-4"><i class="fas fa-sign-out-alt"></i></div>
+                <h3 class="font-extrabold text-lg mb-2 dark:text-white">Sign Out?</h3>
+                <p class="text-xs text-slate-500 mb-6">Are you sure you want to log out of your account?</p>
+                <div class="flex gap-2">
+                    <button @click="showLogoutConfirm=false" class="flex-1 py-3 bg-slate-100 dark:bg-slate-700 dark:text-white rounded-xl font-bold text-sm">Cancel</button>
+                    <button @click="logout()" class="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold text-sm shadow-lg">Sign Out</button>
                 </div>
-                <div class="flex-1 pb-24">
-                    <template x-for="chat in discussions" :key="chat.id">
-                        <div @click="openChatModal(chat)" class="px-5 py-5 border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors flex items-start gap-4 group">
-                            <div class="shrink-0"><img :src="'https://ui-avatars.com/api/?name='+chat.createdBy+'&background=random&color=fff&size=56'" class="w-12 h-12 rounded-full border-2 border-white dark:border-slate-800 shadow-sm object-cover"></div>
-                            <div class="flex-1 min-w-0 pt-1">
-                                <div class="flex justify-between items-start mb-1"><h3 class="font-bold text-base text-slate-800 dark:text-white truncate pr-2" x-text="chat.topic"></h3></div>
-                                <p class="text-sm text-slate-500 mb-3 truncate" x-text="(chat.messages && chat.messages.length > 0) ? (chat.messages[chat.messages.length-1].isImage ? 'Sent an image' : chat.messages[chat.messages.length-1].text) : 'No messages yet'"></p>
-                                <div class="flex justify-between items-end">
-                                    <span class="text-xs px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-bold" x-text="chat.project"></span>
-                                    <button x-show="currentUser.name === chat.createdBy" @click.stop="deleteDiscussion(chat.id)" class="text-sm text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity p-1"><i class="fas fa-trash-alt"></i></button>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
+            </div>
+        </div>
+
+        <div x-show="currentView === 'calendar'" class="h-full overflow-hidden flex flex-col md:flex-row p-4 gap-4 bg-sky-50/50 dark:bg-slate-900 pb-24" x-cloak>
+            <div class="w-full md:w-2/3 bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border dark:border-slate-700 flex flex-col">
+                <div class="flex justify-between items-center mb-4"><h2 class="font-bold text-xl dark:text-white" x-text="calendarTitle"></h2><div class="flex gap-2"><button @click="changeMonth(-1)" class="w-10 h-10 bg-slate-50 dark:bg-slate-700 rounded-full flex items-center justify-center shadow dark:text-white"><i class="fas fa-chevron-left"></i></button><button @click="changeMonth(1)" class="w-10 h-10 bg-slate-50 dark:bg-slate-700 rounded-full flex items-center justify-center shadow dark:text-white"><i class="fas fa-chevron-right"></i></button></div></div>
+                <div class="grid grid-cols-7 gap-1 mb-2 text-center text-xs font-bold text-slate-400"><div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div></div>
+                <div class="grid grid-cols-7 gap-1 flex-1">
+                    <template x-for="day in calendarDays"><div @click="day.date ? selectedDate = day.fullDate : null" class="rounded-lg flex flex-col items-center justify-start p-1 cursor-pointer border relative" :class="[!day.date ? 'border-transparent pointer-events-none' : (day.fullDate === selectedDate ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-700 hover:border-brand-300')]"><span class="text-sm font-bold" :class="day.isToday ? 'text-brand-600 font-extrabold' : 'text-slate-600 dark:text-slate-300'" x-text="day.date"></span><div class="flex gap-0.5 mt-1 flex-wrap justify-center"><template x-for="t in day.tasks.slice(0,4)"><div class="w-2 h-2 rounded-full" :class="t.status==='DONE'?'bg-emerald-400':(t.status==='DOING'?'bg-blue-400':'bg-slate-300')"></div></template></div></div></template>
+                </div>
+            </div>
+            <div class="w-full md:w-1/3 bg-white dark:bg-slate-800 rounded-2xl p-4 border dark:border-slate-700 flex flex-col h-[40vh] md:h-auto">
+                <h3 class="font-bold text-sm uppercase text-slate-500 mb-3">Agenda: <span x-text="selectedDate"></span></h3>
+                <div class="flex-1 overflow-y-auto space-y-2 custom-scroll pb-20 md:pb-0">
+                    <template x-for="task in getTasksBySelectedDate()" :key="task.id"><div @click="openTaskDetail(task)" class="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border dark:border-slate-700 shadow-sm cursor-pointer hover:border-brand-500"><div class="flex justify-between items-start mb-2"><div><div class="text-sm font-bold dark:text-white" x-text="task?.title"></div><span class="text-xs px-2 py-0.5 rounded bg-white dark:bg-slate-800 text-slate-500 shadow-sm" x-text="task?.status"></span></div><i class="fas fa-chevron-right text-sm text-slate-300"></i></div></div></template>
+                    <div x-show="getTasksBySelectedDate().length === 0" class="text-center py-10 text-slate-400 text-sm italic">No tasks for this date.</div>
                 </div>
             </div>
         </div>
 
         <div x-show="currentView === 'analytics'" class="h-full overflow-y-auto p-4 md:p-8 pb-24" x-cloak>
             <div class="max-w-5xl mx-auto space-y-6">
-                <div class="grid grid-cols-3 gap-3 md:gap-6"><div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700"><p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase">Total</p><h3 class="text-xl md:text-3xl font-extrabold text-brand-600 dark:text-brand-400" x-text="tasks.length"></h3></div><div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700"><p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase">Done</p><h3 class="text-xl md:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400" x-text="getTasksByStatus('DONE').length"></h3></div><div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700"><p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase">Doing</p><h3 class="text-xl md:text-3xl font-extrabold text-indigo-600 dark:text-indigo-400" x-text="getTasksByStatus('DOING').length"></h3></div></div>
+                <div class="p-4 border-b dark:border-slate-800"><h2 class="font-bold text-xl dark:text-white">Analytics</h2></div>
+                <div class="grid grid-cols-3 gap-3 md:gap-6"><div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border dark:border-slate-700"><p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase">Total Tasks</p><h3 class="text-xl md:text-3xl font-extrabold text-brand-600 dark:text-brand-400" x-text="getVisibleTasks().length"></h3></div><div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border dark:border-slate-700"><p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase">Done</p><h3 class="text-xl md:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400" x-text="getTasksByStatus('DONE').length"></h3></div><div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border dark:border-slate-700"><p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase">Doing</p><h3 class="text-xl md:text-3xl font-extrabold text-indigo-600 dark:text-indigo-400" x-text="getTasksByStatus('DOING').length"></h3></div></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border dark:border-slate-700"><h3 class="font-bold text-sm text-slate-500 uppercase mb-4">Task Status</h3><div class="relative h-56 w-full"><canvas id="statusChart"></canvas></div></div><div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border dark:border-slate-700"><h3 class="font-bold text-sm text-slate-500 uppercase mb-4">Workload</h3><div class="relative h-56 w-full"><canvas id="workloadChart"></canvas></div></div></div>
             </div>
         </div>
-    </main>
 
-    <nav class="fixed bottom-0 left-0 w-full z-40 pb-safe" x-show="currentUser && !isPublicView" x-cloak>
-        <div class="nav-bar-blur w-full flex justify-around items-center h-16 px-2 shadow-[0_-5px_10px_rgba(0,0,0,0.02)]">
-            <button @click="switchView('board')" class="flex flex-col items-center gap-1 p-2 w-16" :class="currentView==='board' ? 'text-brand-600' : 'text-slate-400'"><i class="fas fa-home text-lg"></i><span class="text-[10px] font-bold">Home</span></button>
-            <button @click="switchView('feed')" class="flex flex-col items-center gap-1 p-2 w-16" :class="currentView==='feed' ? 'text-brand-600' : 'text-slate-400'"><i class="fas fa-rss text-lg"></i><span class="text-[10px] font-bold">Feed</span></button>
-            <div class="-mt-8"><button @click="openCreateModal()" class="w-14 h-14 rounded-full bg-brand-600 text-white flex items-center justify-center shadow-lg border-4 border-white dark:border-slate-900 hover:scale-105"><i class="fas fa-plus text-xl"></i></button></div>
-            <button @click="switchView('discuss')" class="flex flex-col items-center gap-1 p-2 w-16" :class="currentView==='discuss' ? 'text-brand-600' : 'text-slate-400'"><i class="fas fa-comment-alt text-lg"></i><span class="text-[10px] font-bold">Chat</span></button>
-            <button @click="switchView('analytics')" class="flex flex-col items-center gap-1 p-2 w-16" :class="currentView==='analytics' ? 'text-brand-600' : 'text-slate-400'"><i class="fas fa-chart-pie text-lg"></i><span class="text-[10px] font-bold">Stats</span></button>
-        </div>
-    </nav>
-
-    <div x-show="showDetail" class="fixed inset-0 bg-black/50 z-[70] flex flex-col md:fixed md:inset-0 md:backdrop-blur-sm md:items-center md:justify-center md:p-4" x-cloak x-transition.opacity> 
-        <div class="flex-1 flex flex-col w-full md:max-w-3xl md:h-[85vh] md:bg-white md:dark:bg-slate-800 md:rounded-2xl md:shadow-2xl overflow-hidden relative" @click.outside="showDetail=false"> 
-            <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900"> 
-                <button @click="showDetail=false" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 shadow flex items-center justify-center"><i class="fas fa-arrow-left"></i></button> 
-                <div class="flex gap-2 items-center" x-show="!isPublicView"> 
-                    <button @click="editFromDetail()" class="text-xs font-bold text-slate-400 hover:text-brand-500"><i class="fas fa-pen"></i> Edit</button> 
-                    <button @click="deleteTask(activeTask.id)" class="text-xs font-bold text-red-400 hover:text-red-500 ml-2"><i class="fas fa-trash"></i></button> 
-                </div> 
-            </div> 
-            <div class="flex-1 overflow-y-auto p-5 bg-white dark:bg-slate-800 relative"> 
-                <h2 class="text-2xl font-extrabold dark:text-white mb-2" x-text="activeTask.title"></h2> 
-                <p class="text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border dark:border-slate-700 mb-6" x-text="activeTask.desc || 'No description provided.'"></p> 
-                
-                <div> 
-                    <h3 class="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2"><i class="fas fa-check-square"></i> Subtasks</h3> 
-                    <div class="space-y-2"> 
-                        <template x-for="(sub, index) in (activeTask.subtasks || [])" :key="index"> 
-                            <div class="flex items-center gap-3 p-2 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700"> 
-                                <input type="checkbox" class="cb-custom" :checked="sub.isDone" @change="toggleSubtask(activeTask.id, index, sub)"> 
-                                <span class="text-sm flex-1 dark:text-slate-200" :class="sub.isDone ? 'line-through text-slate-400' : ''" x-text="sub.text"></span> 
-                                <button @click="deleteSubtask(activeTask.id, index)" class="text-slate-300 hover:text-red-500"><i class="fas fa-trash"></i></button> 
-                            </div> 
-                        </template> 
-                    </div> 
-                    <div class="mt-3 flex gap-2"> 
-                        <input type="text" x-model="newSubtask" @keydown.enter="addSubtask(activeTask.id)" class="flex-1 bg-slate-100 dark:bg-slate-900 rounded-lg px-3 py-2 text-xs outline-none dark:text-white" placeholder="Add subtask..."> 
-                        <button @click="addSubtask(activeTask.id)" class="bg-slate-800 text-white rounded-lg px-3"><i class="fas fa-plus"></i></button> 
-                    </div> 
-                </div> 
-            </div> 
-            <div class="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex gap-3">
-                <button x-show="activeTask.status==='TODO' || activeTask.status==='DONE'" @click="moveTask(activeTask.id, 'DOING'); showDetail=false" class="flex-1 p-3 rounded-xl bg-blue-50 text-blue-600 font-bold border border-blue-100 hover:bg-blue-100"><i class="fas fa-play mr-1"></i> Start</button> 
-                <button x-show="activeTask.status==='TODO' || activeTask.status==='DOING'" @click="moveTask(activeTask.id, 'DONE'); showDetail=false" class="flex-1 bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-emerald-500/30 hover:bg-emerald-600">MARK COMPLETE</button> 
-                <button x-show="activeTask.status==='DONE'" @click="moveTask(activeTask.id, 'TODO'); showDetail=false" class="flex-1 bg-slate-200 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-300">REOPEN</button> 
-            </div>
-        </div> 
-    </div>
-    
-    <div x-show="showModal" class="fixed inset-0 bg-black/50 z-[60] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm" x-cloak x-transition.opacity> 
-        <div class="bg-white dark:bg-slate-800 w-full md:max-w-md rounded-t-3xl md:rounded-3xl shadow-2xl p-6 relative h-[85vh] md:h-auto overflow-y-auto" @click.outside="showModal=false"> 
-            <div class="flex justify-between items-center mb-6"> 
-                <h3 class="font-extrabold text-xl dark:text-white" x-text="isEditMode ? 'Edit Task' : 'New Task'"></h3> 
-                <button @click="showModal=false" class="text-slate-400"><i class="fas fa-times"></i></button> 
-            </div> 
-            <div class="space-y-4"> 
-                <input type="text" x-model="form.title" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-bold outline-none dark:text-white" placeholder="Task Title"> 
-                <textarea x-model="form.desc" rows="3" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs outline-none dark:text-white" placeholder="Description"></textarea> 
-                <div class="grid grid-cols-2 gap-3"> 
-                    <select x-model="form.priority" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-bold outline-none dark:text-white"><option>High</option><option>Medium</option><option>Low</option></select> 
-                    <input type="date" x-model="form.dueDate" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-bold outline-none dark:text-white"> 
-                </div> 
-                <input type="text" x-model="form.assignee" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-bold outline-none dark:text-white" placeholder="Assignee Email (optional)"> 
-            </div> 
-            <div class="flex gap-3 mt-8"> 
-                <button @click="showModal=false" class="flex-1 py-3 rounded-xl font-bold text-xs bg-slate-100 text-slate-500">CANCEL</button> 
-                <button @click="saveTask()" class="flex-[2] bg-brand-600 text-white py-3 rounded-xl font-bold text-xs shadow-lg"><span x-text="isEditMode ? 'UPDATE' : 'CREATE'"></span></button> 
-            </div> 
-        </div> 
-    </div>
-
-    <div x-show="activeDiscussion" class="fixed inset-0 z-[200] bg-white dark:bg-slate-900 flex flex-col" x-transition.opacity x-cloak>
-        <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 bg-white dark:bg-slate-900 shadow-sm">
-            <button @click="activeDiscussion = null" class="text-slate-400"><i class="fas fa-arrow-left"></i></button>
-            <div class="flex-1"><h3 class="font-bold text-sm text-slate-800 dark:text-white" x-text="activeDiscussion ? activeDiscussion.topic : ''"></h3></div>
-        </div>
-        <div class="flex-1 bg-slate-50 dark:bg-slate-950 p-4 space-y-4 overflow-y-auto chat-container" id="chatContainer">
-            <template x-if="activeDiscussion">
-                <template x-for="(msg, index) in (activeDiscussion.messages || [])" :key="index">
-                    <div class="flex gap-2" :class="msg.sender === currentUser.name ? 'flex-row-reverse' : ''">
-                        <img :src="'https://ui-avatars.com/api/?name='+msg.sender+'&background=random&color=fff&size=32'" class="w-8 h-8 rounded-full shadow-sm">
-                        <div class="p-3 rounded-2xl shadow-sm max-w-[80%]" :class="msg.sender === currentUser.name ? 'bg-brand-500 text-white rounded-tr-none' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-tl-none'">
-                            <p class="text-xs font-bold mb-1 opacity-75" x-text="msg.sender"></p>
-                            <img x-show="msg.isImage" :src="msg.text" class="rounded-lg mb-1 w-full chat-image">
-                            <p class="text-xs" x-text="msg.text" x-show="!msg.isImage"></p>
-                        </div>
+        <div x-show="currentView === 'discuss'" class="h-full overflow-y-auto p-0 bg-white dark:bg-slate-900 pb-24" x-cloak>
+            <div class="p-4 border-b dark:border-slate-800 sticky top-0 z-10 flex justify-between items-center bg-white/90 dark:bg-slate-900/90"><h2 class="font-bold text-xl dark:text-white">Discussions</h2><button @click="showDiscussModal=true" class="w-10 h-10 rounded-full bg-brand-500 text-white flex items-center justify-center shadow"><i class="fas fa-plus"></i></button></div>
+            <div class="flex-1 pb-24">
+                <template x-for="chat in getVisibleDiscussions()" :key="chat.id">
+                    <div @click="openChatModal(chat)" class="px-5 py-5 border-b dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex items-start gap-4">
+                        <img :src="'https://ui-avatars.com/api/?name='+(chat?.topic || 'D')+'&background=random&color=fff'" class="w-12 h-12 rounded-full border shadow-sm object-cover">
+                        <div class="flex-1 min-w-0 pt-1"><h3 class="font-bold text-base dark:text-white truncate" x-text="chat?.topic"></h3><p class="text-sm text-slate-500 truncate" x-text="(chat?.messages && chat.messages.length > 0) ? (chat.messages[chat.messages.length-1].isImage ? 'Sent file(s)' : chat.messages[chat.messages.length-1].text) : 'No messages'"></p><div class="text-xs text-brand-500 font-bold mt-1" x-text="(chat?.members ? chat.members.length : 1) + ' Members'"></div></div>
                     </div>
                 </template>
-            </template>
-        </div>
-        <div class="p-3 border-t border-slate-100 dark:border-slate-800 flex gap-2 items-center bg-white dark:bg-slate-900 pb-safe chat-input-area">
-            <input type="file" x-ref="chatFile" class="hidden" accept="image/*" @change="handleChatUpload($event)">
-            <button class="text-slate-400 hover:text-brand-500" @click="$refs.chatFile.click()"><i class="fas fa-image"></i></button>
-            <input type="text" x-model="chatInput" @keydown.enter="sendChatMessage()" class="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full px-4 py-2 text-xs outline-none dark:text-white" placeholder="Type a message...">
-            <button @click="sendChatMessage()" class="w-8 h-8 bg-brand-500 rounded-full text-white flex items-center justify-center"><i class="fas fa-paper-plane text-xs"></i></button>
-        </div>
-    </div>
-
-    <div x-show="showDiscussModal" class="fixed inset-0 bg-black/50 z-[210] flex items-center justify-center p-4 backdrop-blur-sm" x-cloak x-transition.opacity>
-        <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl shadow-2xl p-6">
-            <h3 class="font-bold text-lg mb-4 dark:text-white">Start New Discussion</h3>
-            <input type="text" x-model="newDiscussTopic" class="w-full bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 text-sm mb-3 outline-none dark:text-white" placeholder="Topic Title">
-            <input type="text" x-model="newDiscussProject" class="w-full bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 text-sm mb-4 outline-none dark:text-white" placeholder="Project Name">
-            <div class="flex gap-2">
-                <button @click="showDiscussModal = false" class="flex-1 py-2 bg-slate-100 text-slate-500 rounded-lg font-bold text-xs">CANCEL</button>
-                <button @click="createDiscussion()" class="flex-1 py-2 bg-brand-500 text-white rounded-lg font-bold text-xs">CREATE</button>
+                <div x-show="getVisibleDiscussions().length === 0" class="text-center py-10 text-slate-400">No active discussions.</div>
             </div>
         </div>
-    </div>
 
-    <div class="fixed top-5 right-5 z-[1000] flex flex-col gap-2 pointer-events-none">
-        <template x-for="toast in toasts" :key="toast.id">
-            <div class="px-4 py-3 rounded-lg shadow-lg text-white font-bold text-xs transform transition-all" :class="toast.type==='error'?'bg-red-500':'bg-emerald-500'" x-text="toast.message"></div>
-        </template>
-    </div>
+        <div x-show="activeDiscussion?.id" class="fixed inset-0 z-[200] bg-white dark:bg-slate-900 flex flex-col" x-transition.opacity x-cloak>
+            <div class="px-4 py-3 border-b dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shadow-sm"><div class="flex items-center gap-3"><button @click="activeDiscussion = {}" class="text-slate-400"><i class="fas fa-arrow-left"></i></button><h3 class="font-bold text-sm dark:text-white" x-text="activeDiscussion?.topic || ''"></h3></div><div class="flex gap-3 items-center"><button x-show="activeDiscussion?.createdByUid === currentUser?.uid" @click="inviteMode='chat'; showInviteModal=true" class="text-brand-500 font-bold text-xs"><i class="fas fa-user-plus"></i> Invite</button><button x-show="activeDiscussion?.createdByUid === currentUser?.uid" @click="deleteDiscussion(activeDiscussion?.id)" class="text-red-500"><i class="fas fa-trash"></i></button></div></div>
+            <div class="flex-1 bg-slate-50 dark:bg-slate-950 p-4 space-y-4 overflow-y-auto chat-container" id="chatContainer">
+                <template x-if="activeDiscussion?.id"><template x-for="(msg, index) in (activeDiscussion?.messages || [])" :key="index"><div class="flex gap-2" :class="msg?.sender === currentUser?.name ? 'flex-row-reverse' : ''"><img :src="getAvatarByUid(null, msg?.sender)" class="w-8 h-8 rounded-full object-cover"><div class="p-3 rounded-2xl shadow-sm max-w-[80%]" :class="msg?.sender === currentUser?.name ? 'bg-brand-500 text-white rounded-tr-none' : 'bg-white dark:bg-slate-800 dark:text-white rounded-tl-none'"><p class="text-[10px] font-bold mb-1 opacity-75" x-text="msg?.sender"></p><template x-if="msg?.isImage"><div class="space-y-1"><img :src="msg?.text" class="rounded-lg w-full max-w-xs"><div class="text-[9px] opacity-70" x-text="msg?.fileName"></div></div></template><p class="text-xs" x-text="msg?.text" x-show="!msg?.isImage"></p></div></div></template></template>
+            </div>
+            <div class="p-3 border-t dark:border-slate-800 flex gap-2 items-center bg-white dark:bg-slate-900 pb-safe"><input type="file" multiple x-ref="chatFile" class="hidden" @change="handleChatUpload($event)"><button class="text-slate-400 hover:text-brand-500 text-xl px-2" @click="$refs.chatFile.click()"><i class="fas fa-plus-circle"></i></button><input type="text" x-model="chatInput" @keydown.enter="sendChatMessage()" class="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full px-4 py-2 text-sm outline-none dark:text-white" placeholder="Type a message..."><button @click="sendChatMessage()" class="w-10 h-10 bg-brand-500 rounded-full text-white flex items-center justify-center"><i class="fas fa-paper-plane"></i></button></div>
+        </div>
+
+    </main>
+
+    <div x-show="showDetail" class="fixed inset-0 bg-black/50 z-[70] flex flex-col md:p-4" x-cloak x-transition.opacity><div class="flex-1 flex flex-col w-full md:max-w-3xl md:h-[85vh] md:mx-auto md:bg-white md:dark:bg-slate-800 md:rounded-2xl overflow-hidden relative bg-white dark:bg-slate-800" @click.outside="showDetail=false"><div class="px-5 py-4 border-b dark:border-slate-700 flex justify-between bg-slate-50 dark:bg-slate-900"><button @click="showDetail=false" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 shadow"><i class="fas fa-arrow-left"></i></button><div class="flex gap-2 items-center" x-show="!activeTask?.createdByUid || activeTask?.createdByUid === currentUser?.uid"><button @click="editFromDetail()" class="text-xs font-bold text-slate-400 hover:text-brand-500"><i class="fas fa-pen"></i> Edit</button><button @click="deleteTask(activeTask?.id)" class="text-xs font-bold text-red-400 ml-2"><i class="fas fa-trash"></i></button></div></div><div class="flex-1 overflow-y-auto p-5 relative"><h2 class="text-2xl font-extrabold dark:text-white mb-2" x-text="activeTask?.title"></h2><p class="text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border dark:border-slate-700 mb-6" x-text="activeTask?.desc || 'No description provided.'"></p>
+    <div class="mb-6 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border dark:border-slate-700"><h3 class="text-[10px] font-bold text-slate-400 uppercase mb-3"><i class="fas fa-users"></i> Team Members</h3><div class="flex flex-wrap gap-2 items-center"><template x-for="mUid in (activeTask?.members || [activeTask?.createdByUid])" :key="mUid"><div x-show="mUid" class="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-2 py-1.5 rounded-full shadow-sm border dark:border-slate-700"><img :src="getAvatarByUid(mUid, getUserName(mUid))" class="w-4 h-4 rounded-full object-cover"><span class="text-[10px] font-bold dark:text-white" x-text="getUserName(mUid)"></span></div></template><button x-show="activeTask?.createdByUid === currentUser?.uid" @click="inviteMode='task'; showInviteModal=true" class="bg-brand-50 text-brand-600 px-3 py-1.5 rounded-full text-[10px] font-bold border border-brand-200 shadow-sm"><i class="fas fa-plus"></i> Add Member</button></div></div>
+    <div><h3 class="text-xs font-bold text-slate-400 uppercase mb-3"><i class="fas fa-check-square"></i> Subtasks</h3><div class="space-y-2"><template x-for="(sub, index) in (activeTask?.subtasks || [])" :key="index"><div class="flex items-center gap-3 p-2 rounded-lg bg-slate-50 dark:bg-slate-900/50 border dark:border-slate-700 group"><input type="checkbox" class="cb-custom" :checked="sub?.isDone" @change="toggleSubtask(activeTask?.id, index, sub)"><span class="text-sm flex-1 dark:text-slate-200" :class="sub?.isDone ? 'line-through text-slate-400' : ''" x-text="sub?.text"></span><button x-show="!activeTask?.createdByUid || activeTask?.createdByUid === currentUser?.uid" @click="deleteSubtask(activeTask?.id, index)" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100"><i class="fas fa-trash"></i></button></div></template></div><div class="mt-3 flex gap-2" x-show="!activeTask?.createdByUid || activeTask?.createdByUid === currentUser?.uid"><input type="text" x-model="newSubtask" @keydown.enter="addSubtask(activeTask?.id)" class="flex-1 bg-slate-100 dark:bg-slate-900 rounded-lg px-3 py-2 text-xs outline-none dark:text-white" placeholder="Add subtask..."><button @click="addSubtask(activeTask?.id)" class="bg-slate-800 text-white rounded-lg px-3"><i class="fas fa-plus"></i></button></div></div></div><div class="p-4 border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex gap-3"><button x-show="activeTask?.status==='TODO' || activeTask?.status==='DONE'" @click="moveTask(activeTask?.id, 'DOING'); showDetail=false" class="flex-1 p-3 rounded-xl bg-blue-50 text-blue-600 font-bold border border-blue-100">Start Doing</button><button x-show="activeTask?.status==='TODO' || activeTask?.status==='DOING'" @click="moveTask(activeTask?.id, 'DONE'); showDetail=false" class="flex-1 bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-lg">MARK COMPLETE</button><button x-show="activeTask?.status==='DONE'" @click="moveTask(activeTask?.id, 'TODO'); showDetail=false" class="flex-1 bg-slate-200 text-slate-600 rounded-xl font-bold text-xs">REOPEN</button></div></div></div>
+    
+    <div x-show="showModal" class="fixed inset-0 bg-black/50 z-[60] flex items-end md:items-center justify-center md:p-4" x-cloak x-transition.opacity><div class="bg-white dark:bg-slate-800 w-full md:max-w-md rounded-t-3xl md:rounded-3xl p-6" @click.outside="showModal=false"><div class="flex justify-between items-center mb-6"><h3 class="font-extrabold text-xl dark:text-white" x-text="isEditMode ? 'Edit Task' : 'New Task'"></h3><button @click="showModal=false" class="text-slate-400"><i class="fas fa-times"></i></button></div><div class="space-y-4"><input type="text" x-model="form.title" class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-sm font-bold outline-none dark:text-white" placeholder="Task Title"><textarea x-model="form.desc" rows="3" class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-xs outline-none dark:text-white" placeholder="Description"></textarea><div class="grid grid-cols-2 gap-3"><select x-model="form.priority" class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-xs font-bold outline-none dark:text-white"><option>High</option><option>Medium</option><option>Low</option></select><input type="date" x-model="form.dueDate" class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-xs font-bold outline-none dark:text-white"></div></div><div class="flex gap-3 mt-8"><button @click="showModal=false" class="flex-1 py-3 rounded-xl font-bold text-xs bg-slate-100 text-slate-500">CANCEL</button><button @click="saveTask()" class="flex-[2] bg-brand-600 text-white py-3 rounded-xl font-bold text-xs shadow-lg"><span x-text="isEditMode ? 'UPDATE' : 'CREATE'"></span></button></div></div></div>
+
+    <div x-show="showEditProfile" class="fixed inset-0 bg-black/50 z-[250] flex items-end md:items-center justify-center md:p-4" x-cloak x-transition.opacity><div class="bg-white dark:bg-slate-800 w-full md:max-w-md rounded-t-3xl md:rounded-3xl p-6" @click.outside="showEditProfile=false"><h3 class="font-bold text-lg mb-4 dark:text-white">Edit Profile</h3><div class="flex items-center gap-4 mb-4"><img :src="editProfileForm.avatar || getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-16 h-16 rounded-full object-cover border dark:border-slate-700"><div><input type="file" accept="image/*" x-ref="avatarInput" class="hidden" @change="handleAvatarUpload($event)"><button type="button" @click="$refs.avatarInput.click()" class="text-xs font-bold text-brand-500 bg-brand-50 dark:bg-brand-900/20 px-3 py-1.5 rounded-lg">Change Photo</button></div></div><div class="space-y-3"><div><label class="text-xs font-bold text-slate-400">Name</label><input type="text" x-model="editProfileForm.name" class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-sm outline-none dark:text-white"></div><div><label class="text-xs font-bold text-slate-400">Bio</label><textarea x-model="editProfileForm.bio" rows="3" class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-sm outline-none dark:text-white"></textarea></div><div><label class="text-xs font-bold text-slate-400">Website URL</label><input type="text" x-model="editProfileForm.website" class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-sm outline-none dark:text-white" placeholder="https://..."></div></div><div class="flex gap-2 mt-6"><button @click="showEditProfile=false" class="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-sm">Cancel</button><button @click="saveProfile()" class="flex-1 py-3 bg-brand-500 text-white rounded-xl font-bold text-sm">Save</button></div></div></div>
+
+    <div x-show="showInviteModal" class="fixed inset-0 bg-black/50 z-[250] flex items-center justify-center p-4" x-cloak><div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl p-6" @click.outside="showInviteModal = false"><h3 class="font-bold text-lg mb-4 dark:text-white" x-text="inviteMode === 'chat' ? 'Invite to Discussion' : 'Invite to Task'"></h3><div class="max-h-60 overflow-y-auto space-y-2 mb-4"><template x-for="user in allUsers" :key="user.uid"><div x-show="user?.uid !== currentUser?.uid" class="flex justify-between items-center p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg"><div class="flex items-center gap-2"><img :src="getAvatarByUid(user?.uid, user?.name)" class="w-8 h-8 rounded-full object-cover"><span class="text-sm font-bold dark:text-white" x-text="user?.name"></span></div><button x-show="!isMember(user?.uid)" @click="inviteUser(user?.uid)" class="text-xs bg-slate-200 dark:bg-slate-600 px-3 py-1 rounded font-bold">Invite</button><span x-show="isMember(user?.uid)" class="text-xs text-brand-500 font-bold"><i class="fas fa-check"></i> Added</span></div></template></div><button @click="showInviteModal = false" class="w-full py-2 bg-slate-100 dark:bg-slate-700 rounded-lg font-bold text-sm">Done</button></div></div>
+
+    <div x-show="showDiscussModal" class="fixed inset-0 bg-black/50 z-[210] flex items-center justify-center p-4" x-cloak><div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl shadow-2xl p-6"><h3 class="font-bold text-lg mb-4 dark:text-white">New Discussion</h3><input type="text" x-model="newDiscussTopic" class="w-full bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 text-sm mb-4 outline-none dark:text-white" placeholder="Topic Title"><div class="flex gap-2"><button @click="showDiscussModal = false" class="flex-1 py-2 bg-slate-100 text-slate-500 rounded-lg font-bold text-xs">CANCEL</button><button @click="createDiscussion()" class="flex-1 py-2 bg-brand-500 text-white rounded-lg font-bold text-xs">CREATE</button></div></div></div>
+
+    <div x-show="showCmd" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[300] flex justify-center pt-20 px-4" x-transition.opacity x-cloak><div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden" @click.outside="showCmd = false"><div class="p-4 border-b dark:border-slate-700 flex items-center gap-3"><i class="fas fa-search text-slate-400"></i><input type="text" x-model="cmdQuery" class="flex-1 bg-transparent outline-none font-bold text-lg dark:text-white" placeholder="Type command..." autofocus><span class="text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">ESC</span></div><div class="max-h-[300px] overflow-y-auto p-2"><template x-for="cmd in filteredCommands" :key="cmd.text"><button @click="runCommand(cmd.action)" class="w-full text-left px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 flex justify-between group"><div class="flex gap-3"><div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 flex items-center justify-center group-hover:text-brand-600"><i class="fas" :class="cmd.icon"></i></div><span class="font-bold text-sm dark:text-slate-200" x-text="cmd.text"></span></div><i class="fas fa-chevron-right text-slate-300"></i></button></template></div></div></div>
+
+    <nav class="fixed bottom-0 left-0 w-full z-40 pb-safe" x-show="currentUser" x-cloak><div class="nav-bar-blur w-full flex justify-around items-center h-16 px-2 shadow-[0_-5px_10px_rgba(0,0,0,0.02)]"><button @click="switchView('board')" class="flex flex-col items-center w-14" :class="currentView==='board' ? 'text-brand-600' : 'text-slate-400'"><i class="fas fa-home text-[22px]"></i></button><button @click="switchView('feed')" class="flex flex-col items-center w-14" :class="currentView==='feed' ? 'text-brand-600' : 'text-slate-400'"><i class="fas fa-search text-[22px]"></i></button><button @click="openCreateModal()" class="w-12 h-10 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center shadow"><i class="fas fa-plus"></i></button><button @click="switchView('discuss')" class="flex flex-col items-center w-14" :class="currentView==='discuss' ? 'text-brand-600' : 'text-slate-400'"><i class="far fa-comment-dots text-[22px]"></i></button><button @click="openMyProfile()" class="flex flex-col items-center w-14" :class="currentView==='profile' ? 'text-brand-600' : 'text-slate-400'"><i class="far fa-user text-[22px]"></i></button></div></nav>
+
+    <div class="fixed top-5 right-5 z-[1000] flex flex-col gap-2 pointer-events-none"><template x-for="toast in toasts" :key="toast.id"><div class="px-4 py-3 rounded-lg shadow-lg text-white font-bold text-xs" :class="toast.type==='error'?'bg-red-500':'bg-slate-800'" x-text="toast.message"></div></template></div>
 
     <script>
         function taskApp() {
             return {
-                currentUser: null, isPublicView: false, 
-                authMode: 'login', authLoading: false, loginError: '',
-                loginForm: { email: '', password: '' }, regForm: { name: '', email: '', password: '' },
-                currentView: 'board', tasks: [], feedItems: [], discussions: [], toasts: [],
+                showWelcome: true, 
+                currentUser: null, authMode: 'login', authLoading: false, loginError: '', loginForm: { email: '', password: '' }, regForm: { name: '', email: '', password: '' },
+                currentView: 'board', feedTab: 'feed', tasks: [], feedItems: [], discussions: [], toasts: [], allUsers: [], 
+                myProfileData: {}, viewedProfile: {}, 
+                activeProfileTab: 'posts', showEditProfile: false, editProfileForm: { name: '', bio: '', website: '', avatar: '' },
+                
+                newPostText: '', postFileRaw: null, postFilePreview: null, postFileType: '', isUploadingMedia: false,
                 isDarkMode: localStorage.getItem('tf_dark') === 'true',
+                
                 showModal: false, showDetail: false, isEditMode: false, openListView: false, activeListTitle: '', activeListTasks: [],
-                activeTask: {}, form: { id: null, title: '', desc: '', assignee: '', priority: 'Medium', dueDate: '' },
-                newSubtask: '', activeDiscussion: null, showDiscussModal: false, newDiscussTopic: '', newDiscussProject: '', chatInput: '',
-                newPostText: '', postFile: null, postFileBase64: null,
+                activeTask: {}, form: { id: null, title: '', desc: '', assignee: '', priority: 'Medium', dueDate: '' }, newSubtask: '',
+                activeDiscussion: {}, showDiscussModal: false, newDiscussTopic: '', chatInput: '', showInviteModal: false, inviteMode: 'chat',
+                showFollowModal: false, followListTitle: '', followListData: [], showPostModal: false, activePost: {}, showLogoutConfirm: false,
+                calendarDays: [], calendarTitle: '', currentDate: new Date(), selectedDate: new Date().toISOString().split('T')[0], chartStatus: null, chartWorkload: null,
+                showCmd: false, cmdQuery: '', commands: [{text:'Create Task', icon:'fa-plus', action:'create'}, {text:'Toggle Dark Mode', icon:'fa-moon', action:'dark'}, {text:'Go to Calendar', icon:'fa-calendar', action:'calendar'}],
 
                 initApp() {
-                    this.$watch('isDarkMode', v => localStorage.setItem('tf_dark', v)); 
+                    this.$watch('isDarkMode', v => localStorage.setItem('tf_dark', v));
+                    let attempts = 0;
                     
-                    // FIXED: Wait for Firebase to load before setting up observer
                     const checkFb = setInterval(() => {
+                        attempts++;
                         if (window.fb && window.fb.auth) {
-                            clearInterval(checkFb); 
-                            
-                            window.fb.onAuthStateChanged(window.fb.auth, (user) => {
-                                if (user) {
-                                    this.currentUser = { 
-                                        name: user.displayName || 'User', 
-                                        email: user.email, 
-                                        uid: user.uid 
-                                    };
-                                    this.currentView = 'board'; 
-                                    this.setupRealtimeData();
-                                } else {
+                            clearInterval(checkFb);
+                            window.fb.onAuthStateChanged(window.fb.auth, async (user) => {
+                                try {
+                                    if (user) {
+                                        const userRef = window.fb.doc(window.fb.db, "users", user.uid); 
+                                        const userSnap = await window.fb.getDoc(userRef);
+                                        let finalName = user.displayName;
+                                        
+                                        if (!userSnap.exists()) {
+                                            await window.fb.setDoc(userRef, { uid: user.uid, name: finalName || 'User', email: user.email, bio: '', website: '', avatar: '', followers: [], following: [] });
+                                        } else {
+                                            finalName = userSnap.data().name || finalName;
+                                        }
+                                        
+                                        this.currentUser = { name: finalName || 'User', email: user.email, uid: user.uid };
+                                        this.currentView = 'board'; 
+                                        this.setupRealtimeData();
+                                    } else { 
+                                        this.currentUser = null; 
+                                    }
+                                } catch (err) {
+                                    console.error("Firebase Auth/DB Error:", err);
+                                    this.loginError = "Database Error: " + (err.message || "Gagal memuat data pengguna.");
                                     this.currentUser = null;
+                                    await window.fb.signOut(window.fb.auth); 
+                                } finally {
+                                    this.authLoading = false;
+                                    setTimeout(() => { this.showWelcome = false; }, 500);
                                 }
                             });
+                        } else if (attempts > 50) {
+                            clearInterval(checkFb);
+                            this.showWelcome = false;
+                            this.authLoading = false;
+                            this.loginError = "Gagal memuat sistem (Koneksi Firebase terputus).";
                         }
                     }, 100);
                 },
 
-                // --- AUTHENTICATION ---
-                async login() {
-                    this.authLoading = true; this.loginError = '';
-                    try {
-                        await window.fb.signInWithEmailAndPassword(window.fb.auth, this.loginForm.email, this.loginForm.password);
-                        this.loginForm = { email: '', password: '' };
-                        this.showToast('Login Success!');
-                    } catch(e) { this.loginError = "Gagal Login: " + e.message; }
-                    this.authLoading = false;
+                async login() { 
+                    this.authLoading = true; this.loginError = ''; 
+                    try { 
+                        await window.fb.signInWithEmailAndPassword(window.fb.auth, this.loginForm.email, this.loginForm.password); 
+                        this.loginForm = { email: '', password: '' }; 
+                        this.showWelcome = true;
+                    } catch(e) { 
+                        this.loginError = "Login Gagal: " + e.message; 
+                        this.authLoading = false; 
+                        this.showWelcome = false;
+                    } 
                 },
-                async register() {
-                    this.authLoading = true; this.loginError = '';
-                    try {
-                        const userCred = await window.fb.createUserWithEmailAndPassword(window.fb.auth, this.regForm.email, this.regForm.password);
-                        await window.fb.updateProfile(userCred.user, { displayName: this.regForm.name });
-                        this.regForm = { name: '', email: '', password: '' };
-                        this.showToast('Account Created!');
-                    } catch(e) { this.loginError = "Gagal Register: " + e.message; }
-                    this.authLoading = false;
+                async register() { 
+                    this.authLoading = true; this.loginError = ''; 
+                    try { 
+                        const userCred = await window.fb.createUserWithEmailAndPassword(window.fb.auth, this.regForm.email, this.regForm.password); 
+                        await window.fb.updateProfile(userCred.user, { displayName: this.regForm.name }); 
+                        await window.fb.setDoc(window.fb.doc(window.fb.db, "users", userCred.user.uid), { uid: userCred.user.uid, name: this.regForm.name, email: this.regForm.email, bio: '', website: '', avatar: '', followers: [], following: [] }); 
+                        this.regForm = { name: '', email: '', password: '' }; 
+                        this.showWelcome = true; 
+                    } catch(e) { 
+                        this.loginError = "Register Gagal: " + e.message; 
+                        this.authLoading = false; 
+                        this.showWelcome = false;
+                    } 
                 },
-                async logout() { await window.fb.signOut(window.fb.auth); this.tasks=[]; this.feedItems=[]; this.discussions=[]; this.showToast('Logged out'); },
+                async logout() { 
+                    this.showLogoutConfirm = false; this.showWelcome = true;
+                    setTimeout(async () => { await window.fb.signOut(window.fb.auth); location.reload(); }, 800);
+                },
 
-                // --- REALTIME FIRESTORE SYNC ---
                 setupRealtimeData() {
-                    // 1. Sync Tasks
-                    const qTasks = window.fb.query(window.fb.collection(window.fb.db, "tasks"), window.fb.orderBy("createdAt", "desc"));
-                    window.fb.onSnapshot(qTasks, (snapshot) => {
-                        this.tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        if(this.activeTask && this.activeTask.id) {
-                            const updated = this.tasks.find(t => t.id === this.activeTask.id);
-                            if(updated) this.activeTask = updated;
+                    window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "feed"), window.fb.orderBy("time", "desc")), snap => { this.feedItems = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); });
+                    window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "users")), snap => {
+                        this.allUsers = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        if (this.currentUser) {
+                            this.myProfileData = this.allUsers.find(u => u.uid === this.currentUser.uid) || {};
+                            if(!this.viewedProfile || !this.viewedProfile.uid) this.viewedProfile = this.myProfileData;
+                            else this.viewedProfile = this.allUsers.find(u => u.uid === this.viewedProfile.uid) || this.myProfileData;
                         }
                     });
-
-                    // 2. Sync Feed
-                    const qFeed = window.fb.query(window.fb.collection(window.fb.db, "feed"), window.fb.orderBy("time", "desc"));
-                    window.fb.onSnapshot(qFeed, (snapshot) => {
-                        this.feedItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "tasks")), snap => {
+                        this.tasks = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        if(this.activeTask && this.activeTask.id) this.activeTask = this.tasks.find(t => t.id === this.activeTask.id) || this.activeTask;
+                        this.generateCalendar();
                     });
-
-                    // 3. Sync Discussions
-                    const qDiscuss = window.fb.query(window.fb.collection(window.fb.db, "discussions"), window.fb.orderBy("createdAt", "desc"));
-                    window.fb.onSnapshot(qDiscuss, (snapshot) => {
-                        this.discussions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        if(this.activeDiscussion && this.activeDiscussion.id) {
-                            const updated = this.discussions.find(d => d.id === this.activeDiscussion.id);
-                            if(updated) { this.activeDiscussion = updated; this.scrollChat(); }
-                        }
+                    window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "discussions"), window.fb.orderBy("createdAt", "desc")), snap => {
+                        this.discussions = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        if(this.activeDiscussion && this.activeDiscussion.id) { this.activeDiscussion = this.discussions.find(d => d.id === this.activeDiscussion.id) || {}; this.scrollChat(); }
                     });
                 },
 
-                // --- TASKS ---
-                getMyActiveTasks() { return this.tasks.filter(t => t.status !== 'DONE' && (t.assignee.includes(this.currentUser.email) || t.assignee === '')); },
-                getGlobalCount(status) { return status === 'HIGH' ? this.tasks.filter(t => t.priority === 'High' && t.status !== 'DONE').length : this.tasks.filter(t => t.status === status).length; },
-                getTasksByStatus(status) { return this.tasks.filter(t => t.status === status); },
-                setGlobalFilter(status) {
-                    this.activeListTitle = status === 'HIGH' ? 'High Priority' : status;
-                    this.activeListTasks = status === 'HIGH' ? this.tasks.filter(t => t.priority === 'High' && t.status !== 'DONE') : this.tasks.filter(t => t.status === status);
-                    this.openListView = true;
+                getUserName(uid) { const u = this.allUsers.find(x => x.uid === uid); return u ? u.name : 'Unknown'; },
+                getAvatarByUid(uid, fallbackName) {
+                    if(uid) { const u = this.allUsers.find(x => x.uid === uid); if(u && u.avatar) return u.avatar; if(u) fallbackName = u.name; }
+                    return `https://ui-avatars.com/api/?name=${encodeURIComponent(fallbackName || 'U')}&background=random&color=fff`;
                 },
+
+                getVisibleTasks() { 
+                    if (!this.currentUser) return [];
+                    return this.tasks.filter(t => t.createdByUid === this.currentUser.uid || (t.members || []).includes(this.currentUser.uid)); 
+                },
+                getMyActiveTasks() { return this.getVisibleTasks().filter(t => t.status !== 'DONE'); },
+                getGlobalCount(s) { return s === 'HIGH' ? this.getVisibleTasks().filter(t => t.priority === 'High' && t.status !== 'DONE').length : this.getVisibleTasks().filter(t => t.status === s).length; },
+                setGlobalFilter(s) { this.activeListTitle = s; this.activeListTasks = s === 'HIGH' ? this.getVisibleTasks().filter(t => t.priority === 'High' && t.status !== 'DONE') : this.getVisibleTasks().filter(t => t.status === s); this.openListView = true; },
                 openTaskDetail(t) { this.activeTask = t; this.showDetail = true; },
-                openCreateModal() { this.isEditMode = false; this.form = { title: '', desc: '', assignee: this.currentUser.email, priority: 'Medium', dueDate: new Date().toISOString().split('T')[0] }; this.showModal = true; },
+                openCreateModal() { this.isEditMode = false; this.form = { title: '', desc: '', assignee: '', priority: 'Medium', dueDate: new Date().toISOString().split('T')[0] }; this.showModal = true; },
                 editFromDetail() { this.showDetail = false; this.isEditMode = true; this.form = { ...this.activeTask }; this.showModal = true; },
+                async saveTask() { 
+                    if(!this.form.title || !this.currentUser) return; 
+                    if(this.isEditMode) { await window.fb.updateDoc(window.fb.doc(window.fb.db, "tasks", this.form.id), { ...this.form }); } else { await window.fb.addDoc(window.fb.collection(window.fb.db, "tasks"), { ...this.form, status: 'TODO', createdAt: Date.now(), subtasks: [], createdByUid: this.currentUser.uid, createdByName: this.currentUser.name, members: [this.currentUser.uid] }); } this.showModal = false; this.showToast(this.isEditMode ? 'Updated' : 'Created'); 
+                },
+                async moveTask(id, stat) { if(!id) return; await window.fb.updateDoc(window.fb.doc(window.fb.db, "tasks", id), { status: stat }); if(stat==='DONE') confetti({ particleCount: 100, origin: { y: 0.6 } }); if(this.currentView === 'analytics') this.updateCharts(); },
+                async deleteTask(id) { if(!id || !confirm('Delete task?')) return; await window.fb.deleteDoc(window.fb.doc(window.fb.db, "tasks", id)); this.showDetail = false; },
+                async addSubtask(taskId) { if(!this.newSubtask || !taskId) return; await window.fb.updateDoc(window.fb.doc(window.fb.db, "tasks", taskId), { subtasks: window.fb.arrayUnion({ text: this.newSubtask, isDone: false }) }); this.newSubtask = ''; },
+                async deleteSubtask(taskId, index) { if(!taskId) return; const newSubs = [...this.activeTask.subtasks]; newSubs.splice(index, 1); await window.fb.updateDoc(window.fb.doc(window.fb.db, "tasks", taskId), { subtasks: newSubs }); },
+                async toggleSubtask(taskId, index, sub) { if(!taskId) return; const newSubs = [...this.activeTask.subtasks]; newSubs[index].isDone = !sub.isDone; await window.fb.updateDoc(window.fb.doc(window.fb.db, "tasks", taskId), { subtasks: newSubs }); },
+
+                getSuggestedUsers() { return this.allUsers.filter(u => u.uid !== this.currentUser?.uid); },
+                isFollowingUser(uid) { return this.myProfileData?.following?.includes(uid); },
+                getFollowBtnText(targetUid) {
+                    if (!this.myProfileData) return 'Follow';
+                    const iFollowThem = this.myProfileData.following?.includes(targetUid);
+                    const theyFollowMe = this.myProfileData.followers?.includes(targetUid);
+                    if (iFollowThem) return 'Following';
+                    if (theyFollowMe) return 'Follow Back';
+                    return 'Follow';
+                },
+                getFollowBtnClass(targetUid) {
+                    return this.isFollowingUser(targetUid) ? 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-white' : 'bg-brand-500 text-white shadow-md shadow-brand-500/20';
+                },
+
+                async toggleFollowUser(targetUid) {
+                    if(!this.myProfileData || !this.myProfileData.uid) return;
+                    const myUid = this.myProfileData.uid; const isF = this.isFollowingUser(targetUid);
+                    await window.fb.updateDoc(window.fb.doc(window.fb.db, "users", myUid), { following: isF ? window.fb.arrayRemove(targetUid) : window.fb.arrayUnion(targetUid) });
+                    await window.fb.updateDoc(window.fb.doc(window.fb.db, "users", targetUid), { followers: isF ? window.fb.arrayRemove(myUid) : window.fb.arrayUnion(myUid) });
+                },
+                openMyProfile() { this.viewedProfile = this.myProfileData; this.activeProfileTab = 'posts'; this.switchView('profile'); },
+                openProfile(item) { let u = item.uid ? this.allUsers.find(x => x.uid === item.uid) : this.allUsers.find(x => x.name === item.user); if(u) { this.viewedProfile = u; this.activeProfileTab = 'posts'; this.switchView('profile'); } else this.showToast('User not found', 'error'); },
+                getUserPosts() { const id = this.viewedProfile?.uid || this.currentUser?.uid; return this.feedItems.filter(i => i.uid === id || (!i.uid && i.user === this.viewedProfile?.name)); },
+                getProfileGridItems() { 
+                    if (this.activeProfileTab === 'posts') return this.getUserPosts(); 
+                    if (this.activeProfileTab === 'likes') {
+                        const vUid = this.viewedProfile?.uid;
+                        const vName = this.viewedProfile?.name;
+                        return this.feedItems.filter(i => i.likes && (i.likes.includes(vUid) || i.likes.includes(vName)));
+                    } 
+                    return []; 
+                },
+                getFollowersCount() { return this.viewedProfile?.followers?.length || 0; }, getFollowingCount() { return this.viewedProfile?.following?.length || 0; }, 
+                openEditProfile() { 
+                    if (!this.myProfileData || !this.myProfileData.uid) {
+                        this.showToast("Mempersiapkan data profil...", "error");
+                        return;
+                    }
+                    this.editProfileForm = { name: this.myProfileData.name || '', bio: this.myProfileData.bio || '', website: this.myProfileData.website || '', avatar: this.myProfileData.avatar || '' }; 
+                    this.showEditProfile = true; 
+                },
+                async saveProfile() { if(!this.myProfileData?.uid) return; await window.fb.updateDoc(window.fb.doc(window.fb.db, "users", this.myProfileData.uid), { name: this.editProfileForm.name, bio: this.editProfileForm.bio, website: this.editProfileForm.website, avatar: this.editProfileForm.avatar }); this.showEditProfile = false; this.showToast('Profile updated!'); },
                 
-                async saveTask() {
-                    if(!this.form.title) return;
-                    try {
-                        if(this.isEditMode) {
-                            await window.fb.updateDoc(window.fb.doc(window.fb.db, "tasks", this.form.id), { ...this.form });
-                        } else {
-                            await window.fb.addDoc(window.fb.collection(window.fb.db, "tasks"), { ...this.form, status: 'TODO', createdAt: Date.now(), subtasks: [] });
+                openFollowList(type) {
+                    if (!this.viewedProfile) return;
+                    this.followListTitle = type;
+                    const listIds = type === 'Followers' ? (this.viewedProfile.followers || []) : (this.viewedProfile.following || []);
+                    this.followListData = this.allUsers.filter(u => listIds.includes(u.uid));
+                    this.showFollowModal = true;
+                },
+                updateFollowListData() {
+                    setTimeout(() => {
+                        if (!this.viewedProfile) return;
+                        const listIds = this.followListTitle === 'Followers' ? (this.viewedProfile.followers || []) : (this.viewedProfile.following || []);
+                        this.followListData = this.allUsers.filter(u => listIds.includes(u.uid));
+                    }, 500);
+                },
+
+                handleAvatarUpload(e) {
+                    const f = e.target.files[0]; if(!f) return; const reader = new FileReader(); 
+                    reader.onload = (event) => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const max = 400; if(w > h) { if(w > max) { h *= max/w; w = max; } } else { if(h > max) { w *= max/h; h = max; } } canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); this.editProfileForm.avatar = canvas.toDataURL('image/jpeg', 0.8); }; img.src = event.target.result; }; reader.readAsDataURL(f);
+                },
+
+                handleFeedMedia(e) { 
+                    const f = e.target.files[0]; 
+                    if(!f) return; 
+                    
+                    this.postFileRaw = f;
+                    this.postFileType = f.type.startsWith('video/') ? 'video' : 'image';
+                    this.postFilePreview = URL.createObjectURL(f);
+                },
+
+                async createPost() { 
+                    if((!this.newPostText && !this.postFileRaw) || !this.currentUser) return; 
+                    this.isUploadingMedia = true;
+                    
+                    let mediaUrl = null;
+
+                    if (this.postFileRaw) {
+                        try {
+                            const ext = this.postFileRaw.name.split('.').pop();
+                            const fileName = `posts/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
+                            const storageRef = window.fb.ref(window.fb.storage, fileName);
+                            
+                            await window.fb.uploadBytes(storageRef, this.postFileRaw);
+                            mediaUrl = await window.fb.getDownloadURL(storageRef);
+                        } catch (err) {
+                            console.error(err);
+                            this.showToast('Gagal upload! Pastikan Rules Firebase Storage sudah dibuka.', 'error');
+                            this.isUploadingMedia = false;
+                            return; 
                         }
-                        this.showModal = false; this.showToast(this.isEditMode ? 'Task Updated' : 'Task Created');
-                    } catch(e) { this.showToast('Error saving task', 'error'); }
-                },
-                async moveTask(id, stat) {
-                    await window.fb.updateDoc(window.fb.doc(window.fb.db, "tasks", id), { status: stat });
-                    if(stat==='DONE') { confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } }); document.getElementById('doneSound').play(); }
-                },
-                async deleteTask(id) {
-                    if(!confirm('Delete Permanently?')) return;
-                    await window.fb.deleteDoc(window.fb.doc(window.fb.db, "tasks", id));
-                    this.showDetail = false; this.showToast('Task Deleted');
-                },
-                async addSubtask(taskId) {
-                    if(!this.newSubtask) return;
-                    await window.fb.updateDoc(window.fb.doc(window.fb.db, "tasks", taskId), { subtasks: window.fb.arrayUnion({ text: this.newSubtask, isDone: false }) });
-                    this.newSubtask = '';
-                },
-                async deleteSubtask(taskId, index) {
-                    const taskRef = window.fb.doc(window.fb.db, "tasks", taskId);
-                    const newSubs = [...this.activeTask.subtasks]; newSubs.splice(index, 1);
-                    await window.fb.updateDoc(taskRef, { subtasks: newSubs });
-                },
-                async toggleSubtask(taskId, index, sub) {
-                    const taskRef = window.fb.doc(window.fb.db, "tasks", taskId);
-                    const newSubs = [...this.activeTask.subtasks]; newSubs[index].isDone = !sub.isDone;
-                    await window.fb.updateDoc(taskRef, { subtasks: newSubs });
+                    }
+
+                    await window.fb.addDoc(window.fb.collection(window.fb.db, "feed"), { 
+                        user: this.currentUser.name, 
+                        uid: this.currentUser.uid, 
+                        content: this.newPostText, 
+                        media: mediaUrl, 
+                        mediaType: this.postFileType,
+                        time: Date.now(), 
+                        likes: [], 
+                        comments: [] 
+                    }); 
+                    
+                    this.newPostText = ''; 
+                    this.postFileRaw = null; 
+                    this.postFilePreview = null;
+                    this.postFileType = '';
+                    this.isUploadingMedia = false;
+                    
+                    this.showToast('Posted successfully!'); 
                 },
 
-                // --- FEED ---
-                handleFeedImage(e) {
-                    const file = e.target.files[0]; if(!file) return;
-                    this.postFile = file;
-                    const reader = new FileReader();
-                    reader.onload = () => { this.postFileBase64 = reader.result; };
-                    reader.readAsDataURL(file);
+                async deletePost(id) { if(!id) return; if(confirm('Delete post?')) await window.fb.deleteDoc(window.fb.doc(window.fb.db, "feed", id)); },
+                
+                async toggleLike(item) { 
+                    if(!this.currentUser || !item?.id) return;
+                    const r = window.fb.doc(window.fb.db, "feed", item.id); 
+                    const hasUid = item.likes?.includes(this.currentUser.uid);
+                    const hasName = item.likes?.includes(this.currentUser.name);
+                    
+                    if (hasUid || hasName) {
+                        if(hasUid) await window.fb.updateDoc(r, { likes: window.fb.arrayRemove(this.currentUser.uid) });
+                        if(hasName) await window.fb.updateDoc(r, { likes: window.fb.arrayRemove(this.currentUser.name) });
+                    } else {
+                        await window.fb.updateDoc(r, { likes: window.fb.arrayUnion(this.currentUser.uid) });
+                    }
                 },
-                async createPost() {
-                    if(!this.newPostText && !this.postFileBase64) return;
-                    try {
-                        await window.fb.addDoc(window.fb.collection(window.fb.db, "feed"), {
-                            user: this.currentUser.name, content: this.newPostText, media: this.postFileBase64, time: Date.now(), likes: [], comments: []
-                        });
-                        this.newPostText = ''; this.postFile = null; this.postFileBase64 = null;
-                    } catch(e) { this.showToast('Failed to post', 'error'); }
-                },
-                async deletePost(id) {
-                    if(!confirm('Delete this post?')) return;
-                    await window.fb.deleteDoc(window.fb.doc(window.fb.db, "feed", id));
-                },
-                async toggleLike(item) {
-                    const ref = window.fb.doc(window.fb.db, "feed", item.id);
-                    const hasLiked = item.likes && item.likes.includes(this.currentUser.name);
-                    await window.fb.updateDoc(ref, { likes: hasLiked ? window.fb.arrayRemove(this.currentUser.name) : window.fb.arrayUnion(this.currentUser.name) });
-                },
-                async sendPostComment(postId, text, data) {
-                    if(!text) return;
-                    await window.fb.updateDoc(window.fb.doc(window.fb.db, "feed", postId), { comments: window.fb.arrayUnion({ sender: this.currentUser.name, text: text }) });
-                    data.replyText = '';
-                },
+                
+                async sendPostComment(pId, txt, d) { if(!txt || !this.currentUser || !pId) return; await window.fb.updateDoc(window.fb.doc(window.fb.db, "feed", pId), { comments: window.fb.arrayUnion({ sender: this.currentUser.name, text: txt }) }); d.replyText = ''; },
+                openPostDetail(post) { this.activePost = post; this.showPostModal = true; },
 
-                // --- DISCUSSIONS (CHAT) ---
-                async createDiscussion() {
-                    if(!this.newDiscussTopic) return;
-                    await window.fb.addDoc(window.fb.collection(window.fb.db, "discussions"), {
-                        topic: this.newDiscussTopic, project: this.newDiscussProject || 'Main', createdBy: this.currentUser.name, createdAt: Date.now(), messages: []
-                    });
-                    this.showDiscussModal = false; this.newDiscussTopic = ''; this.newDiscussProject = '';
+                getVisibleDiscussions() { 
+                    if (!this.currentUser) return [];
+                    return this.discussions.filter(d => d.createdByUid === this.currentUser.uid || (d.members || []).includes(this.currentUser.uid)); 
                 },
-                async deleteDiscussion(id) {
-                    if(!confirm('Delete chat?')) return;
-                    await window.fb.deleteDoc(window.fb.doc(window.fb.db, "discussions", id));
+                async createDiscussion() { 
+                    if(!this.newDiscussTopic || !this.currentUser) return; 
+                    await window.fb.addDoc(window.fb.collection(window.fb.db, "discussions"), { topic: this.newDiscussTopic, createdBy: this.currentUser.name, createdByUid: this.currentUser.uid, createdAt: Date.now(), messages: [], members: [this.currentUser.uid] }); this.showDiscussModal = false; this.newDiscussTopic = ''; 
                 },
+                async deleteDiscussion(id) { if(!id) return; if(confirm('Delete discussion?')) { await window.fb.deleteDoc(window.fb.doc(window.fb.db, "discussions", id)); this.activeDiscussion = {}; } },
                 openChatModal(chat) { this.activeDiscussion = chat; this.scrollChat(); },
                 scrollChat() { setTimeout(() => { const el = document.getElementById('chatContainer'); if(el) el.scrollTop = el.scrollHeight; }, 100); },
-                async sendChatMessage() {
-                    if(!this.chatInput.trim() || !this.activeDiscussion) return;
-                    const txt = this.chatInput; this.chatInput = '';
-                    await window.fb.updateDoc(window.fb.doc(window.fb.db, "discussions", this.activeDiscussion.id), {
-                        messages: window.fb.arrayUnion({ sender: this.currentUser.name, text: txt, isImage: false, timestamp: Date.now() })
-                    });
-                    this.scrollChat();
+                async sendChatMessage() { 
+                    if(!this.chatInput.trim() || !this.activeDiscussion?.id || !this.currentUser) return; 
+                    const txt = this.chatInput; this.chatInput = ''; await window.fb.updateDoc(window.fb.doc(window.fb.db, "discussions", this.activeDiscussion.id), { messages: window.fb.arrayUnion({ sender: this.currentUser.name, text: txt, isImage: false, timestamp: Date.now() }) }); this.scrollChat(); 
                 },
-                handleChatUpload(e) {
-                    const file = e.target.files[0]; if(!file) return;
-                    const reader = new FileReader();
-                    reader.onload = async () => {
-                        await window.fb.updateDoc(window.fb.doc(window.fb.db, "discussions", this.activeDiscussion.id), {
-                            messages: window.fb.arrayUnion({ sender: this.currentUser.name, text: reader.result, isImage: true, timestamp: Date.now() })
-                        });
-                        this.scrollChat();
-                    };
-                    reader.readAsDataURL(file);
+                handleChatUpload(e) { 
+                    if(!this.currentUser || !this.activeDiscussion?.id) return;
+                    Array.from(e.target.files).forEach(f => { const r = new FileReader(); r.onload = async (event) => { if(f.type.startsWith('image/')) { const img = new Image(); img.onload = async () => { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const max = 800; if(w > h) { if(w > max) { h *= max/w; w = max; } } else { if(h > max) { w *= max/h; h = max; } } canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); await window.fb.updateDoc(window.fb.doc(window.fb.db, "discussions", this.activeDiscussion.id), { messages: window.fb.arrayUnion({ sender: this.currentUser.name, text: canvas.toDataURL('image/jpeg', 0.7), fileName: f.name, isImage: true, timestamp: Date.now() }) }); this.scrollChat(); }; img.src = event.target.result; } else { await window.fb.updateDoc(window.fb.doc(window.fb.db, "discussions", this.activeDiscussion.id), { messages: window.fb.arrayUnion({ sender: this.currentUser.name, text: r.result, fileName: f.name, isImage: false, timestamp: Date.now() }) }); this.scrollChat(); } }; r.readAsDataURL(f); }); 
                 },
+                
+                isMember(uid) { if(this.inviteMode === 'chat') return (this.activeDiscussion?.members || []).includes(uid); if(this.inviteMode === 'task') return (this.activeTask?.members || []).includes(uid); return false; },
+                async inviteUser(uid) { if(this.inviteMode === 'chat' && this.activeDiscussion?.id) { await window.fb.updateDoc(window.fb.doc(window.fb.db, "discussions", this.activeDiscussion.id), { members: window.fb.arrayUnion(uid) }); } if(this.inviteMode === 'task' && this.activeTask?.id) { await window.fb.updateDoc(window.fb.doc(window.fb.db, "tasks", this.activeTask.id), { members: window.fb.arrayUnion(uid) }); if(!this.activeTask.members) this.activeTask.members = []; if(!this.activeTask.members.includes(uid)) this.activeTask.members.push(uid); } this.showToast('Invited!'); },
 
-                // --- UTILS ---
-                switchView(v) { this.currentView = v; },
+                changeMonth(offset) { this.currentDate.setMonth(this.currentDate.getMonth() + offset); this.generateCalendar(); },
+                generateCalendar() { const y = this.currentDate.getFullYear(), m = this.currentDate.getMonth(); this.calendarTitle = new Date(y, m).toLocaleString('default', { month: 'long', year: 'numeric' }); const first = new Date(y, m, 1).getDay(), days = new Date(y, m+1, 0).getDate(); this.calendarDays = Array(first).fill({date:''}).concat([...Array(days).keys()].map(i => { const dStr = `${y}-${String(m+1).padStart(2,'0')}-${String(i+1).padStart(2,'0')}`; const dayTasks = this.getVisibleTasks().filter(t=>(t.dueDate || '').substring(0, 10)===dStr && t.status !== 'DONE'); return { date: i+1, fullDate: dStr, isToday: dStr === new Date().toISOString().split('T')[0], tasks: dayTasks }; })); },
+                getTasksBySelectedDate() { return this.getVisibleTasks().filter(t => (t.dueDate || '').substring(0, 10) === this.selectedDate); },
+                getTasksByStatus(s) { return this.getVisibleTasks().filter(t => t.status === s); },
+                updateCharts() { setTimeout(() => { const c1 = document.getElementById('statusChart'); const c2 = document.getElementById('workloadChart'); if(this.chartStatus) this.chartStatus.destroy(); if(this.chartWorkload) this.chartWorkload.destroy(); if(c1) { this.chartStatus = new Chart(c1, { type: 'doughnut', data: { labels: ['To Do','Doing','Done'], datasets: [{ data: [this.getTasksByStatus('TODO').length, this.getTasksByStatus('DOING').length, this.getTasksByStatus('DONE').length], backgroundColor: ['#94a3b8','#0ea5e9','#10b981'], borderWidth:0 }] }, options: { cutout: '70%', plugins: { legend: { position:'bottom' } } } }); } if(c2) { const a = {}; this.getVisibleTasks().forEach(t => { a[t.createdByName || 'Unknown'] = (a[t.createdByName || 'Unknown'] || 0) + 1; }); this.chartWorkload = new Chart(c2, { type: 'bar', data: { labels: Object.keys(a), datasets: [{ label:'Tasks', data: Object.values(a), backgroundColor: '#0ea5e9', borderRadius: 6 }] }, options: { scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } } }); } }, 200); },
+
+                switchView(v) { this.currentView = v; if(v === 'analytics') this.updateCharts(); if(v === 'calendar') this.generateCalendar(); },
                 toggleDarkMode() { this.isDarkMode = !this.isDarkMode; },
-                showToast(msg, type='success') { const id = Date.now(); this.toasts.push({id, message: msg, type}); setTimeout(() => { this.toasts = this.toasts.filter(t => t.id !== id) }, 3000); },
+                showToast(m, t='success') { const i = Date.now(); this.toasts.push({id: i, message: m, type: t}); setTimeout(() => { this.toasts = this.toasts.filter(x => x.id !== i) }, 3000); },
                 getDaysLeft(d) { if(!d) return {text:'-'}; const days = Math.ceil((new Date(d) - new Date()) / (86400000)); if(days < 0) return {text: Math.abs(days)+'d Late'}; if(days === 0) return {text:'Today'}; return {text: days+'d'}; },
-                getCardColor(task) {
-                    const name = (task.assignee || 'A').toLowerCase();
-                    const colors = ['from-blue-600 to-indigo-600', 'from-emerald-500 to-teal-600', 'from-violet-600 to-purple-600', 'from-pink-500 to-rose-500', 'from-amber-500 to-orange-600'];
-                    let hash = 0; for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-                    return colors[Math.abs(hash) % colors.length];
-                }
+                getCardColor(t) { const n = (t?.createdByName || 'A').toLowerCase(); const c = ['from-blue-600 to-indigo-600', 'from-emerald-500 to-teal-600', 'from-violet-600 to-purple-600', 'from-pink-500 to-rose-500', 'from-amber-500 to-orange-600']; let h = 0; for (let i = 0; i < n.length; i++) h = n.charCodeAt(i) + ((h << 5) - h); return c[Math.abs(h) % c.length]; },
+                toggleCmdPalette() { this.showCmd = !this.showCmd; this.cmdQuery = ''; },
+                get filteredCommands() { return this.commands.filter(c => c.text.toLowerCase().includes(this.cmdQuery.toLowerCase())); },
+                runCommand(action) { this.showCmd = false; if(action === 'create') this.openCreateModal(); if(action === 'dark') this.toggleDarkMode(); if(action === 'calendar') this.switchView('calendar'); }
             }
         }
     </script>
