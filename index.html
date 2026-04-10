@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Yarch V73 - Ultimate Social & Video</title>
+    <title>Yarch App - Ultimate Social & Video</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -27,15 +27,9 @@
         .snap-x-mandatory { scroll-snap-type: x mandatory; }
         .snap-center { scroll-snap-align: center; }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+        .story-ring { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); padding: 2px; border-radius: 50%; }
         
-        /* Animasi IG Double Tap Heart */
-        @keyframes popHeart {
-            0% { transform: scale(0); opacity: 0; }
-            15% { transform: scale(1.3); opacity: 1; }
-            30% { transform: scale(1); opacity: 1; }
-            70% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(0); opacity: 0; }
-        }
+        @keyframes popHeart { 0% { transform: scale(0); opacity: 0; } 15% { transform: scale(1.3); opacity: 1; } 30% { transform: scale(1); opacity: 1; } 70% { transform: scale(1); opacity: 1; } 100% { transform: scale(0); opacity: 0; } }
         .anim-pop-heart { animation: popHeart 0.8s ease-in-out forwards; }
     </style>
     <script type="module">
@@ -43,7 +37,6 @@
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         
-        // Storage dihapus dari operasional utama sesuai permintaan (Simpan di Firestore sbg Base64)
         const firebaseConfig = { apiKey: "AIzaSyBR9Fn4fUPmJDFRufysD36fWHDrq5Am_oo", authDomain: "yarch-v73.firebaseapp.com", projectId: "yarch-v73", storageBucket: "yarch-v73.firebasestorage.app", messagingSenderId: "684931554564", appId: "1:684931554564:web:9392fe77035a599ac20451" };
         const app = initializeApp(firebaseConfig);
         window.fb = { auth: getAuth(app), db: getFirestore(app), signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, signOut, collection, addDoc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, arrayUnion, arrayRemove };
@@ -52,19 +45,14 @@
 <body class="text-slate-800 dark:text-slate-200 h-screen flex flex-col overflow-hidden bg-sky-50/50" x-data="taskApp()" x-init="initApp()" @keydown.escape="showCmd = false" :class="{ 'dark': isDarkMode }">
 
     <div x-show="showWelcome" class="fixed inset-0 z-[2000] bg-brand-600 flex flex-col items-center justify-center text-white transition-opacity duration-500" x-transition.opacity x-cloak>
-        <div class="w-24 h-24 rounded-3xl bg-white text-brand-600 flex items-center justify-center shadow-2xl mb-6 transform rotate-3 animate-pulse">
-            <i class="fas fa-cubes text-5xl"></i>
-        </div>
-        <h1 class="font-extrabold text-3xl mb-2 tracking-tight">Yarch V73</h1>
-        <div class="flex items-center gap-2 opacity-80 mt-2">
-            <i class="fas fa-circle-notch fa-spin text-sm"></i>
-            <p class="text-sm font-medium" x-text="currentUser ? 'Loading workspace...' : 'Starting up...'"></p>
-        </div>
+        <div class="w-24 h-24 rounded-3xl bg-white text-brand-600 flex items-center justify-center shadow-2xl mb-6 transform rotate-3 animate-pulse"><i class="fas fa-cubes text-5xl"></i></div>
+        <h1 class="font-extrabold text-3xl mb-2 tracking-tight">Yarch App</h1>
+        <div class="flex items-center gap-2 opacity-80 mt-2"><i class="fas fa-circle-notch fa-spin text-sm"></i><p class="text-sm font-medium" x-text="currentUser ? 'Loading workspace...' : 'Starting up...'"></p></div>
     </div>
 
     <div x-show="!currentUser && !showWelcome" class="fixed inset-0 z-[1000] bg-sky-50 dark:bg-slate-900 flex items-center justify-center p-6 transition-all duration-500" x-transition.opacity x-cloak>
         <div class="w-full max-w-sm">
-            <div class="text-center mb-10"><div class="w-20 h-20 rounded-3xl bg-gradient-to-br from-brand-500 to-blue-600 flex items-center justify-center text-white shadow-xl mx-auto mb-6 transform rotate-3"><i class="fas fa-cubes text-3xl"></i></div><h1 class="font-extrabold text-3xl text-slate-900 dark:text-white mb-2">Yarch V73</h1><p class="text-sm text-slate-400 font-medium" x-text="authMode === 'login' ? 'Welcome back, please sign in' : 'Create your account'"></p></div>
+            <div class="text-center mb-10"><div class="w-20 h-20 rounded-3xl bg-gradient-to-br from-brand-500 to-blue-600 flex items-center justify-center text-white shadow-xl mx-auto mb-6 transform rotate-3"><i class="fas fa-cubes text-3xl"></i></div><h1 class="font-extrabold text-3xl text-slate-900 dark:text-white mb-2">Yarch App</h1><p class="text-sm text-slate-400 font-medium" x-text="authMode === 'login' ? 'Welcome back, please sign in' : 'Create your account'"></p></div>
             <form @submit.prevent="login()" class="space-y-4" x-show="authMode === 'login'">
                 <input type="email" x-model="loginForm.email" class="w-full bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-2xl p-4 text-sm outline-none dark:text-white" placeholder="Email" required>
                 <input type="password" x-model="loginForm.password" class="w-full bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-2xl p-4 text-sm outline-none dark:text-white" placeholder="Password" required>
@@ -92,9 +80,9 @@
                     <div><h2 class="font-extrabold text-xl dark:text-white" x-text="currentUser?.name"></h2><p class="text-sm text-slate-400">Welcome back!</p></div>
                 </div>
                 <div class="flex gap-2">
+                     <button @click="openCreateModal()" class="w-10 h-10 rounded-full bg-brand-500 text-white shadow-lg"><i class="fas fa-plus"></i></button>
                      <button @click="switchView('calendar')" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-brand-500 border dark:border-slate-700 shadow-sm"><i class="far fa-calendar-alt"></i></button>
                      <button @click="switchView('analytics')" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-brand-500 border dark:border-slate-700 shadow-sm"><i class="fas fa-chart-pie"></i></button>
-                     <button @click="toggleCmdPalette()" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-400 border dark:border-slate-700 shadow-sm"><i class="fas fa-search"></i></button>
                 </div>
             </div>
 
@@ -132,56 +120,46 @@
 
         <div x-show="currentView === 'feed'" class="h-full flex flex-col bg-slate-100 dark:bg-slate-950 pb-24" x-cloak>
             
-            <div class="px-4 pt-4 pb-2 sticky top-0 z-20 bg-slate-100/90 dark:bg-slate-950/90 backdrop-blur-md border-b dark:border-slate-800">
+            <div class="px-4 py-3 sticky top-0 z-20 bg-slate-100/90 dark:bg-slate-950/90 backdrop-blur-md flex justify-between items-center">
+                <h1 class="font-extrabold text-xl dark:text-white tracking-tighter">Yarch App</h1>
+                <button @click="switchView('messages')" class="relative text-2xl text-slate-800 dark:text-white hover:text-slate-500 transition-colors">
+                    <i class="fab fa-facebook-messenger"></i>
+                    <span x-show="getUnreadDMCount() > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-white dark:border-slate-950" x-text="getUnreadDMCount()"></span>
+                </button>
+            </div>
+
+            <div class="px-4 pb-2 bg-slate-100/90 dark:bg-slate-950/90 backdrop-blur-md border-b dark:border-slate-800 z-10 sticky top-12">
                 <div class="bg-slate-200 dark:bg-slate-800 rounded-xl flex p-1 relative max-w-sm mx-auto">
                     <div class="absolute inset-y-1 left-1 w-[calc(50%-4px)] bg-white dark:bg-slate-700 rounded-lg shadow-sm transition-transform duration-300" :class="feedTab === 'explore' ? 'translate-x-full' : ''"></div>
-                    <button @click="feedTab = 'feed'; exploreQuery = ''" class="flex-1 py-2 text-xs font-bold z-10 transition-colors" :class="feedTab === 'feed' ? 'text-brand-600 dark:text-white' : 'text-slate-500'">Feed</button>
-                    <button @click="feedTab = 'explore'" class="flex-1 py-2 text-xs font-bold z-10 transition-colors" :class="feedTab === 'explore' ? 'text-brand-600 dark:text-white' : 'text-slate-500'">Explore</button>
+                    <button @click="feedTab = 'feed'; exploreQuery = ''" class="flex-1 py-1.5 text-xs font-bold z-10 transition-colors" :class="feedTab === 'feed' ? 'text-brand-600 dark:text-white' : 'text-slate-500'">Feed</button>
+                    <button @click="feedTab = 'explore'" class="flex-1 py-1.5 text-xs font-bold z-10 transition-colors" :class="feedTab === 'explore' ? 'text-brand-600 dark:text-white' : 'text-slate-500'">Explore</button>
                 </div>
             </div>
 
             <div x-show="feedTab === 'feed'" class="flex-1 overflow-y-auto w-full custom-scroll">
-                <div class="max-w-xl mx-auto md:py-4">
-                    
-                    <div class="mb-4 bg-white dark:bg-slate-800 md:rounded-3xl p-5 shadow-sm border-b md:border dark:border-slate-700 relative">
-                        <div x-show="isUploadingMedia" class="absolute inset-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center md:rounded-3xl">
-                            <i class="fas fa-spinner fa-spin text-brand-500 text-2xl mb-2"></i>
-                            <span class="text-xs font-bold text-slate-700 dark:text-white">Uploading media...</span>
-                        </div>
-
-                        <div class="flex gap-3 mb-2 relative">
-                            <img :src="getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-10 h-10 rounded-full object-cover border dark:border-slate-700">
-                            
-                            <div class="flex-1 relative">
-                                <textarea x-ref="postTextarea" x-model="newPostText" @input="checkMention($event)" rows="3" class="w-full bg-slate-50 dark:bg-slate-900 rounded-xl px-4 py-3 text-sm outline-none dark:text-white resize-none" placeholder="Write a caption... (Use # and @)"></textarea>
-                                
-                                <div x-show="showMentions && mentionCandidates.length > 0" class="absolute left-0 top-full mt-1 w-full max-w-xs bg-white dark:bg-slate-800 shadow-xl rounded-xl border dark:border-slate-700 z-50 overflow-hidden" x-transition>
-                                    <template x-for="u in mentionCandidates" :key="u.uid">
-                                        <div @click="insertMention(u.name)" class="p-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer border-b dark:border-slate-700 last:border-0">
-                                            <img :src="getAvatarByUid(u.uid, u.name)" class="w-8 h-8 rounded-full object-cover">
-                                            <div>
-                                                <div class="text-xs font-bold dark:text-white" x-text="u.name"></div>
-                                                <div class="text-[10px] text-slate-400" x-text="'@' + u.name.toLowerCase().replace(/\s/g,'')"></div>
-                                            </div>
-                                        </div>
-                                    </template>
-                                </div>
+                
+                <div class="bg-white dark:bg-slate-800 border-b md:border dark:border-slate-700 py-3 mb-2 max-w-xl mx-auto md:mt-2 md:rounded-3xl">
+                    <div class="flex overflow-x-auto gap-3 px-4 hide-scroll">
+                        <div class="flex flex-col items-center gap-1 cursor-pointer shrink-0" @click="handleMyStoryClick()">
+                            <div class="relative w-16 h-16 rounded-full border border-slate-200 dark:border-slate-700 p-0.5">
+                                <img :src="getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-full h-full rounded-full object-cover">
+                                <div class="absolute bottom-0 right-0 bg-brand-500 text-white w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-800"><i class="fas fa-plus text-[10px]"></i></div>
                             </div>
+                            <span class="text-[10px] text-slate-500 dark:text-slate-300">Your story</span>
                         </div>
                         
-                        <div x-show="postFilePreview" class="relative mt-3 mb-3 inline-block">
-                            <template x-if="postFileType === 'video'"><video :src="postFilePreview" class="h-40 w-auto object-cover rounded-xl shadow bg-black" controls></video></template>
-                            <template x-if="postFileType === 'image'"><img :src="postFilePreview" class="h-40 w-auto object-cover rounded-xl shadow"></template>
-                            <button type="button" @click.prevent="postFileRaw=null; postFilePreview=null; postFileType=''" class="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center shadow z-20"><i class="fas fa-times text-xs"></i></button>
-                        </div>
-                        
-                        <div class="flex justify-between items-center mt-3 border-t dark:border-slate-700 pt-3">
-                            <input type="file" x-ref="mediaInput" class="hidden" accept="image/*,video/*" @change="handleFeedMedia($event)">
-                            <button type="button" @click="$refs.mediaInput.click()" class="text-slate-600 dark:text-slate-300 font-bold text-sm flex items-center gap-2 px-3 hover:bg-slate-100 dark:hover:bg-slate-700 py-2 rounded-xl transition-colors"><i class="far fa-image text-lg text-brand-500"></i> Media</button>
-                            <button type="submit" @click.prevent="createPost" :disabled="!newPostText && !postFileRaw" class="bg-brand-500 px-6 py-2 rounded-xl text-white font-bold text-sm disabled:opacity-50 shadow-sm">Share</button>
-                        </div>
+                        <template x-for="group in getGroupedStories()" :key="group.uid">
+                            <div class="flex flex-col items-center gap-1 cursor-pointer shrink-0" @click="openStoryViewer(group)">
+                                <div class="story-ring w-16 h-16">
+                                    <img :src="getAvatarByUid(group.uid, group.userName)" class="w-full h-full rounded-full object-cover border-2 border-white dark:border-slate-800">
+                                </div>
+                                <span class="text-[10px] text-slate-800 dark:text-slate-200 truncate w-16 text-center" x-text="group.userName"></span>
+                            </div>
+                        </template>
                     </div>
+                </div>
 
+                <div class="max-w-xl mx-auto md:py-2">
                     <div class="py-2 bg-white dark:bg-slate-800 md:rounded-3xl shadow-sm border-y md:border dark:border-slate-700 mb-4">
                         <div class="flex overflow-x-auto gap-4 hide-scroll px-4 py-3 snap-x-mandatory">
                             <template x-for="user in getSuggestedUsers()" :key="user.uid">
@@ -213,7 +191,6 @@
                                     <template x-if="item?.mediaType !== 'video' && item?.media && !item?.media?.includes('.mp4')">
                                         <img :src="item?.media" class="w-full max-h-[80vh] object-cover cursor-pointer" @click="setTimeout(() => openPostDetail(item), 250)">
                                     </template>
-                                    
                                     <div x-show="heartAnimId === item.id" class="absolute inset-0 flex items-center justify-center bg-black/10 z-20 pointer-events-none">
                                          <i class="fas fa-heart text-white text-7xl drop-shadow-lg anim-pop-heart"></i>
                                     </div>
@@ -234,14 +211,11 @@
 
                                 <div class="px-4 pb-4">
                                     <div class="font-extrabold text-sm mb-1 dark:text-white" x-text="(item?.likes ? item.likes.length : 0) + ' likes'"></div>
-                                    
                                     <div class="text-sm dark:text-slate-200">
                                         <span class="font-bold mr-1 cursor-pointer hover:underline" x-text="item?.user" @click="openProfile(item)"></span>
                                         <span x-html="formatText(item?.content)"></span>
                                     </div>
-                                    
                                     <button x-show="item?.comments && item.comments.length > 0 && !expanded" @click="expanded = true" class="text-slate-500 text-[13px] mt-1.5 font-medium">View all <span x-text="item.comments.length"></span> comments</button>
-                                    
                                     <div x-show="expanded" class="mt-2 space-y-1.5" x-transition>
                                         <template x-for="msg in (item?.comments || [])">
                                             <div class="text-[13px] leading-tight">
@@ -251,7 +225,6 @@
                                         </template>
                                         <button x-show="item?.comments && item.comments.length > 0" @click="expanded = false" class="text-slate-500 text-[11px] mt-2 uppercase font-bold tracking-wider">Hide comments</button>
                                     </div>
-
                                     <div class="flex items-center gap-3 mt-3 pt-3 border-t dark:border-slate-100 dark:border-slate-700">
                                         <img :src="getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-6 h-6 rounded-full object-cover">
                                         <input type="text" x-model="replyText" @keydown.enter="sendPostComment(item?.id, replyText, $data)" class="flex-1 bg-transparent text-sm outline-none dark:text-white" placeholder="Add a comment...">
@@ -265,7 +238,6 @@
             </div>
 
             <div x-show="feedTab === 'explore'" class="flex-1 overflow-y-auto w-full custom-scroll flex flex-col">
-                
                 <div class="px-5 py-3 sticky top-0 bg-slate-100/90 dark:bg-slate-950/90 backdrop-blur-md z-10 border-b dark:border-slate-800">
                     <div class="relative">
                         <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
@@ -273,26 +245,249 @@
                         <button x-show="exploreQuery" @click="exploreQuery = ''" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white"><i class="fas fa-times-circle"></i></button>
                     </div>
                 </div>
-
                 <div class="grid grid-cols-3 gap-0.5 mt-0.5">
                     <template x-for="post in getFilteredExplore()" :key="post.id">
                         <div class="aspect-square bg-slate-200 dark:bg-slate-800 relative cursor-pointer group" @click="openPostDetail(post)">
-                            <template x-if="post?.mediaType === 'video' || post?.media?.includes('.mp4')">
-                                <video :src="post?.media" class="w-full h-full object-cover" muted></video>
-                            </template>
-                            <template x-if="post?.mediaType !== 'video' && !post?.media?.includes('.mp4')">
-                                <img :src="post?.media" class="w-full h-full object-cover">
-                            </template>
-                            <div x-show="post?.mediaType === 'video' || post?.media?.includes('.mp4')" class="absolute top-2 right-2 text-white bg-black/60 w-6 h-6 rounded-full flex items-center justify-center text-[10px] shadow">
-                                <i class="fas fa-play ml-0.5"></i>
+                            <template x-if="post?.mediaType === 'video' || post?.media?.includes('.mp4')"><video :src="post?.media" class="w-full h-full object-cover" muted></video></template>
+                            <template x-if="post?.mediaType !== 'video' && !post?.media?.includes('.mp4')"><img :src="post?.media" class="w-full h-full object-cover"></template>
+                            <div x-show="post?.mediaType === 'video' || post?.media?.includes('.mp4')" class="absolute top-2 right-2 text-white bg-black/60 w-6 h-6 rounded-full flex items-center justify-center text-[10px] shadow"><i class="fas fa-play ml-0.5"></i></div>
+                        </div>
+                    </template>
+                </div>
+                <div x-show="getFilteredExplore().length === 0" class="text-center p-10 mt-10"><i class="fas fa-search text-4xl text-slate-300 mb-3"></i><p class="text-slate-400 text-sm font-bold">No results found.</p></div>
+            </div>
+        </div>
+
+        <div x-show="currentView === 'activity'" class="h-full overflow-y-auto bg-white dark:bg-slate-900 pb-24" x-cloak>
+            <div class="p-4 border-b dark:border-slate-800 sticky top-0 z-10 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md">
+                <h2 class="font-bold text-xl dark:text-white tracking-tight">Notifications</h2>
+            </div>
+            <div class="flex-1 pb-24">
+                <template x-for="notif in getMyNotifications()" :key="notif.id">
+                    <div class="px-5 py-4 border-b dark:border-slate-800 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer" @click="handleNotifClick(notif)">
+                        <img :src="getAvatarByUid(notif.fromUid, notif.fromName)" class="w-11 h-11 rounded-full object-cover border dark:border-slate-700">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm dark:text-slate-200">
+                                <span class="font-bold mr-1" x-text="notif.fromName"></span>
+                                <span x-text="notif.type === 'like' ? 'liked your post.' : (notif.type === 'comment' ? 'commented: ' + notif.data : 'started following you.')"></span>
+                            </p>
+                            <p class="text-xs text-slate-400 mt-0.5" x-text="getRelativeTime(notif.time)"></p>
+                        </div>
+                        <template x-if="notif.type === 'follow'">
+                            <button @click.stop="toggleFollowUser(notif.fromUid)" class="text-xs px-4 py-1.5 rounded-lg font-bold transition-colors" :class="getFollowBtnClass(notif.fromUid)" x-text="getFollowBtnText(notif.fromUid)"></button>
+                        </template>
+                        <template x-if="notif.type !== 'follow'">
+                            <i class="fas text-slate-300 text-lg" :class="notif.type === 'like' ? 'fa-heart text-red-400' : 'fa-comment'"></i>
+                        </template>
+                    </div>
+                </template>
+                <div x-show="getMyNotifications().length === 0" class="text-center py-20 text-slate-400">
+                    <div class="w-20 h-20 rounded-full border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center text-3xl mx-auto mb-4"><i class="far fa-heart"></i></div>
+                    <p class="font-bold">Activity On Your Posts</p>
+                    <p class="text-xs mt-2">When someone likes or comments on one of your posts, you'll see it here.</p>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="currentView === 'messages'" class="h-full flex flex-col bg-white dark:bg-slate-900 pb-24" x-cloak>
+            <div class="p-4 border-b dark:border-slate-800 sticky top-0 z-10 flex justify-between items-center bg-white/90 dark:bg-slate-900/90 backdrop-blur-md">
+                <div class="flex items-center gap-3">
+                    <button @click="switchView('feed')" class="text-xl text-slate-800 dark:text-white"><i class="fas fa-arrow-left"></i></button>
+                    <h2 class="font-bold text-xl dark:text-white tracking-tight" x-text="currentUser?.name"></h2>
+                </div>
+                <button @click="messagesTab === 'direct' ? showNewDMModal = true : showDiscussModal=true" class="text-xl text-slate-800 dark:text-white"><i class="fas fa-pen-to-square"></i></button>
+            </div>
+            
+            <div class="flex border-b dark:border-slate-800 px-4 pt-2">
+                <button @click="messagesTab = 'direct'" class="flex-1 py-3 text-sm font-bold border-b-2 transition-colors" :class="messagesTab === 'direct' ? 'border-slate-800 dark:border-white text-slate-800 dark:text-white' : 'border-transparent text-slate-400'">Direct Messages</button>
+                <button @click="messagesTab = 'groups'" class="flex-1 py-3 text-sm font-bold border-b-2 transition-colors" :class="messagesTab === 'groups' ? 'border-slate-800 dark:border-white text-slate-800 dark:text-white' : 'border-transparent text-slate-400'">Discussions</button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto custom-scroll">
+                <div x-show="messagesTab === 'direct'">
+                    <template x-for="chat in getVisibleDMs()" :key="chat.id">
+                        <div @click="openChatModal(chat, 'dm')" class="px-5 py-4 border-b dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex items-center gap-4">
+                            <img :src="getAvatarByUid(getOtherMember(chat).uid, getOtherMember(chat).name)" class="w-12 h-12 rounded-full border dark:border-slate-700 object-cover">
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-bold text-sm dark:text-white truncate" x-text="getOtherMember(chat).name"></h3>
+                                <p class="text-xs text-slate-500 truncate mt-0.5" x-text="(chat?.messages && chat.messages.length > 0) ? (chat.messages[chat.messages.length-1].isImage ? 'Sent a photo' : chat.messages[chat.messages.length-1].text) : 'Tap to chat'"></p>
                             </div>
+                        </div>
+                    </template>
+                    <div x-show="getVisibleDMs().length === 0" class="text-center py-20 text-slate-400 text-sm">No direct messages yet.</div>
+                </div>
+
+                <div x-show="messagesTab === 'groups'">
+                    <template x-for="chat in getVisibleDiscussions()" :key="chat.id">
+                        <div @click="openChatModal(chat, 'group')" class="px-5 py-4 border-b dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex items-center gap-4">
+                            <img :src="'https://ui-avatars.com/api/?name='+(chat?.topic || 'D')+'&background=random&color=fff'" class="w-12 h-12 rounded-full border dark:border-slate-700 object-cover">
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-bold text-sm dark:text-white truncate" x-text="chat?.topic"></h3>
+                                <p class="text-xs text-slate-500 truncate mt-0.5" x-text="(chat?.messages && chat.messages.length > 0) ? (chat.messages[chat.messages.length-1].sender + ': ' + (chat.messages[chat.messages.length-1].isImage ? 'Sent a photo' : chat.messages[chat.messages.length-1].text)) : 'No messages'"></p>
+                            </div>
+                            <div class="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded font-bold" x-text="(chat?.members ? chat.members.length : 1) + ' ppl'"></div>
+                        </div>
+                    </template>
+                    <div x-show="getVisibleDiscussions().length === 0" class="text-center py-20 text-slate-400 text-sm">No discussions yet.</div>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="activeChat?.id" class="fixed inset-0 z-[200] bg-white dark:bg-slate-900 flex flex-col" x-transition.opacity x-cloak>
+            <div class="px-4 py-3 border-b dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <button @click="activeChat = {}" class="text-slate-800 dark:text-white text-lg"><i class="fas fa-arrow-left"></i></button>
+                    <img x-show="activeChatType === 'dm'" :src="getAvatarByUid(getOtherMember(activeChat).uid, getOtherMember(activeChat).name)" class="w-8 h-8 rounded-full object-cover">
+                    <h3 class="font-bold text-sm dark:text-white" x-text="activeChatType === 'dm' ? getOtherMember(activeChat).name : (activeChat?.topic || '')"></h3>
+                </div>
+                <div class="flex gap-3 items-center">
+                    <button x-show="activeChatType === 'group' && activeChat?.createdByUid === currentUser?.uid" @click="inviteMode='chat'; showInviteModal=true" class="text-slate-800 dark:text-white text-lg"><i class="fas fa-user-plus"></i></button>
+                </div>
+            </div>
+            
+            <div class="flex-1 bg-slate-50 dark:bg-slate-950 p-4 space-y-4 overflow-y-auto chat-container custom-scroll" id="chatContainer">
+                <template x-if="activeChat?.id">
+                    <template x-for="(msg, index) in (activeChat?.messages || [])" :key="index">
+                        <div class="flex gap-2" :class="msg?.sender === currentUser?.name ? 'flex-row-reverse' : ''">
+                            <img x-show="activeChatType === 'group' || msg?.sender !== currentUser?.name" :src="getAvatarByUid(null, msg?.sender)" class="w-8 h-8 rounded-full object-cover self-end">
+                            <div class="p-3 rounded-2xl max-w-[75%] shadow-sm" :class="msg?.sender === currentUser?.name ? 'bg-brand-500 text-white rounded-br-none' : 'bg-white dark:bg-slate-800 dark:text-white rounded-bl-none'">
+                                <p x-show="activeChatType === 'group' && msg?.sender !== currentUser?.name" class="text-[10px] font-bold mb-1 opacity-60" x-text="msg?.sender"></p>
+                                <template x-if="msg?.isImage"><div class="space-y-1"><img :src="msg?.text" class="rounded-lg w-full"><div class="text-[9px] opacity-70" x-text="msg?.fileName"></div></div></template>
+                                <p class="text-sm" x-text="msg?.text" x-show="!msg?.isImage"></p>
+                            </div>
+                        </div>
+                    </template>
+                </template>
+            </div>
+            
+            <div class="p-3 border-t dark:border-slate-800 flex gap-2 items-center bg-white dark:bg-slate-900 pb-safe">
+                <input type="file" multiple x-ref="chatFile" class="hidden" @change="handleChatUpload($event)">
+                <button class="text-slate-800 dark:text-white text-2xl px-1 hover:text-slate-500" @click="$refs.chatFile.click()"><i class="far fa-image"></i></button>
+                <div class="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center px-4 py-1.5 border dark:border-slate-700">
+                    <input type="text" x-model="chatInput" @keydown.enter="sendChatMessage()" class="flex-1 bg-transparent text-sm outline-none dark:text-white py-1" placeholder="Message...">
+                    <button x-show="chatInput.trim().length > 0" @click="sendChatMessage()" class="text-brand-500 font-bold text-sm ml-2">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="showNewDMModal" class="fixed inset-0 bg-black/50 z-[210] flex items-center justify-center p-4" x-cloak>
+            <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl shadow-2xl p-6" @click.outside="showNewDMModal = false">
+                <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg dark:text-white">New Message</h3><button @click="showNewDMModal=false" class="text-slate-400"><i class="fas fa-times"></i></button></div>
+                <div class="max-h-60 overflow-y-auto space-y-2">
+                    <template x-for="user in getSuggestedUsers()" :key="user.uid">
+                        <div class="flex justify-between items-center p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg cursor-pointer" @click="startDM(user)">
+                            <div class="flex items-center gap-3"><img :src="getAvatarByUid(user.uid, user.name)" class="w-10 h-10 rounded-full object-cover"><span class="text-sm font-bold dark:text-white" x-text="user.name"></span></div>
+                            <i class="fas fa-chevron-right text-slate-300"></i>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="showCreateSocial" class="fixed inset-0 z-[250] bg-black/60 flex items-end justify-center" x-cloak x-transition.opacity>
+            <div class="bg-white dark:bg-slate-900 w-full md:max-w-md rounded-t-3xl p-6 transform transition-transform" @click.outside="showCreateSocial = false">
+                <div class="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-6"></div>
+                <h3 class="font-bold text-xl dark:text-white mb-6 text-center">Create</h3>
+                <div class="space-y-3 mb-6 pb-safe">
+                    <button @click="showCreateSocial=false; openCreatePostModal()" class="w-full flex items-center p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border dark:border-slate-700 hover:border-brand-500 transition-colors group">
+                        <div class="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-500 flex items-center justify-center text-xl mr-4 group-hover:scale-110 transition-transform"><i class="fas fa-th"></i></div>
+                        <div class="text-left"><div class="font-bold text-base dark:text-white">Post</div><div class="text-xs text-slate-500">Share photo or video to your feed</div></div>
+                    </button>
+                    <button @click="showCreateSocial=false; openCreateStoryModal()" class="w-full flex items-center p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border dark:border-slate-700 hover:border-brand-500 transition-colors group">
+                        <div class="w-12 h-12 rounded-full bg-pink-100 dark:bg-pink-900/30 text-pink-500 flex items-center justify-center text-xl mr-4 group-hover:scale-110 transition-transform"><i class="fas fa-history"></i></div>
+                        <div class="text-left"><div class="font-bold text-base dark:text-white">Story</div><div class="text-xs text-slate-500">Share multiple photos for 24 hours</div></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="showCreatePost" class="fixed inset-0 bg-black/80 z-[260] flex items-center justify-center p-4" x-cloak x-transition.opacity>
+            <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-3xl overflow-hidden flex flex-col max-h-[90vh]" @click.outside="showCreatePost=false">
+                <div class="px-4 py-3 border-b dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900">
+                    <button @click="showCreatePost=false" class="text-slate-800 dark:text-white text-lg px-2"><i class="fas fa-times"></i></button>
+                    <h3 class="font-bold text-base dark:text-white">New Post</h3>
+                    <button @click="createPost()" :disabled="!newPostText && !postFileRaw" class="text-brand-500 font-bold text-sm disabled:opacity-50 px-2">Share</button>
+                </div>
+                <div class="p-5 overflow-y-auto relative custom-scroll flex-1">
+                    <div x-show="isUploadingMedia" class="absolute inset-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center"><i class="fas fa-spinner fa-spin text-brand-500 text-3xl mb-2"></i></div>
+                    <div class="flex gap-3 mb-4">
+                        <img :src="getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-10 h-10 rounded-full object-cover">
+                        <div class="flex-1 relative">
+                            <textarea x-ref="postTextarea" x-model="newPostText" @input="checkMention($event)" rows="4" class="w-full bg-transparent text-sm outline-none dark:text-white resize-none" placeholder="Write a caption..."></textarea>
+                            <div x-show="showMentions && mentionCandidates.length > 0" class="absolute left-0 top-full mt-1 w-full bg-white dark:bg-slate-700 shadow-xl rounded-xl border dark:border-slate-600 z-50 overflow-hidden"><template x-for="u in mentionCandidates" :key="u.uid"><div @click="insertMention(u.name)" class="p-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-600 cursor-pointer border-b dark:border-slate-600 last:border-0"><img :src="getAvatarByUid(u.uid, u.name)" class="w-8 h-8 rounded-full object-cover"><div><div class="text-xs font-bold dark:text-white" x-text="u.name"></div></div></div></template></div>
+                        </div>
+                    </div>
+                    <div x-show="postFilePreview" class="relative mt-2 mb-4 w-full flex justify-center bg-slate-100 dark:bg-slate-950 rounded-xl overflow-hidden">
+                        <template x-if="postFileType === 'video'"><video :src="postFilePreview" class="max-h-64 object-contain" controls></video></template>
+                        <template x-if="postFileType === 'image'"><img :src="postFilePreview" class="max-h-64 object-contain"></template>
+                        <button type="button" @click.prevent="postFileRaw=null; postFilePreview=null; postFileType=''" class="absolute top-2 right-2 bg-slate-800/70 text-white w-8 h-8 rounded-full flex items-center justify-center shadow backdrop-blur z-20"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="border-t dark:border-slate-700 pt-4 flex justify-between items-center">
+                        <span class="text-sm font-bold text-slate-500">Add to your post</span>
+                        <input type="file" x-ref="mediaInput" class="hidden" accept="image/*,video/*" @change="handleFeedMedia($event)">
+                        <button type="button" @click="$refs.mediaInput.click()" class="text-green-500 text-2xl hover:scale-110 transition-transform"><i class="far fa-images"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="showCreateStory" class="fixed inset-0 bg-black/95 z-[260] flex flex-col" x-cloak x-transition.opacity>
+            <div class="px-4 py-4 flex justify-between items-center text-white bg-gradient-to-b from-black/50 to-transparent absolute top-0 w-full z-20">
+                <button @click="showCreateStory=false; storyFilesRaw=[]; storyFilesPreview=[]" class="text-2xl"><i class="fas fa-times"></i></button>
+                <h3 class="font-bold text-sm shadow-sm">Add to Story</h3>
+                <div class="w-8"></div>
+            </div>
+            
+            <div class="flex-1 flex flex-col items-center justify-center relative p-4">
+                <div x-show="storyFilesPreview.length === 0" class="text-center">
+                    <input type="file" multiple x-ref="storyInput" class="hidden" accept="image/*" @change="handleStoryMedia($event)">
+                    <button type="button" @click="$refs.storyInput.click()" class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center text-3xl text-white backdrop-blur-md border-2 border-white/50 hover:bg-white/30 transition-colors mx-auto mb-4"><i class="fas fa-images"></i></button>
+                    <p class="text-white text-sm font-bold">Select Photos</p>
+                    <p class="text-white/60 text-xs mt-2">You can select multiple photos at once</p>
+                </div>
+                
+                <div x-show="storyFilesPreview.length > 0" class="flex gap-4 overflow-x-auto w-full max-w-sm pb-4 snap-x snap-mandatory hide-scroll items-center">
+                    <template x-for="(src, index) in storyFilesPreview" :key="index">
+                        <div class="min-w-full h-[60vh] relative snap-center rounded-2xl overflow-hidden shadow-2xl border border-white/20">
+                            <img :src="src" class="w-full h-full object-contain bg-black/50">
+                            <button @click="storyFilesPreview.splice(index,1); storyFilesRaw.splice(index,1)" class="absolute top-4 right-4 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-sm"><i class="fas fa-times"></i></button>
+                            <div class="absolute bottom-4 right-4 bg-black/60 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm" x-text="(index+1) + '/' + storyFilesPreview.length"></div>
                         </div>
                     </template>
                 </div>
                 
-                <div x-show="getFilteredExplore().length === 0" class="text-center p-10 mt-10">
-                    <i class="fas fa-search text-4xl text-slate-300 mb-3"></i>
-                    <p class="text-slate-400 text-sm font-bold">No results found.</p>
+                <button x-show="storyFilesPreview.length > 0" @click="$refs.storyInput.click()" class="mt-6 text-white text-sm font-bold bg-white/20 px-5 py-2.5 rounded-full backdrop-blur-sm border border-white/30 hover:bg-white/30"><i class="fas fa-plus mr-2"></i>Add More Photos</button>
+
+                <div x-show="isUploadingMedia" class="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white z-30"><i class="fas fa-spinner fa-spin text-4xl mb-4"></i><span class="text-sm font-bold">Adding stories...</span></div>
+            </div>
+
+            <div class="p-6 bg-gradient-to-t from-black/80 to-transparent flex justify-end">
+                <button x-show="storyFilesPreview.length > 0" @click="createStory()" :disabled="isUploadingMedia" class="bg-white text-black px-6 py-3 rounded-full font-bold text-sm shadow-xl flex items-center gap-2 hover:bg-slate-200">Share (<span x-text="storyFilesRaw.length"></span>) <i class="fas fa-chevron-right text-xs"></i></button>
+            </div>
+        </div>
+
+        <div x-show="showStoryViewer" class="fixed inset-0 bg-black z-[400] flex flex-col" x-cloak x-transition.opacity>
+            <div class="absolute top-0 left-0 w-full p-2 z-20 flex gap-1">
+                 <div class="h-0.5 bg-white/30 rounded-full flex-1 overflow-hidden"><div class="h-full bg-white transition-all duration-[5000ms] ease-linear" :style="storyProgressStyle"></div></div>
+            </div>
+            <div class="absolute top-4 left-0 w-full p-4 z-20 flex justify-between items-center text-white bg-gradient-to-b from-black/50 to-transparent">
+                <div class="flex items-center gap-3">
+                    <img :src="getAvatarByUid(activeStoryGroup?.uid, activeStoryGroup?.userName)" class="w-8 h-8 rounded-full object-cover border border-white/50">
+                    <span class="font-bold text-sm shadow-sm" x-text="activeStoryGroup?.userName"></span>
+                    <span class="text-[10px] text-white/70" x-text="getRelativeTime(activeStoryData?.time)"></span>
+                </div>
+                <button @click="closeStoryViewer()" class="text-2xl drop-shadow-md"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="flex-1 relative flex items-center justify-center" @click="handleStoryTap($event)">
+                <img :src="activeStoryData?.media" class="w-full h-full object-contain">
+                <div class="absolute left-0 top-0 w-1/3 h-full z-10"></div>
+                <div class="absolute right-0 top-0 w-1/3 h-full z-10"></div>
+            </div>
+            <div class="p-4 bg-gradient-to-t from-black/80 to-transparent z-20 pb-safe">
+                <div class="flex gap-3">
+                    <input type="text" class="flex-1 bg-transparent border border-white/40 rounded-full px-4 py-3 text-sm text-white placeholder-white/70 outline-none focus:border-white" placeholder="Send message...">
+                    <button class="text-white text-2xl px-2"><i class="far fa-heart"></i></button>
+                    <button class="text-white text-2xl px-2"><i class="far fa-paper-plane"></i></button>
                 </div>
             </div>
         </div>
@@ -300,7 +495,7 @@
         <div x-show="showPostModal" class="fixed inset-0 bg-black/95 z-[300] flex items-center justify-center p-0 md:p-10" x-cloak x-transition.opacity>
             <div class="bg-white dark:bg-slate-900 w-full h-full md:h-auto md:max-h-[90vh] md:max-w-xl md:rounded-3xl relative overflow-hidden flex flex-col" @click.outside="showPostModal=false">
                <div class="flex justify-between items-center p-4 border-b dark:border-slate-800 sticky top-0 z-20 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm">
-                   <h3 class="font-bold text-sm dark:text-white">Post Detail</h3>
+                   <h3 class="font-bold text-sm dark:text-white">Post</h3>
                    <button @click="showPostModal=false" class="w-8 h-8 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
                </div>
                <div class="overflow-y-auto custom-scroll flex-1 p-0" x-data="{replyText: ''}">
@@ -314,39 +509,24 @@
                             </div>
                             
                             <div class="relative bg-slate-100 dark:bg-slate-950 flex justify-center group" @dblclick="toggleLike(activePost); activePost = feedItems.find(f=>f.id===activePost?.id) || activePost; showHeartAnim(activePost?.id)">
-                                <template x-if="activePost?.mediaType === 'video' || activePost?.media?.includes('.mp4')">
-                                    <video :src="activePost?.media" controls class="w-full max-h-[70vh] object-contain bg-black"></video>
-                                </template>
-                                <template x-if="activePost?.mediaType !== 'video' && activePost?.media && !activePost?.media?.includes('.mp4')">
-                                    <img :src="activePost?.media" class="w-full max-h-[70vh] object-contain bg-black">
-                                </template>
-                                <div x-show="heartAnimId === activePost?.id" class="absolute inset-0 flex items-center justify-center bg-black/10 z-20 pointer-events-none">
-                                     <i class="fas fa-heart text-white text-7xl drop-shadow-lg anim-pop-heart"></i>
-                                </div>
+                                <template x-if="activePost?.mediaType === 'video' || activePost?.media?.includes('.mp4')"><video :src="activePost?.media" controls class="w-full max-h-[70vh] object-contain bg-black"></video></template>
+                                <template x-if="activePost?.mediaType !== 'video' && activePost?.media && !activePost?.media?.includes('.mp4')"><img :src="activePost?.media" class="w-full max-h-[70vh] object-contain bg-black"></template>
+                                <div x-show="heartAnimId === activePost?.id" class="absolute inset-0 flex items-center justify-center bg-black/10 z-20 pointer-events-none"><i class="fas fa-heart text-white text-7xl drop-shadow-lg anim-pop-heart"></i></div>
                             </div>
 
                             <div class="px-4 pt-3 pb-1 flex justify-between items-center">
                                 <div class="flex gap-4">
-                                    <button @click="toggleLike(activePost); activePost = feedItems.find(f=>f.id===activePost?.id) || activePost" class="text-[22px] transition-transform active:scale-75" :class="(activePost?.likes && (activePost.likes.includes(currentUser?.uid) || activePost.likes.includes(currentUser?.name))) ? 'text-red-500' : 'text-slate-800 dark:text-white'">
-                                        <i class="fa-heart" :class="(activePost?.likes && (activePost.likes.includes(currentUser?.uid) || activePost.likes.includes(currentUser?.name))) ? 'fas' : 'far'"></i>
-                                    </button>
+                                    <button @click="toggleLike(activePost); activePost = feedItems.find(f=>f.id===activePost?.id) || activePost" class="text-[22px] transition-transform active:scale-75" :class="(activePost?.likes && (activePost.likes.includes(currentUser?.uid) || activePost.likes.includes(currentUser?.name))) ? 'text-red-500' : 'text-slate-800 dark:text-white'"><i class="fa-heart" :class="(activePost?.likes && (activePost.likes.includes(currentUser?.uid) || activePost.likes.includes(currentUser?.name))) ? 'fas' : 'far'"></i></button>
                                     <button class="text-[22px] text-slate-800 dark:text-white hover:text-slate-500"><i class="far fa-comment"></i></button>
                                     <button @click="sharePost(activePost)" class="text-[22px] text-slate-800 dark:text-white hover:text-slate-500"><i class="far fa-paper-plane"></i></button>
                                 </div>
-                                <button @click="toggleSavePost(activePost?.id)" class="text-[22px] text-slate-800 dark:text-white hover:text-slate-500 transition-transform active:scale-75">
-                                    <i :class="(myProfileData?.savedPosts && myProfileData.savedPosts.includes(activePost?.id)) ? 'fas fa-bookmark text-brand-500' : 'far fa-bookmark'"></i>
-                                </button>
+                                <button @click="toggleSavePost(activePost?.id)" class="text-[22px] text-slate-800 dark:text-white hover:text-slate-500 transition-transform active:scale-75"><i :class="(myProfileData?.savedPosts && myProfileData.savedPosts.includes(activePost?.id)) ? 'fas fa-bookmark text-brand-500' : 'far fa-bookmark'"></i></button>
                             </div>
                             
                             <div class="px-4 pb-4">
                                 <div class="font-extrabold text-sm mb-1 dark:text-white" x-text="(activePost?.likes ? activePost.likes.length : 0) + ' likes'"></div>
-                                <div class="text-sm dark:text-slate-200 mb-3">
-                                    <span class="font-bold mr-1" x-text="activePost?.user"></span>
-                                    <span x-html="formatText(activePost?.content)"></span>
-                                </div>
-                                
+                                <div class="text-sm dark:text-slate-200 mb-3"><span class="font-bold mr-1" x-text="activePost?.user"></span><span x-html="formatText(activePost?.content)"></span></div>
                                 <div class="space-y-2 mt-4"><template x-for="msg in (activePost?.comments || [])"><div class="text-[13px] leading-tight"><span class="font-bold dark:text-white mr-1" x-text="msg.sender"></span><span class="text-slate-700 dark:text-slate-300" x-text="msg.text"></span></div></template></div>
-                                
                                 <div class="flex items-center gap-3 mt-4 pt-3 border-t dark:border-slate-100 dark:border-slate-700">
                                     <img :src="getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-6 h-6 rounded-full object-cover">
                                     <input type="text" x-model="replyText" @keydown.enter="sendPostComment(activePost?.id, replyText, $data); activePost = feedItems.find(f=>f.id===activePost?.id) || activePost" class="flex-1 bg-transparent text-sm outline-none dark:text-white" placeholder="Add a comment...">
@@ -367,6 +547,7 @@
                 <div class="flex gap-2 mb-6">
                     <button x-show="!viewedProfile?.uid || viewedProfile?.uid === currentUser?.uid" @click="openEditProfile()" class="flex-1 py-1.5 bg-slate-100 dark:bg-slate-800 font-bold text-sm rounded-lg dark:text-white border dark:border-slate-700">Edit profile</button>
                     <button x-show="viewedProfile?.uid && viewedProfile?.uid !== currentUser?.uid" @click="toggleFollowUser(viewedProfile?.uid)" class="flex-1 py-1.5 font-bold text-sm rounded-lg transition-colors border" :class="getFollowBtnClass(viewedProfile?.uid)" x-text="getFollowBtnText(viewedProfile?.uid)"></button>
+                    <button x-show="viewedProfile?.uid && viewedProfile?.uid !== currentUser?.uid" @click="startDM(viewedProfile)" class="flex-1 py-1.5 font-bold text-sm rounded-lg bg-slate-100 dark:bg-slate-800 dark:text-white border dark:border-slate-700">Message</button>
                     <button x-show="!viewedProfile?.uid || viewedProfile?.uid === currentUser?.uid" @click="showLogoutConfirm = true" class="py-1.5 px-4 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white font-bold text-sm rounded-lg border dark:border-slate-700"><i class="fas fa-sign-out-alt"></i></button>
                 </div>
             </div>
@@ -379,16 +560,10 @@
             <div class="grid grid-cols-3 gap-0.5 mt-0.5">
                 <template x-for="post in getProfileGridItems()" :key="post.id">
                     <div class="aspect-square bg-slate-100 dark:bg-slate-800 relative cursor-pointer group" @click="openPostDetail(post)">
-                        <template x-if="post?.mediaType === 'video' || post?.media?.includes('.mp4')">
-                            <video :src="post?.media" class="w-full h-full object-cover" muted></video>
-                        </template>
-                        <template x-if="post?.mediaType !== 'video' && !post?.media?.includes('.mp4')">
-                            <img x-show="post?.media" :src="post?.media" class="w-full h-full object-cover">
-                        </template>
+                        <template x-if="post?.mediaType === 'video' || post?.media?.includes('.mp4')"><video :src="post?.media" class="w-full h-full object-cover" muted></video></template>
+                        <template x-if="post?.mediaType !== 'video' && !post?.media?.includes('.mp4')"><img x-show="post?.media" :src="post?.media" class="w-full h-full object-cover"></template>
                         <div x-show="!post?.media" class="w-full h-full p-2 flex items-center justify-center text-center"><p class="text-[9px] dark:text-slate-300 line-clamp-4" x-text="post?.content"></p></div>
-                        <div x-show="post?.mediaType === 'video' || post?.media?.includes('.mp4')" class="absolute top-2 right-2 text-white bg-black/60 w-6 h-6 rounded-full flex items-center justify-center text-[10px] shadow">
-                            <i class="fas fa-play ml-0.5"></i>
-                        </div>
+                        <div x-show="post?.mediaType === 'video' || post?.media?.includes('.mp4')" class="absolute top-2 right-2 text-white bg-black/60 w-6 h-6 rounded-full flex items-center justify-center text-[10px] shadow"><i class="fas fa-play ml-0.5"></i></div>
                     </div>
                 </template>
                 <div x-show="getProfileGridItems().length === 0" class="col-span-3 text-center py-10 text-slate-400 text-sm">Nothing to see here yet.</div>
@@ -447,44 +622,34 @@
             </div>
         </div>
 
-        <div x-show="currentView === 'discuss'" class="h-full overflow-y-auto p-0 bg-white dark:bg-slate-900 pb-24" x-cloak>
-            <div class="p-4 border-b dark:border-slate-800 sticky top-0 z-10 flex justify-between items-center bg-white/90 dark:bg-slate-900/90"><h2 class="font-bold text-xl dark:text-white">Discussions</h2><button @click="showDiscussModal=true" class="w-10 h-10 rounded-full bg-brand-500 text-white flex items-center justify-center shadow"><i class="fas fa-plus"></i></button></div>
-            <div class="flex-1 pb-24">
-                <template x-for="chat in getVisibleDiscussions()" :key="chat.id">
-                    <div @click="openChatModal(chat)" class="px-5 py-5 border-b dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex items-start gap-4">
-                        <img :src="'https://ui-avatars.com/api/?name='+(chat?.topic || 'D')+'&background=random&color=fff'" class="w-12 h-12 rounded-full border shadow-sm object-cover">
-                        <div class="flex-1 min-w-0 pt-1"><h3 class="font-bold text-base dark:text-white truncate" x-text="chat?.topic"></h3><p class="text-sm text-slate-500 truncate" x-text="(chat?.messages && chat.messages.length > 0) ? (chat.messages[chat.messages.length-1].isImage ? 'Sent file(s)' : chat.messages[chat.messages.length-1].text) : 'No messages'"></p><div class="text-xs text-brand-500 font-bold mt-1" x-text="(chat?.members ? chat.members.length : 1) + ' Members'"></div></div>
-                    </div>
-                </template>
-                <div x-show="getVisibleDiscussions().length === 0" class="text-center py-10 text-slate-400">No active discussions.</div>
-            </div>
-        </div>
-
-        <div x-show="activeDiscussion?.id" class="fixed inset-0 z-[200] bg-white dark:bg-slate-900 flex flex-col" x-transition.opacity x-cloak>
-            <div class="px-4 py-3 border-b dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shadow-sm"><div class="flex items-center gap-3"><button @click="activeDiscussion = {}" class="text-slate-400"><i class="fas fa-arrow-left"></i></button><h3 class="font-bold text-sm dark:text-white" x-text="activeDiscussion?.topic || ''"></h3></div><div class="flex gap-3 items-center"><button x-show="activeDiscussion?.createdByUid === currentUser?.uid" @click="inviteMode='chat'; showInviteModal=true" class="text-brand-500 font-bold text-xs"><i class="fas fa-user-plus"></i> Invite</button><button x-show="activeDiscussion?.createdByUid === currentUser?.uid" @click="deleteDiscussion(activeDiscussion?.id)" class="text-red-500"><i class="fas fa-trash"></i></button></div></div>
-            <div class="flex-1 bg-slate-50 dark:bg-slate-950 p-4 space-y-4 overflow-y-auto chat-container" id="chatContainer">
-                <template x-if="activeDiscussion?.id"><template x-for="(msg, index) in (activeDiscussion?.messages || [])" :key="index"><div class="flex gap-2" :class="msg?.sender === currentUser?.name ? 'flex-row-reverse' : ''"><img :src="getAvatarByUid(null, msg?.sender)" class="w-8 h-8 rounded-full object-cover"><div class="p-3 rounded-2xl shadow-sm max-w-[80%]" :class="msg?.sender === currentUser?.name ? 'bg-brand-500 text-white rounded-tr-none' : 'bg-white dark:bg-slate-800 dark:text-white rounded-tl-none'"><p class="text-[10px] font-bold mb-1 opacity-75" x-text="msg?.sender"></p><template x-if="msg?.isImage"><div class="space-y-1"><img :src="msg?.text" class="rounded-lg w-full max-w-xs"><div class="text-[9px] opacity-70" x-text="msg?.fileName"></div></div></template><p class="text-xs" x-text="msg?.text" x-show="!msg?.isImage"></p></div></div></template></template>
-            </div>
-            <div class="p-3 border-t dark:border-slate-800 flex gap-2 items-center bg-white dark:bg-slate-900 pb-safe"><input type="file" multiple x-ref="chatFile" class="hidden" @change="handleChatUpload($event)"><button class="text-slate-400 hover:text-brand-500 text-xl px-2" @click="$refs.chatFile.click()"><i class="fas fa-plus-circle"></i></button><input type="text" x-model="chatInput" @keydown.enter="sendChatMessage()" class="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full px-4 py-2 text-sm outline-none dark:text-white" placeholder="Type a message..."><button @click="sendChatMessage()" class="w-10 h-10 bg-brand-500 rounded-full text-white flex items-center justify-center"><i class="fas fa-paper-plane"></i></button></div>
-        </div>
-
     </main>
 
     <div x-show="showDetail" class="fixed inset-0 bg-black/50 z-[70] flex flex-col md:p-4" x-cloak x-transition.opacity><div class="flex-1 flex flex-col w-full md:max-w-3xl md:h-[85vh] md:mx-auto md:bg-white md:dark:bg-slate-800 md:rounded-2xl overflow-hidden relative bg-white dark:bg-slate-800" @click.outside="showDetail=false"><div class="px-5 py-4 border-b dark:border-slate-700 flex justify-between bg-slate-50 dark:bg-slate-900"><button @click="showDetail=false" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 shadow"><i class="fas fa-arrow-left"></i></button><div class="flex gap-2 items-center" x-show="!activeTask?.createdByUid || activeTask?.createdByUid === currentUser?.uid"><button @click="editFromDetail()" class="text-xs font-bold text-slate-400 hover:text-brand-500"><i class="fas fa-pen"></i> Edit</button><button @click="deleteTask(activeTask?.id)" class="text-xs font-bold text-red-400 ml-2"><i class="fas fa-trash"></i></button></div></div><div class="flex-1 overflow-y-auto p-5 relative"><h2 class="text-2xl font-extrabold dark:text-white mb-2" x-text="activeTask?.title"></h2><p class="text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border dark:border-slate-700 mb-6" x-text="activeTask?.desc || 'No description provided.'"></p>
     <div class="mb-6 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border dark:border-slate-700"><h3 class="text-[10px] font-bold text-slate-400 uppercase mb-3"><i class="fas fa-users"></i> Team Members</h3><div class="flex flex-wrap gap-2 items-center"><template x-for="mUid in (activeTask?.members || [activeTask?.createdByUid])" :key="mUid"><div x-show="mUid" class="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-2 py-1.5 rounded-full shadow-sm border dark:border-slate-700"><img :src="getAvatarByUid(mUid, getUserName(mUid))" class="w-4 h-4 rounded-full object-cover"><span class="text-[10px] font-bold dark:text-white" x-text="getUserName(mUid)"></span></div></template><button x-show="activeTask?.createdByUid === currentUser?.uid" @click="inviteMode='task'; showInviteModal=true" class="bg-brand-50 text-brand-600 px-3 py-1.5 rounded-full text-[10px] font-bold border border-brand-200 shadow-sm"><i class="fas fa-plus"></i> Add Member</button></div></div>
     <div><h3 class="text-xs font-bold text-slate-400 uppercase mb-3"><i class="fas fa-check-square"></i> Subtasks</h3><div class="space-y-2"><template x-for="(sub, index) in (activeTask?.subtasks || [])" :key="index"><div class="flex items-center gap-3 p-2 rounded-lg bg-slate-50 dark:bg-slate-900/50 border dark:border-slate-700 group"><input type="checkbox" class="cb-custom" :checked="sub?.isDone" @change="toggleSubtask(activeTask?.id, index, sub)"><span class="text-sm flex-1 dark:text-slate-200" :class="sub?.isDone ? 'line-through text-slate-400' : ''" x-text="sub?.text"></span><button x-show="!activeTask?.createdByUid || activeTask?.createdByUid === currentUser?.uid" @click="deleteSubtask(activeTask?.id, index)" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100"><i class="fas fa-trash"></i></button></div></template></div><div class="mt-3 flex gap-2" x-show="!activeTask?.createdByUid || activeTask?.createdByUid === currentUser?.uid"><input type="text" x-model="newSubtask" @keydown.enter="addSubtask(activeTask?.id)" class="flex-1 bg-slate-100 dark:bg-slate-900 rounded-lg px-3 py-2 text-xs outline-none dark:text-white" placeholder="Add subtask..."><button @click="addSubtask(activeTask?.id)" class="bg-slate-800 text-white rounded-lg px-3"><i class="fas fa-plus"></i></button></div></div></div><div class="p-4 border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex gap-3"><button x-show="activeTask?.status==='TODO' || activeTask?.status==='DONE'" @click="moveTask(activeTask?.id, 'DOING'); showDetail=false" class="flex-1 p-3 rounded-xl bg-blue-50 text-blue-600 font-bold border border-blue-100">Start Doing</button><button x-show="activeTask?.status==='TODO' || activeTask?.status==='DOING'" @click="moveTask(activeTask?.id, 'DONE'); showDetail=false" class="flex-1 bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-lg">MARK COMPLETE</button><button x-show="activeTask?.status==='DONE'" @click="moveTask(activeTask?.id, 'TODO'); showDetail=false" class="flex-1 bg-slate-200 text-slate-600 rounded-xl font-bold text-xs">REOPEN</button></div></div></div>
     
-    <div x-show="showModal" class="fixed inset-0 bg-black/50 z-[60] flex items-end md:items-center justify-center md:p-4" x-cloak x-transition.opacity><div class="bg-white dark:bg-slate-800 w-full md:max-w-md rounded-t-3xl md:rounded-3xl p-6" @click.outside="showModal=false"><div class="flex justify-between items-center mb-6"><h3 class="font-extrabold text-xl dark:text-white" x-text="isEditMode ? 'Edit Task' : 'New Task'"></h3><button @click="showModal=false" class="text-slate-400"><i class="fas fa-times"></i></button></div><div class="space-y-4"><input type="text" x-model="form.title" class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-sm font-bold outline-none dark:text-white" placeholder="Task Title"><textarea x-model="form.desc" rows="3" class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-xs outline-none dark:text-white" placeholder="Description"></textarea><div class="grid grid-cols-2 gap-3"><select x-model="form.priority" class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-xs font-bold outline-none dark:text-white"><option>High</option><option>Medium</option><option>Low</option></select><input type="date" x-model="form.dueDate" class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-xs font-bold outline-none dark:text-white"></div></div><div class="flex gap-3 mt-8"><button @click="showModal=false" class="flex-1 py-3 rounded-xl font-bold text-xs bg-slate-100 text-slate-500">CANCEL</button><button @click="saveTask()" class="flex-[2] bg-brand-600 text-white py-3 rounded-xl font-bold text-xs shadow-lg"><span x-text="isEditMode ? 'UPDATE' : 'CREATE'"></span></button></div></div></div>
+    <div x-show="showModal" class="fixed inset-0 bg-black/50 z-[260] flex items-end md:items-center justify-center md:p-4" x-cloak x-transition.opacity><div class="bg-white dark:bg-slate-800 w-full md:max-w-md rounded-t-3xl md:rounded-3xl p-6" @click.outside="showModal=false"><div class="flex justify-between items-center mb-6"><h3 class="font-extrabold text-xl dark:text-white" x-text="isEditMode ? 'Edit Task' : 'New Task'"></h3><button @click="showModal=false" class="text-slate-400"><i class="fas fa-times"></i></button></div><div class="space-y-4"><input type="text" x-model="form.title" class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-sm font-bold outline-none dark:text-white" placeholder="Task Title"><textarea x-model="form.desc" rows="3" class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-xs outline-none dark:text-white" placeholder="Description"></textarea><div class="grid grid-cols-2 gap-3"><select x-model="form.priority" class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-xs font-bold outline-none dark:text-white"><option>High</option><option>Medium</option><option>Low</option></select><input type="date" x-model="form.dueDate" class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-xs font-bold outline-none dark:text-white"></div></div><div class="flex gap-3 mt-8"><button @click="showModal=false" class="flex-1 py-3 rounded-xl font-bold text-xs bg-slate-100 text-slate-500">CANCEL</button><button @click="saveTask()" class="flex-[2] bg-brand-600 text-white py-3 rounded-xl font-bold text-xs shadow-lg"><span x-text="isEditMode ? 'UPDATE' : 'CREATE'"></span></button></div></div></div>
 
     <div x-show="showEditProfile" class="fixed inset-0 bg-black/50 z-[250] flex items-end md:items-center justify-center md:p-4" x-cloak x-transition.opacity><div class="bg-white dark:bg-slate-800 w-full md:max-w-md rounded-t-3xl md:rounded-3xl p-6" @click.outside="showEditProfile=false"><h3 class="font-bold text-lg mb-4 dark:text-white">Edit Profile</h3><div class="flex items-center gap-4 mb-4"><img :src="editProfileForm.avatar || getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-16 h-16 rounded-full object-cover border dark:border-slate-700"><div><input type="file" accept="image/*" x-ref="avatarInput" class="hidden" @change="handleAvatarUpload($event)"><button type="button" @click="$refs.avatarInput.click()" class="text-xs font-bold text-brand-500 bg-brand-50 dark:bg-brand-900/20 px-3 py-1.5 rounded-lg">Change Photo</button></div></div><div class="space-y-3"><div><label class="text-xs font-bold text-slate-400">Name</label><input type="text" x-model="editProfileForm.name" class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-sm outline-none dark:text-white"></div><div><label class="text-xs font-bold text-slate-400">Bio</label><textarea x-model="editProfileForm.bio" rows="3" class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-sm outline-none dark:text-white"></textarea></div><div><label class="text-xs font-bold text-slate-400">Website URL</label><input type="text" x-model="editProfileForm.website" class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-sm outline-none dark:text-white" placeholder="https://..."></div></div><div class="flex gap-2 mt-6"><button @click="showEditProfile=false" class="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-sm">Cancel</button><button @click="saveProfile()" class="flex-1 py-3 bg-brand-500 text-white rounded-xl font-bold text-sm">Save</button></div></div></div>
 
     <div x-show="showInviteModal" class="fixed inset-0 bg-black/50 z-[250] flex items-center justify-center p-4" x-cloak><div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl p-6" @click.outside="showInviteModal = false"><h3 class="font-bold text-lg mb-4 dark:text-white" x-text="inviteMode === 'chat' ? 'Invite to Discussion' : 'Invite to Task'"></h3><div class="max-h-60 overflow-y-auto space-y-2 mb-4"><template x-for="user in allUsers" :key="user.uid"><div x-show="user?.uid !== currentUser?.uid" class="flex justify-between items-center p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg"><div class="flex items-center gap-2"><img :src="getAvatarByUid(user?.uid, user?.name)" class="w-8 h-8 rounded-full object-cover"><span class="text-sm font-bold dark:text-white" x-text="user?.name"></span></div><button x-show="!isMember(user?.uid)" @click="inviteUser(user?.uid)" class="text-xs bg-slate-200 dark:bg-slate-600 px-3 py-1 rounded font-bold">Invite</button><span x-show="isMember(user?.uid)" class="text-xs text-brand-500 font-bold"><i class="fas fa-check"></i> Added</span></div></template></div><button @click="showInviteModal = false" class="w-full py-2 bg-slate-100 dark:bg-slate-700 rounded-lg font-bold text-sm">Done</button></div></div>
 
-    <div x-show="showDiscussModal" class="fixed inset-0 bg-black/50 z-[210] flex items-center justify-center p-4" x-cloak><div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl shadow-2xl p-6"><h3 class="font-bold text-lg mb-4 dark:text-white">New Discussion</h3><input type="text" x-model="newDiscussTopic" class="w-full bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 text-sm mb-4 outline-none dark:text-white" placeholder="Topic Title"><div class="flex gap-2"><button @click="showDiscussModal = false" class="flex-1 py-2 bg-slate-100 text-slate-500 rounded-lg font-bold text-xs">CANCEL</button><button @click="createDiscussion()" class="flex-1 py-2 bg-brand-500 text-white rounded-lg font-bold text-xs">CREATE</button></div></div></div>
+    <div x-show="showDiscussModal" class="fixed inset-0 bg-black/50 z-[210] flex items-center justify-center p-4" x-cloak><div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl shadow-2xl p-6"><h3 class="font-bold text-lg mb-4 dark:text-white">New Discussion Group</h3><input type="text" x-model="newDiscussTopic" class="w-full bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 text-sm mb-4 outline-none dark:text-white" placeholder="Group Name"><div class="flex gap-2"><button @click="showDiscussModal = false" class="flex-1 py-2 bg-slate-100 text-slate-500 rounded-lg font-bold text-xs">CANCEL</button><button @click="createDiscussion()" class="flex-1 py-2 bg-brand-500 text-white rounded-lg font-bold text-xs">CREATE</button></div></div></div>
 
     <div x-show="showCmd" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[300] flex justify-center pt-20 px-4" x-transition.opacity x-cloak><div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden" @click.outside="showCmd = false"><div class="p-4 border-b dark:border-slate-700 flex items-center gap-3"><i class="fas fa-search text-slate-400"></i><input type="text" x-model="cmdQuery" class="flex-1 bg-transparent outline-none font-bold text-lg dark:text-white" placeholder="Type command..." autofocus><span class="text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">ESC</span></div><div class="max-h-[300px] overflow-y-auto p-2"><template x-for="cmd in filteredCommands" :key="cmd.text"><button @click="runCommand(cmd.action)" class="w-full text-left px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 flex justify-between group"><div class="flex gap-3"><div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 flex items-center justify-center group-hover:text-brand-600"><i class="fas" :class="cmd.icon"></i></div><span class="font-bold text-sm dark:text-slate-200" x-text="cmd.text"></span></div><i class="fas fa-chevron-right text-slate-300"></i></button></template></div></div></div>
 
-    <nav class="fixed bottom-0 left-0 w-full z-40 pb-safe" x-show="currentUser" x-cloak><div class="nav-bar-blur w-full flex justify-around items-center h-16 px-2 shadow-[0_-5px_10px_rgba(0,0,0,0.02)]"><button @click="switchView('board')" class="flex flex-col items-center w-14" :class="currentView==='board' ? 'text-brand-600' : 'text-slate-400'"><i class="fas fa-home text-[22px]"></i></button><button @click="switchView('feed')" class="flex flex-col items-center w-14" :class="currentView==='feed' ? 'text-brand-600' : 'text-slate-400'"><i class="fas fa-search text-[22px]"></i></button><button @click="openCreateModal()" class="w-12 h-10 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center shadow"><i class="fas fa-plus"></i></button><button @click="switchView('discuss')" class="flex flex-col items-center w-14" :class="currentView==='discuss' ? 'text-brand-600' : 'text-slate-400'"><i class="far fa-comment-dots text-[22px]"></i></button><button @click="openMyProfile()" class="flex flex-col items-center w-14" :class="currentView==='profile' ? 'text-brand-600' : 'text-slate-400'"><i class="far fa-user text-[22px]"></i></button></div></nav>
+    <nav class="fixed bottom-0 left-0 w-full z-40 pb-safe" x-show="currentUser" x-cloak>
+        <div class="nav-bar-blur w-full flex justify-around items-center h-14 md:h-16 px-2 shadow-[0_-5px_10px_rgba(0,0,0,0.02)]">
+            <button @click="switchView('board')" class="flex flex-col items-center w-14 transition-transform active:scale-90" :class="currentView==='board' ? 'text-brand-600' : 'text-slate-800 dark:text-white'"><i class="fas fa-home text-[22px]"></i></button>
+            <button @click="switchView('feed')" class="flex flex-col items-center w-14 transition-transform active:scale-90" :class="currentView==='feed' ? 'text-brand-600' : 'text-slate-800 dark:text-white'"><i class="fas fa-compass text-[22px]"></i></button>
+            <button @click="showCreateSocial = true" class="flex flex-col items-center w-14 transition-transform active:scale-90 text-slate-800 dark:text-white"><i class="far fa-plus-square text-[24px]"></i></button>
+            <button @click="switchView('activity'); markNotificationsRead()" class="flex flex-col items-center w-14 transition-transform active:scale-90 relative" :class="currentView==='activity' ? 'text-brand-600' : 'text-slate-800 dark:text-white'">
+                <i class="fas fa-heart text-[22px]"></i>
+                <span x-show="getUnreadNotifCount() > 0" class="absolute top-0 right-2 w-2 h-2 bg-red-500 rounded-full border border-white dark:border-slate-900"></span>
+            </button>
+            <button @click="openMyProfile()" class="flex flex-col items-center w-14 transition-transform active:scale-90" :class="currentView==='profile' ? 'text-brand-600' : 'text-slate-800 dark:text-white'"><img :src="getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-7 h-7 rounded-full object-cover border" :class="currentView==='profile' ? 'border-brand-600' : 'border-slate-300 dark:border-slate-600'"></button>
+        </div>
+    </nav>
 
     <div class="fixed top-5 right-5 z-[1000] flex flex-col gap-2 pointer-events-none"><template x-for="toast in toasts" :key="toast.id"><div class="px-4 py-3 rounded-lg shadow-lg text-white font-bold text-xs" :class="toast.type==='error'?'bg-red-500':'bg-slate-800'" x-text="toast.message"></div></template></div>
 
@@ -493,7 +658,8 @@
             return {
                 showWelcome: true, 
                 currentUser: null, authMode: 'login', authLoading: false, loginError: '', loginForm: { email: '', password: '' }, regForm: { name: '', email: '', password: '' },
-                currentView: 'board', feedTab: 'feed', tasks: [], feedItems: [], discussions: [], toasts: [], allUsers: [], 
+                currentView: 'board', feedTab: 'feed', messagesTab: 'direct', 
+                tasks: [], feedItems: [], discussions: [], dms: [], notifications: [], stories: [], toasts: [], allUsers: [], 
                 myProfileData: { savedPosts: [] }, viewedProfile: {}, 
                 activeProfileTab: 'posts', showEditProfile: false, editProfileForm: { name: '', bio: '', website: '', avatar: '' },
                 
@@ -501,12 +667,15 @@
                 isDarkMode: localStorage.getItem('tf_dark') === 'true',
                 exploreQuery: '', heartAnimId: null, 
                 
-                // STATE UNTUK MENTION SYSTEM
                 showMentions: false, mentionSearch: '',
+                
+                showCreateSocial: false, showCreatePost: false, showCreateStory: false, showStoryViewer: false,
+                storyFilesRaw: [], storyFilesPreview: [], // ARRAY UNTUK MULTIPLE STORIES
+                activeStoryGroup: null, activeStoryData: null, storyTimer: null, storyProgress: 0,
                 
                 showModal: false, showDetail: false, isEditMode: false, openListView: false, activeListTitle: '', activeListTasks: [],
                 activeTask: {}, form: { id: null, title: '', desc: '', assignee: '', priority: 'Medium', dueDate: '' }, newSubtask: '',
-                activeDiscussion: {}, showDiscussModal: false, newDiscussTopic: '', chatInput: '', showInviteModal: false, inviteMode: 'chat',
+                activeChat: {}, activeChatType: 'dm', showDiscussModal: false, showNewDMModal: false, newDiscussTopic: '', chatInput: '', showInviteModal: false, inviteMode: 'chat',
                 showFollowModal: false, followListTitle: '', followListData: [], showPostModal: false, activePost: {}, showLogoutConfirm: false,
                 calendarDays: [], calendarTitle: '', currentDate: new Date(), selectedDate: new Date().toISOString().split('T')[0], chartStatus: null, chartWorkload: null,
                 showCmd: false, cmdQuery: '', commands: [{text:'Create Task', icon:'fa-plus', action:'create'}, {text:'Toggle Dark Mode', icon:'fa-moon', action:'dark'}, {text:'Go to Calendar', icon:'fa-calendar', action:'calendar'}],
@@ -539,7 +708,6 @@
                                         this.currentUser = null; 
                                     }
                                 } catch (err) {
-                                    console.error("Firebase Auth/DB Error:", err);
                                     this.loginError = "Database Error: " + (err.message || "Gagal memuat data pengguna.");
                                     this.currentUser = null;
                                     await window.fb.signOut(window.fb.auth); 
@@ -552,41 +720,14 @@
                             clearInterval(checkFb);
                             this.showWelcome = false;
                             this.authLoading = false;
-                            this.loginError = "Gagal memuat sistem (Koneksi Firebase terputus).";
+                            this.loginError = "Gagal memuat sistem (Koneksi terputus).";
                         }
                     }, 100);
                 },
 
-                async login() { 
-                    this.authLoading = true; this.loginError = ''; 
-                    try { 
-                        await window.fb.signInWithEmailAndPassword(window.fb.auth, this.loginForm.email, this.loginForm.password); 
-                        this.loginForm = { email: '', password: '' }; 
-                        this.showWelcome = true;
-                    } catch(e) { 
-                        this.loginError = "Login Gagal: " + e.message; 
-                        this.authLoading = false; 
-                        this.showWelcome = false;
-                    } 
-                },
-                async register() { 
-                    this.authLoading = true; this.loginError = ''; 
-                    try { 
-                        const userCred = await window.fb.createUserWithEmailAndPassword(window.fb.auth, this.regForm.email, this.regForm.password); 
-                        await window.fb.updateProfile(userCred.user, { displayName: this.regForm.name }); 
-                        await window.fb.setDoc(window.fb.doc(window.fb.db, "users", userCred.user.uid), { uid: userCred.user.uid, name: this.regForm.name, email: this.regForm.email, bio: '', website: '', avatar: '', followers: [], following: [], savedPosts: [] }); 
-                        this.regForm = { name: '', email: '', password: '' }; 
-                        this.showWelcome = true; 
-                    } catch(e) { 
-                        this.loginError = "Register Gagal: " + e.message; 
-                        this.authLoading = false; 
-                        this.showWelcome = false;
-                    } 
-                },
-                async logout() { 
-                    this.showLogoutConfirm = false; this.showWelcome = true;
-                    setTimeout(async () => { await window.fb.signOut(window.fb.auth); location.reload(); }, 800);
-                },
+                async login() { this.authLoading = true; this.loginError = ''; try { await window.fb.signInWithEmailAndPassword(window.fb.auth, this.loginForm.email, this.loginForm.password); this.loginForm = { email: '', password: '' }; this.showWelcome = true; } catch(e) { this.loginError = "Login Gagal: " + e.message; this.authLoading = false; this.showWelcome = false; } },
+                async register() { this.authLoading = true; this.loginError = ''; try { const userCred = await window.fb.createUserWithEmailAndPassword(window.fb.auth, this.regForm.email, this.regForm.password); await window.fb.updateProfile(userCred.user, { displayName: this.regForm.name }); await window.fb.setDoc(window.fb.doc(window.fb.db, "users", userCred.user.uid), { uid: userCred.user.uid, name: this.regForm.name, email: this.regForm.email, bio: '', website: '', avatar: '', followers: [], following: [], savedPosts: [] }); this.regForm = { name: '', email: '', password: '' }; this.showWelcome = true; } catch(e) { this.loginError = "Register Gagal: " + e.message; this.authLoading = false; this.showWelcome = false; } },
+                async logout() { this.showLogoutConfirm = false; this.showWelcome = true; setTimeout(async () => { await window.fb.signOut(window.fb.auth); location.reload(); }, 800); },
 
                 setupRealtimeData() {
                     window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "feed"), window.fb.orderBy("time", "desc")), snap => { this.feedItems = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); });
@@ -598,329 +739,265 @@
                             else this.viewedProfile = this.allUsers.find(u => u.uid === this.viewedProfile.uid) || this.myProfileData;
                         }
                     });
-                    window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "tasks")), snap => {
-                        this.tasks = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        if(this.activeTask && this.activeTask.id) this.activeTask = this.tasks.find(t => t.id === this.activeTask.id) || this.activeTask;
-                        this.generateCalendar();
-                    });
-                    window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "discussions"), window.fb.orderBy("createdAt", "desc")), snap => {
-                        this.discussions = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        if(this.activeDiscussion && this.activeDiscussion.id) { this.activeDiscussion = this.discussions.find(d => d.id === this.activeDiscussion.id) || {}; this.scrollChat(); }
-                    });
+                    window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "tasks")), snap => { this.tasks = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); if(this.activeTask && this.activeTask.id) this.activeTask = this.tasks.find(t => t.id === this.activeTask.id) || this.activeTask; this.generateCalendar(); });
+                    window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "discussions"), window.fb.orderBy("createdAt", "desc")), snap => { this.discussions = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); if(this.activeChatType === 'group' && this.activeChat?.id) { this.activeChat = this.discussions.find(d => d.id === this.activeChat.id) || {}; this.scrollChat(); } });
+                    
+                    window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "stories"), window.fb.orderBy("time", "desc")), snap => { this.stories = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); });
+                    window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "notifications"), window.fb.orderBy("time", "desc")), snap => { this.notifications = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); });
+                    window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "dms"), window.fb.orderBy("updatedAt", "desc")), snap => { this.dms = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); if(this.activeChatType === 'dm' && this.activeChat?.id) { this.activeChat = this.dms.find(d => d.id === this.activeChat.id) || {}; this.scrollChat(); } });
                 },
 
-                // FITUR BARU: MENTION SYSTEM (@)
-                checkMention(e) {
-                    const text = this.newPostText;
-                    const cursorPos = e.target.selectionStart;
-                    const textBeforeCursor = text.substring(0, cursorPos);
-                    const words = textBeforeCursor.split(/\s/);
-                    const lastWord = words[words.length - 1];
+                getMyNotifications() { return this.notifications.filter(n => n.toUid === this.currentUser?.uid); },
+                getUnreadNotifCount() { return this.getMyNotifications().filter(n => !n.read).length; },
+                async markNotificationsRead() {
+                    const unread = this.getMyNotifications().filter(n => !n.read);
+                    for (const n of unread) { await window.fb.updateDoc(window.fb.doc(window.fb.db, "notifications", n.id), { read: true }); }
+                },
+                async pushNotification(toUid, type, dataText = '') {
+                    if (!toUid || toUid === this.currentUser?.uid) return;
+                    await window.fb.addDoc(window.fb.collection(window.fb.db, "notifications"), { toUid, fromUid: this.currentUser.uid, fromName: this.currentUser.name, type, data: dataText, time: Date.now(), read: false });
+                },
+                handleNotifClick(notif) {
+                    if (notif.type === 'follow') { this.openProfile({ uid: notif.fromUid }); }
+                    else if (notif.postId) { const p = this.feedItems.find(x => x.id === notif.postId); if(p) this.openPostDetail(p); }
+                },
 
-                    if (lastWord.startsWith('@')) {
-                        this.mentionSearch = lastWord.substring(1).toLowerCase();
-                        this.showMentions = true;
-                    } else {
-                        this.showMentions = false;
-                    }
+                // === STORIES LOGIC (MULTIPLE PHOTOS UPDATE) ===
+                openCreateStoryModal() { this.storyFilesRaw = []; this.storyFilesPreview = []; this.showCreateStory = true; },
+                handleStoryMedia(e) {
+                    const files = Array.from(e.target.files);
+                    if (!files.length) return;
+
+                    files.forEach((f, idx) => {
+                        if (f.size > 3000000) { this.showToast(`File terlalu besar (Max 3MB).`, 'error'); return; }
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            const img = new Image();
+                            img.onload = () => {
+                                const canvas = document.createElement('canvas');
+                                let w = img.width, h = img.height;
+                                const max = 1024;
+                                if(w > h) { if(w > max) { h *= max/w; w = max; } } else { if(h > max) { w *= max/h; h = max; } }
+                                canvas.width = w; canvas.height = h;
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(img, 0, 0, w, h);
+                                const b64 = canvas.toDataURL('image/jpeg', 0.8);
+                                this.storyFilesRaw.push(b64);
+                                this.storyFilesPreview.push(b64);
+                            };
+                            img.src = event.target.result;
+                        };
+                        reader.readAsDataURL(f);
+                    });
+                },
+                getGroupedStories() {
+                    const activeStories = this.stories.filter(s => s.time > Date.now() - 24 * 60 * 60 * 1000);
+                    const grouped = {};
+                    activeStories.forEach(s => { if(!grouped[s.uid]) { grouped[s.uid] = { uid: s.uid, userName: s.userName, items: [] }; } grouped[s.uid].items.push(s); });
+                    Object.values(grouped).forEach(g => g.items.sort((a,b) => a.time - b.time));
+                    return Object.values(grouped);
+                },
+                handleMyStoryClick() {
+                    const myGroup = this.getGroupedStories().find(g => g.uid === this.currentUser?.uid);
+                    if (myGroup) { this.openStoryViewer(myGroup); } else { this.openCreateStoryModal(); }
+                },
+                async createStory() {
+                    if(!this.storyFilesRaw.length || !this.currentUser) return;
+                    this.isUploadingMedia = true;
+                    try {
+                        let baseTime = Date.now();
+                        for (let i = 0; i < this.storyFilesRaw.length; i++) {
+                            await window.fb.addDoc(window.fb.collection(window.fb.db, "stories"), { uid: this.currentUser.uid, userName: this.currentUser.name, media: this.storyFilesRaw[i], time: baseTime + i, views: [] });
+                        }
+                        this.showCreateStory = false; this.showToast('Stories added!');
+                    } catch(e) { this.showToast('Failed to add story', 'error'); }
+                    finally { this.isUploadingMedia = false; }
+                },
+                openStoryViewer(group) {
+                    this.activeStoryGroup = group; this.activeStoryData = group.items[0]; this.showStoryViewer = true; this.startStoryTimer();
+                },
+                closeStoryViewer() { this.showStoryViewer = false; clearInterval(this.storyTimer); },
+                startStoryTimer() {
+                    clearInterval(this.storyTimer); this.storyProgress = 0;
+                    this.storyTimer = setInterval(() => { this.storyProgress += 2; if (this.storyProgress >= 100) this.nextStory(); }, 100);
+                },
+                get storyProgressStyle() { return `width: ${this.storyProgress}%`; },
+                nextStory() {
+                    if(!this.activeStoryGroup) return;
+                    const idx = this.activeStoryGroup.items.findIndex(i => i.id === this.activeStoryData.id);
+                    if (idx < this.activeStoryGroup.items.length - 1) { this.activeStoryData = this.activeStoryGroup.items[idx + 1]; this.startStoryTimer(); } 
+                    else { this.closeStoryViewer(); }
+                },
+                prevStory() {
+                    if(!this.activeStoryGroup) return;
+                    const idx = this.activeStoryGroup.items.findIndex(i => i.id === this.activeStoryData.id);
+                    if (idx > 0) { this.activeStoryData = this.activeStoryGroup.items[idx - 1]; this.startStoryTimer(); } 
+                    else { this.startStoryTimer(); }
+                },
+                handleStoryTap(e) {
+                    const width = e.target.clientWidth; const x = e.offsetX;
+                    if (x < width / 3) this.prevStory(); else this.nextStory();
+                },
+
+                // === DM LOGIC ===
+                getVisibleDMs() { return this.dms.filter(d => d.members.includes(this.currentUser?.uid)); },
+                getUnreadDMCount() { return 0; }, 
+                getOtherMember(chat) {
+                    if(!chat || !chat.members) return {uid:'', name:'Unknown'};
+                    const otherUid = chat.members.find(u => u !== this.currentUser?.uid);
+                    const user = this.allUsers.find(u => u.uid === otherUid);
+                    return user || {uid: otherUid, name: 'Unknown'};
+                },
+                async startDM(user) {
+                    if(!user || !this.currentUser) return;
+                    this.showNewDMModal = false;
+                    const existingChat = this.getVisibleDMs().find(d => d.members.includes(user.uid));
+                    if (existingChat) { this.openChatModal(existingChat, 'dm'); return; }
+                    
+                    const chatId = this.currentUser.uid < user.uid ? `${this.currentUser.uid}_${user.uid}` : `${user.uid}_${this.currentUser.uid}`;
+                    await window.fb.setDoc(window.fb.doc(window.fb.db, "dms", chatId), { members: [this.currentUser.uid, user.uid], messages: [], updatedAt: Date.now() });
+                    this.openChatModal({ id: chatId, members: [this.currentUser.uid, user.uid], messages: [] }, 'dm');
+                },
+
+                openChatModal(chat, type) { this.activeChat = chat; this.activeChatType = type; this.scrollChat(); },
+                scrollChat() { setTimeout(() => { const el = document.getElementById('chatContainer'); if(el) el.scrollTop = el.scrollHeight; }, 100); },
+                async sendChatMessage() { 
+                    if(!this.chatInput.trim() || !this.activeChat?.id || !this.currentUser) return; 
+                    const txt = this.chatInput; this.chatInput = ''; 
+                    const col = this.activeChatType === 'dm' ? 'dms' : 'discussions';
+                    const payload = { messages: window.fb.arrayUnion({ sender: this.currentUser.name, text: txt, isImage: false, timestamp: Date.now() }) };
+                    if(this.activeChatType === 'dm') payload.updatedAt = Date.now();
+                    await window.fb.updateDoc(window.fb.doc(window.fb.db, col, this.activeChat.id), payload); 
+                    this.scrollChat(); 
+                },
+                handleChatUpload(e) { 
+                    if(!this.currentUser || !this.activeChat?.id) return;
+                    const col = this.activeChatType === 'dm' ? 'dms' : 'discussions';
+                    Array.from(e.target.files).forEach(f => { const r = new FileReader(); r.onload = async (event) => { if(f.type.startsWith('image/')) { const img = new Image(); img.onload = async () => { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const max = 800; if(w > h) { if(w > max) { h *= max/w; w = max; } } else { if(h > max) { w *= max/h; h = max; } } canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); await window.fb.updateDoc(window.fb.doc(window.fb.db, col, this.activeChat.id), { messages: window.fb.arrayUnion({ sender: this.currentUser.name, text: canvas.toDataURL('image/jpeg', 0.7), fileName: f.name, isImage: true, timestamp: Date.now() }), updatedAt: Date.now() }); this.scrollChat(); }; img.src = event.target.result; } }; r.readAsDataURL(f); }); 
+                },
+
+                checkMention(e) {
+                    const text = this.newPostText; const cursorPos = e.target.selectionStart; const textBeforeCursor = text.substring(0, cursorPos); const words = textBeforeCursor.split(/\s/); const lastWord = words[words.length - 1];
+                    if (lastWord.startsWith('@')) { this.mentionSearch = lastWord.substring(1).toLowerCase(); this.showMentions = true; } else { this.showMentions = false; }
                 },
                 get mentionCandidates() {
-                    if(!this.showMentions) return [];
-                    const followedUids = this.myProfileData?.following || [];
-                    const followedUsers = this.allUsers.filter(u => followedUids.includes(u.uid));
-                    if(!this.mentionSearch) return followedUsers;
-                    return followedUsers.filter(u => u.name.toLowerCase().includes(this.mentionSearch));
+                    if(!this.showMentions) return []; const followedUids = this.myProfileData?.following || []; const followedUsers = this.allUsers.filter(u => followedUids.includes(u.uid));
+                    if(!this.mentionSearch) return followedUsers; return followedUsers.filter(u => u.name.toLowerCase().includes(this.mentionSearch));
                 },
                 insertMention(userName) {
-                    const textarea = this.$refs.postTextarea;
-                    const cursorPos = textarea.selectionStart;
-                    const textBefore = this.newPostText.substring(0, cursorPos);
-                    const textAfter = this.newPostText.substring(cursorPos);
-                    
+                    const textarea = this.$refs.postTextarea; const cursorPos = textarea.selectionStart; const textBefore = this.newPostText.substring(0, cursorPos); const textAfter = this.newPostText.substring(cursorPos);
                     const lastAtIndex = textBefore.lastIndexOf('@');
-                    if (lastAtIndex !== -1) {
-                        const textUpToAt = textBefore.substring(0, lastAtIndex);
-                        this.newPostText = textUpToAt + '@' + userName + ' ' + textAfter;
-                        this.showMentions = false;
-                        setTimeout(() => { textarea.focus(); }, 10);
-                    }
+                    if (lastAtIndex !== -1) { this.newPostText = textBefore.substring(0, lastAtIndex) + '@' + userName + ' ' + textAfter; this.showMentions = false; setTimeout(() => { textarea.focus(); }, 10); }
                 },
 
-                // FITUR BARU: FORMAT HASHTAG & MENTION MERAH
-                formatText(text) {
-                    if(!text) return '';
-                    return text
-                        .replace(/#(\w+)/g, '<span class="text-brand-500 font-bold cursor-pointer hover:underline">#$1</span>')
-                        .replace(/@(\w+)/g, '<span class="text-red-500 font-bold cursor-pointer hover:underline">@$1</span>');
-                },
-
-                getRelativeTime(time) {
-                    if(!time) return '';
-                    const diff = Date.now() - time;
-                    const sec = Math.floor(diff / 1000);
-                    if(sec < 60) return sec + ' seconds ago';
-                    const min = Math.floor(sec / 60);
-                    if(min < 60) return min + ' minutes ago';
-                    const hr = Math.floor(min / 60);
-                    if(hr < 24) return hr + ' hours ago';
-                    const d = Math.floor(hr / 24);
-                    return d + ' days ago';
-                },
-
-                showHeartAnim(id) {
-                    this.heartAnimId = id;
-                    setTimeout(() => { this.heartAnimId = null; }, 800);
-                },
-
-                // FITUR BARU: SHARE POST (WEB SHARE API)
-                sharePost(item) {
-                    if (navigator.share) {
-                        navigator.share({
-                            title: 'Yarch V73 Post by ' + item.user,
-                            text: item.content || 'Check out this post!',
-                            url: window.location.href
-                        }).catch(err => console.log('Share error:', err));
-                    } else {
-                        this.showToast('Fitur Share tidak didukung di browsermu', 'error');
-                    }
-                },
-
-                // FITUR BARU: TOGGLE BOOKMARK / SAVE POST
+                formatText(text) { if(!text) return ''; return text.replace(/#(\w+)/g, '<span class="text-brand-500 font-bold cursor-pointer hover:underline">#$1</span>').replace(/@(\w+)/g, '<span class="text-red-500 font-bold cursor-pointer hover:underline">@$1</span>'); },
+                getRelativeTime(time) { if(!time) return ''; const diff = Date.now() - time; const sec = Math.floor(diff / 1000); if(sec < 60) return sec + 's'; const min = Math.floor(sec / 60); if(min < 60) return min + 'm'; const hr = Math.floor(min / 60); if(hr < 24) return hr + 'h'; const d = Math.floor(hr / 24); return d + 'd'; },
+                showHeartAnim(id) { this.heartAnimId = id; setTimeout(() => { this.heartAnimId = null; }, 800); },
+                sharePost(item) { if (navigator.share) { navigator.share({ title: 'Yarch Post', text: item.content, url: window.location.href }).catch(err => console.log(err)); } else { this.showToast('Share not supported', 'error'); } },
+                
                 async toggleSavePost(postId) {
                     if(!this.currentUser || !this.myProfileData?.uid) return;
-                    const ref = window.fb.doc(window.fb.db, "users", this.myProfileData.uid);
-                    const isSaved = (this.myProfileData.savedPosts || []).includes(postId);
-                    
-                    if(isSaved) {
-                        await window.fb.updateDoc(ref, { savedPosts: window.fb.arrayRemove(postId) });
-                        this.showToast('Post removed from saved');
-                    } else {
-                        await window.fb.updateDoc(ref, { savedPosts: window.fb.arrayUnion(postId) });
-                        this.showToast('Post saved!');
-                    }
+                    const ref = window.fb.doc(window.fb.db, "users", this.myProfileData.uid); const isSaved = (this.myProfileData.savedPosts || []).includes(postId);
+                    if(isSaved) { await window.fb.updateDoc(ref, { savedPosts: window.fb.arrayRemove(postId) }); this.showToast('Removed from saved'); } 
+                    else { await window.fb.updateDoc(ref, { savedPosts: window.fb.arrayUnion(postId) }); this.showToast('Post saved!'); }
                 },
 
                 getUserName(uid) { const u = this.allUsers.find(x => x.uid === uid); return u ? u.name : 'Unknown'; },
-                getAvatarByUid(uid, fallbackName) {
-                    if(uid) { const u = this.allUsers.find(x => x.uid === uid); if(u && u.avatar) return u.avatar; if(u) fallbackName = u.name; }
-                    return `https://ui-avatars.com/api/?name=${encodeURIComponent(fallbackName || 'U')}&background=random&color=fff`;
-                },
+                getAvatarByUid(uid, fallbackName) { if(uid) { const u = this.allUsers.find(x => x.uid === uid); if(u && u.avatar) return u.avatar; if(u) fallbackName = u.name; } return `https://ui-avatars.com/api/?name=${encodeURIComponent(fallbackName || 'U')}&background=random&color=fff`; },
 
-                getVisibleTasks() { 
-                    if (!this.currentUser) return [];
-                    return this.tasks.filter(t => t.createdByUid === this.currentUser.uid || (t.members || []).includes(this.currentUser.uid)); 
-                },
+                // TASKS
+                getVisibleTasks() { if (!this.currentUser) return []; return this.tasks.filter(t => t.createdByUid === this.currentUser.uid || (t.members || []).includes(this.currentUser.uid)); },
                 getMyActiveTasks() { return this.getVisibleTasks().filter(t => t.status !== 'DONE'); },
                 getGlobalCount(s) { return s === 'HIGH' ? this.getVisibleTasks().filter(t => t.priority === 'High' && t.status !== 'DONE').length : this.getVisibleTasks().filter(t => t.status === s).length; },
                 setGlobalFilter(s) { this.activeListTitle = s; this.activeListTasks = s === 'HIGH' ? this.getVisibleTasks().filter(t => t.priority === 'High' && t.status !== 'DONE') : this.getVisibleTasks().filter(t => t.status === s); this.openListView = true; },
                 openTaskDetail(t) { this.activeTask = t; this.showDetail = true; },
                 openCreateModal() { this.isEditMode = false; this.form = { title: '', desc: '', assignee: '', priority: 'Medium', dueDate: new Date().toISOString().split('T')[0] }; this.showModal = true; },
                 editFromDetail() { this.showDetail = false; this.isEditMode = true; this.form = { ...this.activeTask }; this.showModal = true; },
-                async saveTask() { 
-                    if(!this.form.title || !this.currentUser) return; 
-                    if(this.isEditMode) { await window.fb.updateDoc(window.fb.doc(window.fb.db, "tasks", this.form.id), { ...this.form }); } else { await window.fb.addDoc(window.fb.collection(window.fb.db, "tasks"), { ...this.form, status: 'TODO', createdAt: Date.now(), subtasks: [], createdByUid: this.currentUser.uid, createdByName: this.currentUser.name, members: [this.currentUser.uid] }); } this.showModal = false; this.showToast(this.isEditMode ? 'Updated' : 'Created'); 
-                },
+                async saveTask() { if(!this.form.title || !this.currentUser) return; if(this.isEditMode) { await window.fb.updateDoc(window.fb.doc(window.fb.db, "tasks", this.form.id), { ...this.form }); } else { await window.fb.addDoc(window.fb.collection(window.fb.db, "tasks"), { ...this.form, status: 'TODO', createdAt: Date.now(), subtasks: [], createdByUid: this.currentUser.uid, createdByName: this.currentUser.name, members: [this.currentUser.uid] }); } this.showModal = false; this.showToast(this.isEditMode ? 'Updated' : 'Created'); },
                 async moveTask(id, stat) { if(!id) return; await window.fb.updateDoc(window.fb.doc(window.fb.db, "tasks", id), { status: stat }); if(stat==='DONE') confetti({ particleCount: 100, origin: { y: 0.6 } }); if(this.currentView === 'analytics') this.updateCharts(); },
                 async deleteTask(id) { if(!id || !confirm('Delete task?')) return; await window.fb.deleteDoc(window.fb.doc(window.fb.db, "tasks", id)); this.showDetail = false; },
                 async addSubtask(taskId) { if(!this.newSubtask || !taskId) return; await window.fb.updateDoc(window.fb.doc(window.fb.db, "tasks", taskId), { subtasks: window.fb.arrayUnion({ text: this.newSubtask, isDone: false }) }); this.newSubtask = ''; },
                 async deleteSubtask(taskId, index) { if(!taskId) return; const newSubs = [...this.activeTask.subtasks]; newSubs.splice(index, 1); await window.fb.updateDoc(window.fb.doc(window.fb.db, "tasks", taskId), { subtasks: newSubs }); },
                 async toggleSubtask(taskId, index, sub) { if(!taskId) return; const newSubs = [...this.activeTask.subtasks]; newSubs[index].isDone = !sub.isDone; await window.fb.updateDoc(window.fb.doc(window.fb.db, "tasks", taskId), { subtasks: newSubs }); },
 
+                // USERS & SOCIAL
                 getSuggestedUsers() { return this.allUsers.filter(u => u.uid !== this.currentUser?.uid); },
                 isFollowingUser(uid) { return this.myProfileData?.following?.includes(uid); },
-                getFollowBtnText(targetUid) {
-                    if (!this.myProfileData) return 'Follow';
-                    const iFollowThem = this.myProfileData.following?.includes(targetUid);
-                    const theyFollowMe = this.myProfileData.followers?.includes(targetUid);
-                    if (iFollowThem) return 'Following';
-                    if (theyFollowMe) return 'Follow Back';
-                    return 'Follow';
-                },
-                getFollowBtnClass(targetUid) {
-                    return this.isFollowingUser(targetUid) ? 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-white' : 'bg-brand-500 text-white shadow-md shadow-brand-500/20';
-                },
-
+                getFollowBtnText(targetUid) { const iFollowThem = this.myProfileData.following?.includes(targetUid); const theyFollowMe = this.myProfileData.followers?.includes(targetUid); if (iFollowThem) return 'Following'; if (theyFollowMe) return 'Follow Back'; return 'Follow'; },
+                getFollowBtnClass(targetUid) { return this.isFollowingUser(targetUid) ? 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-white' : 'bg-brand-500 text-white shadow-md shadow-brand-500/20'; },
                 async toggleFollowUser(targetUid) {
                     if(!this.myProfileData || !this.myProfileData.uid) return;
                     const myUid = this.myProfileData.uid; const isF = this.isFollowingUser(targetUid);
                     await window.fb.updateDoc(window.fb.doc(window.fb.db, "users", myUid), { following: isF ? window.fb.arrayRemove(targetUid) : window.fb.arrayUnion(targetUid) });
                     await window.fb.updateDoc(window.fb.doc(window.fb.db, "users", targetUid), { followers: isF ? window.fb.arrayRemove(myUid) : window.fb.arrayUnion(myUid) });
+                    if (!isF) this.pushNotification(targetUid, 'follow');
                 },
                 openMyProfile() { this.viewedProfile = this.myProfileData; this.activeProfileTab = 'posts'; this.switchView('profile'); },
                 openProfile(item) { let u = item.uid ? this.allUsers.find(x => x.uid === item.uid) : this.allUsers.find(x => x.name === item.user); if(u) { this.viewedProfile = u; this.activeProfileTab = 'posts'; this.switchView('profile'); } else this.showToast('User not found', 'error'); },
                 getUserPosts() { const id = this.viewedProfile?.uid || this.currentUser?.uid; return this.feedItems.filter(i => i.uid === id || (!i.uid && i.user === this.viewedProfile?.name)); },
-                
-                // UPDATE: MENAMPILKAN SAVED POSTS DI PROFIL
                 getProfileGridItems() { 
                     if (this.activeProfileTab === 'posts') return this.getUserPosts(); 
-                    if (this.activeProfileTab === 'saved') {
-                        const savedIds = this.viewedProfile?.savedPosts || [];
-                        return this.feedItems.filter(i => savedIds.includes(i.id));
-                    }
-                    if (this.activeProfileTab === 'likes') {
-                        const vUid = this.viewedProfile?.uid;
-                        const vName = this.viewedProfile?.name;
-                        return this.feedItems.filter(i => i.likes && (i.likes.includes(vUid) || i.likes.includes(vName)));
-                    } 
-                    return []; 
+                    if (this.activeProfileTab === 'saved') { const savedIds = this.viewedProfile?.savedPosts || []; return this.feedItems.filter(i => savedIds.includes(i.id)); }
+                    if (this.activeProfileTab === 'likes') { const vUid = this.viewedProfile?.uid; const vName = this.viewedProfile?.name; return this.feedItems.filter(i => i.likes && (i.likes.includes(vUid) || i.likes.includes(vName))); } return []; 
                 },
-                
-                getFilteredExplore() {
-                    let posts = this.feedItems.filter(p => p.media);
-                    if (this.exploreQuery.trim() === '') return posts;
-                    const q = this.exploreQuery.toLowerCase();
-                    return posts.filter(p => 
-                        (p.content && p.content.toLowerCase().includes(q)) || 
-                        (p.user && p.user.toLowerCase().includes(q))
-                    );
-                },
-
+                getFilteredExplore() { let posts = this.feedItems.filter(p => p.media); if (this.exploreQuery.trim() === '') return posts; const q = this.exploreQuery.toLowerCase(); return posts.filter(p => (p.content && p.content.toLowerCase().includes(q)) || (p.user && p.user.toLowerCase().includes(q)) ); },
                 getFollowersCount() { return this.viewedProfile?.followers?.length || 0; }, getFollowingCount() { return this.viewedProfile?.following?.length || 0; }, 
-                openEditProfile() { 
-                    if (!this.myProfileData || !this.myProfileData.uid) {
-                        this.showToast("Mempersiapkan data profil...", "error");
-                        return;
-                    }
-                    this.editProfileForm = { name: this.myProfileData.name || '', bio: this.myProfileData.bio || '', website: this.myProfileData.website || '', avatar: this.myProfileData.avatar || '' }; 
-                    this.showEditProfile = true; 
-                },
+                openEditProfile() { this.editProfileForm = { name: this.myProfileData.name || '', bio: this.myProfileData.bio || '', website: this.myProfileData.website || '', avatar: this.myProfileData.avatar || '' }; this.showEditProfile = true; },
                 async saveProfile() { if(!this.myProfileData?.uid) return; await window.fb.updateDoc(window.fb.doc(window.fb.db, "users", this.myProfileData.uid), { name: this.editProfileForm.name, bio: this.editProfileForm.bio, website: this.editProfileForm.website, avatar: this.editProfileForm.avatar }); this.showEditProfile = false; this.showToast('Profile updated!'); },
-                
-                openFollowList(type) {
-                    if (!this.viewedProfile) return;
-                    this.followListTitle = type;
-                    const listIds = type === 'Followers' ? (this.viewedProfile.followers || []) : (this.viewedProfile.following || []);
-                    this.followListData = this.allUsers.filter(u => listIds.includes(u.uid));
-                    this.showFollowModal = true;
-                },
-                updateFollowListData() {
-                    setTimeout(() => {
-                        if (!this.viewedProfile) return;
-                        const listIds = this.followListTitle === 'Followers' ? (this.viewedProfile.followers || []) : (this.viewedProfile.following || []);
-                        this.followListData = this.allUsers.filter(u => listIds.includes(u.uid));
-                    }, 500);
-                },
+                openFollowList(type) { if (!this.viewedProfile) return; this.followListTitle = type; const listIds = type === 'Followers' ? (this.viewedProfile.followers || []) : (this.viewedProfile.following || []); this.followListData = this.allUsers.filter(u => listIds.includes(u.uid)); this.showFollowModal = true; },
+                updateFollowListData() { setTimeout(() => { if (!this.viewedProfile) return; const listIds = this.followListTitle === 'Followers' ? (this.viewedProfile.followers || []) : (this.viewedProfile.following || []); this.followListData = this.allUsers.filter(u => listIds.includes(u.uid)); }, 500); },
+                handleAvatarUpload(e) { const f = e.target.files[0]; if(!f) return; const reader = new FileReader(); reader.onload = (event) => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const max = 400; if(w > h) { if(w > max) { h *= max/w; w = max; } } else { if(h > max) { w *= max/h; h = max; } } canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); this.editProfileForm.avatar = canvas.toDataURL('image/jpeg', 0.8); }; img.src = event.target.result; }; reader.readAsDataURL(f); },
 
-                handleAvatarUpload(e) {
-                    const f = e.target.files[0]; if(!f) return; const reader = new FileReader(); 
-                    reader.onload = (event) => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const max = 400; if(w > h) { if(w > max) { h *= max/w; w = max; } } else { if(h > max) { w *= max/h; h = max; } } canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); this.editProfileForm.avatar = canvas.toDataURL('image/jpeg', 0.8); }; img.src = event.target.result; }; reader.readAsDataURL(f);
-                },
-
-                // FITUR BARU: UPLOAD MEDIA TANPA STORAGE (BASE64 FIRESTORE)
+                // CREATE POST
+                openCreatePostModal() { this.newPostText = ''; this.postFileRaw = null; this.postFilePreview = null; this.showCreatePost = true; },
                 handleFeedMedia(e) { 
-                    const f = e.target.files[0]; 
-                    if(!f) return; 
-                    
+                    const f = e.target.files[0]; if(!f) return; 
                     this.postFileType = f.type.startsWith('video/') ? 'video' : 'image';
-                    
-                    if (this.postFileType === 'video' && f.size > 2000000) {
-                        this.showToast('Video terlalu besar! Maks 2MB untuk versi gratis.', 'error');
-                        return;
-                    }
-
+                    if (this.postFileType === 'video' && f.size > 2000000) { this.showToast('Video max 2MB.', 'error'); return; }
                     const reader = new FileReader();
                     reader.onload = (event) => {
                         if (this.postFileType === 'image') {
-                            const img = new Image();
-                            img.onload = () => {
-                                const canvas = document.createElement('canvas');
-                                let w = img.width, h = img.height;
-                                const max = 1024; // Diperkecil agar muat di batas 1MB Firestore
-                                if(w > h) { if(w > max) { h *= max/w; w = max; } } 
-                                else { if(h > max) { w *= max/h; h = max; } }
-                                canvas.width = w; canvas.height = h;
-                                const ctx = canvas.getContext('2d');
-                                ctx.drawImage(img, 0, 0, w, h);
-                                this.postFileRaw = canvas.toDataURL('image/jpeg', 0.75);
-                                this.postFilePreview = this.postFileRaw;
-                            };
-                            img.src = event.target.result;
-                        } else {
-                            // Untuk video langsung pakai base64 murni
-                            this.postFileRaw = event.target.result;
-                            this.postFilePreview = event.target.result;
-                        }
-                    };
-                    reader.readAsDataURL(f);
+                            const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const max = 1024; if(w > h) { if(w > max) { h *= max/w; w = max; } } else { if(h > max) { w *= max/h; h = max; } } canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); this.postFileRaw = canvas.toDataURL('image/jpeg', 0.75); this.postFilePreview = this.postFileRaw; }; img.src = event.target.result;
+                        } else { this.postFileRaw = event.target.result; this.postFilePreview = event.target.result; }
+                    }; reader.readAsDataURL(f);
                 },
-
                 async createPost() { 
                     if((!this.newPostText && !this.postFileRaw) || !this.currentUser) return; 
                     this.isUploadingMedia = true;
-                    
-                    // Kita tidak pakai Storage lagi, langsung lempar base64 ke Firestore
                     try {
-                        await window.fb.addDoc(window.fb.collection(window.fb.db, "feed"), { 
-                            user: this.currentUser.name, 
-                            uid: this.currentUser.uid, 
-                            content: this.newPostText, 
-                            media: this.postFileRaw, // Base64 langsung
-                            mediaType: this.postFileType,
-                            time: Date.now(), 
-                            likes: [], 
-                            comments: [] 
-                        }); 
-                        
-                        this.newPostText = ''; 
-                        this.postFileRaw = null; 
-                        this.postFilePreview = null;
-                        this.postFileType = '';
-                        this.showMentions = false;
-                        this.showToast('Posted successfully!'); 
-                    } catch (err) {
-                        console.error(err);
-                        if(err.message.includes("exceeds the maximum")) {
-                            this.showToast('Gagal! Ukuran media terlalu besar.', 'error');
-                        } else {
-                            this.showToast('Gagal upload: ' + err.message, 'error');
-                        }
-                    } finally {
-                        this.isUploadingMedia = false;
-                    }
+                        await window.fb.addDoc(window.fb.collection(window.fb.db, "feed"), { user: this.currentUser.name, uid: this.currentUser.uid, content: this.newPostText, media: this.postFileRaw, mediaType: this.postFileType, time: Date.now(), likes: [], comments: [] }); 
+                        this.showCreatePost = false; this.showToast('Posted successfully!'); 
+                    } catch (err) { this.showToast('Gagal upload', 'error'); } finally { this.isUploadingMedia = false; }
                 },
-
                 async deletePost(id) { if(!id) return; if(confirm('Delete post?')) await window.fb.deleteDoc(window.fb.doc(window.fb.db, "feed", id)); },
-                
                 async toggleLike(item) { 
                     if(!this.currentUser || !item?.id) return;
-                    const r = window.fb.doc(window.fb.db, "feed", item.id); 
-                    const hasUid = item.likes?.includes(this.currentUser.uid);
-                    const hasName = item.likes?.includes(this.currentUser.name);
-                    
+                    const r = window.fb.doc(window.fb.db, "feed", item.id); const hasUid = item.likes?.includes(this.currentUser.uid); const hasName = item.likes?.includes(this.currentUser.name);
                     if (hasUid || hasName) {
                         if(hasUid) await window.fb.updateDoc(r, { likes: window.fb.arrayRemove(this.currentUser.uid) });
                         if(hasName) await window.fb.updateDoc(r, { likes: window.fb.arrayRemove(this.currentUser.name) });
                     } else {
                         await window.fb.updateDoc(r, { likes: window.fb.arrayUnion(this.currentUser.uid) });
+                        this.pushNotification(item.uid, 'like', { postId: item.id });
                     }
                 },
-                
-                async sendPostComment(pId, txt, d) { if(!txt || !this.currentUser || !pId) return; await window.fb.updateDoc(window.fb.doc(window.fb.db, "feed", pId), { comments: window.fb.arrayUnion({ sender: this.currentUser.name, text: txt }) }); d.replyText = ''; },
+                async sendPostComment(pId, txt, d) { 
+                    if(!txt || !this.currentUser || !pId) return; 
+                    await window.fb.updateDoc(window.fb.doc(window.fb.db, "feed", pId), { comments: window.fb.arrayUnion({ sender: this.currentUser.name, text: txt }) }); 
+                    const postOwner = this.feedItems.find(p => p.id === pId)?.uid;
+                    if (postOwner) this.pushNotification(postOwner, 'comment', txt);
+                    d.replyText = ''; 
+                },
                 openPostDetail(post) { this.activePost = post; this.showPostModal = true; },
 
-                getVisibleDiscussions() { 
-                    if (!this.currentUser) return [];
-                    return this.discussions.filter(d => d.createdByUid === this.currentUser.uid || (d.members || []).includes(this.currentUser.uid)); 
-                },
-                async createDiscussion() { 
-                    if(!this.newDiscussTopic || !this.currentUser) return; 
-                    await window.fb.addDoc(window.fb.collection(window.fb.db, "discussions"), { topic: this.newDiscussTopic, createdBy: this.currentUser.name, createdByUid: this.currentUser.uid, createdAt: Date.now(), messages: [], members: [this.currentUser.uid] }); this.showDiscussModal = false; this.newDiscussTopic = ''; 
-                },
-                async deleteDiscussion(id) { if(!id) return; if(confirm('Delete discussion?')) { await window.fb.deleteDoc(window.fb.doc(window.fb.db, "discussions", id)); this.activeDiscussion = {}; } },
-                openChatModal(chat) { this.activeDiscussion = chat; this.scrollChat(); },
-                scrollChat() { setTimeout(() => { const el = document.getElementById('chatContainer'); if(el) el.scrollTop = el.scrollHeight; }, 100); },
-                async sendChatMessage() { 
-                    if(!this.chatInput.trim() || !this.activeDiscussion?.id || !this.currentUser) return; 
-                    const txt = this.chatInput; this.chatInput = ''; await window.fb.updateDoc(window.fb.doc(window.fb.db, "discussions", this.activeDiscussion.id), { messages: window.fb.arrayUnion({ sender: this.currentUser.name, text: txt, isImage: false, timestamp: Date.now() }) }); this.scrollChat(); 
-                },
-                handleChatUpload(e) { 
-                    if(!this.currentUser || !this.activeDiscussion?.id) return;
-                    Array.from(e.target.files).forEach(f => { const r = new FileReader(); r.onload = async (event) => { if(f.type.startsWith('image/')) { const img = new Image(); img.onload = async () => { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const max = 800; if(w > h) { if(w > max) { h *= max/w; w = max; } } else { if(h > max) { w *= max/h; h = max; } } canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); await window.fb.updateDoc(window.fb.doc(window.fb.db, "discussions", this.activeDiscussion.id), { messages: window.fb.arrayUnion({ sender: this.currentUser.name, text: canvas.toDataURL('image/jpeg', 0.7), fileName: f.name, isImage: true, timestamp: Date.now() }) }); this.scrollChat(); }; img.src = event.target.result; } else { await window.fb.updateDoc(window.fb.doc(window.fb.db, "discussions", this.activeDiscussion.id), { messages: window.fb.arrayUnion({ sender: this.currentUser.name, text: r.result, fileName: f.name, isImage: false, timestamp: Date.now() }) }); this.scrollChat(); } }; r.readAsDataURL(f); }); 
-                },
-                
-                isMember(uid) { if(this.inviteMode === 'chat') return (this.activeDiscussion?.members || []).includes(uid); if(this.inviteMode === 'task') return (this.activeTask?.members || []).includes(uid); return false; },
-                async inviteUser(uid) { if(this.inviteMode === 'chat' && this.activeDiscussion?.id) { await window.fb.updateDoc(window.fb.doc(window.fb.db, "discussions", this.activeDiscussion.id), { members: window.fb.arrayUnion(uid) }); } if(this.inviteMode === 'task' && this.activeTask?.id) { await window.fb.updateDoc(window.fb.doc(window.fb.db, "tasks", this.activeTask.id), { members: window.fb.arrayUnion(uid) }); if(!this.activeTask.members) this.activeTask.members = []; if(!this.activeTask.members.includes(uid)) this.activeTask.members.push(uid); } this.showToast('Invited!'); },
+                // DISCUSSIONS
+                getVisibleDiscussions() { if (!this.currentUser) return []; return this.discussions.filter(d => d.createdByUid === this.currentUser.uid || (d.members || []).includes(this.currentUser.uid)); },
+                async createDiscussion() { if(!this.newDiscussTopic || !this.currentUser) return; await window.fb.addDoc(window.fb.collection(window.fb.db, "discussions"), { topic: this.newDiscussTopic, createdBy: this.currentUser.name, createdByUid: this.currentUser.uid, createdAt: Date.now(), messages: [], members: [this.currentUser.uid] }); this.showDiscussModal = false; this.newDiscussTopic = ''; },
+                async deleteDiscussion(id) { if(!id) return; if(confirm('Delete group?')) { await window.fb.deleteDoc(window.fb.doc(window.fb.db, "discussions", id)); this.activeChat = {}; } },
+                isMember(uid) { if(this.inviteMode === 'chat') return (this.activeChat?.members || []).includes(uid); if(this.inviteMode === 'task') return (this.activeTask?.members || []).includes(uid); return false; },
+                async inviteUser(uid) { if(this.inviteMode === 'chat' && this.activeChat?.id) { await window.fb.updateDoc(window.fb.doc(window.fb.db, "discussions", this.activeChat.id), { members: window.fb.arrayUnion(uid) }); } if(this.inviteMode === 'task' && this.activeTask?.id) { await window.fb.updateDoc(window.fb.doc(window.fb.db, "tasks", this.activeTask.id), { members: window.fb.arrayUnion(uid) }); if(!this.activeTask.members) this.activeTask.members = []; if(!this.activeTask.members.includes(uid)) this.activeTask.members.push(uid); } this.showToast('Invited!'); },
 
+                // CALENDAR & ANALYTICS
                 changeMonth(offset) { this.currentDate.setMonth(this.currentDate.getMonth() + offset); this.generateCalendar(); },
                 generateCalendar() { const y = this.currentDate.getFullYear(), m = this.currentDate.getMonth(); this.calendarTitle = new Date(y, m).toLocaleString('default', { month: 'long', year: 'numeric' }); const first = new Date(y, m, 1).getDay(), days = new Date(y, m+1, 0).getDate(); this.calendarDays = Array(first).fill({date:''}).concat([...Array(days).keys()].map(i => { const dStr = `${y}-${String(m+1).padStart(2,'0')}-${String(i+1).padStart(2,'0')}`; const dayTasks = this.getVisibleTasks().filter(t=>(t.dueDate || '').substring(0, 10)===dStr && t.status !== 'DONE'); return { date: i+1, fullDate: dStr, isToday: dStr === new Date().toISOString().split('T')[0], tasks: dayTasks }; })); },
                 getTasksBySelectedDate() { return this.getVisibleTasks().filter(t => (t.dueDate || '').substring(0, 10) === this.selectedDate); },
