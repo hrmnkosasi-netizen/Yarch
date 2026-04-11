@@ -199,7 +199,7 @@
                         <div class="flex flex-col items-center gap-1 cursor-pointer shrink-0" @click="handleMyStoryClick()">
                             <div class="relative w-16 h-16 rounded-full border border-slate-200 dark:border-slate-700 p-0.5">
                                 <img :src="getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-full h-full rounded-full object-cover">
-                                <div class="absolute bottom-0 right-0 bg-brand-500 text-white w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-800"><i class="fas fa-plus text-[10px]"></i></div>
+                                <div class="absolute bottom-0 right-0 bg-brand-500 text-white w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-800 z-10"><i class="fas fa-plus text-[10px]"></i></div>
                             </div>
                             <span class="text-[10px] text-slate-500 dark:text-slate-300">Your story</span>
                         </div>
@@ -229,7 +229,7 @@
 
                     <div class="space-y-4 md:space-y-6 pb-6">
                          <template x-for="item in feedItems" :key="item.id">
-                            <div x-data="{expanded: false, replyText: ''}" class="bg-white dark:bg-slate-800 md:rounded-[2rem] p-0 shadow-sm border-y md:border dark:border-slate-700 overflow-hidden">
+                            <div x-init="$nextTick(() => observeView($el, item))" x-data="{expanded: false, replyText: ''}" class="bg-white dark:bg-slate-800 md:rounded-[2rem] p-0 shadow-sm border-y md:border dark:border-slate-700 overflow-hidden">
                                 <div class="flex justify-between items-center p-4">
                                     <div class="flex gap-3 items-center cursor-pointer" @click="openProfile(item)">
                                         <img :src="getAvatarByUid(item?.uid, item?.user)" class="w-9 h-9 rounded-full object-cover border dark:border-slate-700">
@@ -307,26 +307,43 @@
             </div>
 
             <div x-show="feedTab === 'explore'" class="flex-1 overflow-y-auto w-full custom-scroll flex flex-col">
-                <div class="px-5 py-3 sticky top-0 bg-slate-100/90 dark:bg-slate-950/90 backdrop-blur-md z-10 border-b dark:border-slate-800">
+                <div class="px-5 py-3 sticky top-0 bg-slate-100/90 dark:bg-slate-950/90 backdrop-blur-md z-[50] border-b dark:border-slate-800">
                     <div class="relative">
                         <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                         <input type="text" x-model="exploreQuery" class="w-full bg-white dark:bg-slate-900 rounded-2xl pl-10 pr-10 py-2.5 text-sm shadow-sm outline-none border dark:border-slate-700 dark:text-white transition-all focus:border-brand-500" placeholder="Search hashtags, users, or keywords...">
                         <button x-show="exploreQuery" @click="exploreQuery = ''" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white"><i class="fas fa-times-circle"></i></button>
                     </div>
                 </div>
-                <div class="grid grid-cols-3 gap-0.5 mt-0.5">
+                
+                <div class="columns-2 gap-2 mt-2 px-2 pb-4">
                     <template x-for="post in getFilteredExplore()" :key="post.id">
-                        <div class="aspect-square bg-slate-200 dark:bg-slate-800 relative cursor-pointer group" @click="openPostDetail(post)">
-                            <template x-if="post?.mediaType === 'video' || post?.media?.includes('.mp4')">
-                                <video :src="post?.media" class="w-full h-full object-cover" muted></video>
-                            </template>
-                            <template x-if="post?.mediaType !== 'video' && !post?.media?.includes('.mp4')">
-                                <div class="w-full h-full relative">
-                                    <img :src="Array.isArray(post?.media) ? post.media[0] : post.media" class="w-full h-full object-cover">
-                                    <div x-show="Array.isArray(post?.media) && post.media.length > 1" class="absolute top-2 right-2 text-white bg-black/50 p-1 rounded text-[10px] shadow z-10"><i class="fas fa-clone"></i></div>
+                        <div class="break-inside-avoid mb-2 bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border dark:border-slate-700 cursor-pointer group" @click="openPostDetail(post)">
+                            <div class="relative w-full">
+                                <template x-if="post?.mediaType === 'video' || post?.media?.includes('.mp4')">
+                                    <video :src="post?.media" class="w-full object-cover" muted></video>
+                                </template>
+                                <template x-if="post?.mediaType !== 'video' && !post?.media?.includes('.mp4')">
+                                    <div class="w-full relative">
+                                        <img :src="Array.isArray(post?.media) ? post.media[0] : post.media" class="w-full object-cover">
+                                        <div x-show="Array.isArray(post?.media) && post.media.length > 1" class="absolute top-2 right-2 text-white bg-black/50 p-1 rounded text-[10px] shadow z-10"><i class="fas fa-clone"></i></div>
+                                    </div>
+                                </template>
+                                <div x-show="post?.mediaType === 'video' || post?.media?.includes('.mp4')" class="absolute top-2 right-2 text-white bg-black/60 w-6 h-6 rounded-full flex items-center justify-center text-[10px] shadow z-10"><i class="fas fa-play ml-0.5"></i></div>
+                            </div>
+                            
+                            <div class="p-2">
+                                <p class="text-[11px] font-bold dark:text-white line-clamp-2 mb-1.5 leading-tight" x-text="post?.content || ''"></p>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-1.5 min-w-0">
+                                        <img :src="getAvatarByUid(post?.uid, post?.user)" class="w-4 h-4 rounded-full object-cover flex-shrink-0 border border-slate-200 dark:border-slate-600">
+                                        <span class="text-[10px] font-bold text-slate-600 dark:text-slate-300 truncate" x-text="post?.user"></span>
+                                    </div>
+                                    <div class="flex items-center gap-1 text-[10px] text-slate-500 font-bold flex-shrink-0">
+                                        <i class="far fa-heart"></i>
+                                        <span x-text="post?.likes ? post.likes.length : 0"></span>
+                                    </div>
                                 </div>
-                            </template>
-                            <div x-show="post?.mediaType === 'video' || post?.media?.includes('.mp4')" class="absolute top-2 right-2 text-white bg-black/60 w-6 h-6 rounded-full flex items-center justify-center text-[10px] shadow"><i class="fas fa-play ml-0.5"></i></div>
+                            </div>
                         </div>
                     </template>
                 </div>
@@ -560,7 +577,7 @@
             </div>
             <div class="grid grid-cols-3 gap-0.5 mt-0.5">
                 <template x-for="post in getProfileGridItems()" :key="post.id">
-                    <div class="aspect-square bg-slate-100 dark:bg-slate-800 relative cursor-pointer group" @click="openPostDetail(post)">
+                    <div class="aspect-square bg-slate-100 dark:bg-slate-800 relative overflow-hidden cursor-pointer group" @click="openPostDetail(post)">
                         <template x-if="post?.mediaType === 'video' || post?.media?.includes('.mp4')">
                             <video :src="post?.media" class="w-full h-full object-cover" muted></video>
                         </template>
@@ -573,9 +590,15 @@
                         <div x-show="!post?.media" class="w-full h-full p-2 flex items-center justify-center text-center">
                             <p class="text-[9px] dark:text-slate-300 line-clamp-4" x-text="post?.content"></p>
                         </div>
-                        <div x-show="post?.mediaType === 'video' || post?.media?.includes('.mp4')" class="absolute top-2 right-2 text-white bg-black/60 w-6 h-6 rounded-full flex items-center justify-center text-[10px] shadow">
+                        <div x-show="post?.mediaType === 'video' || post?.media?.includes('.mp4')" class="absolute top-2 right-2 text-white bg-black/60 w-6 h-6 rounded-full flex items-center justify-center text-[10px] shadow z-10">
                             <i class="fas fa-play ml-0.5"></i>
                         </div>
+                        
+                        <div class="absolute bottom-1 left-1 text-white bg-black/60 px-1.5 py-0.5 rounded flex items-center gap-1 text-[10px] shadow z-10">
+                            <i class="fa-regular fa-eye text-[8px]"></i>
+                            <span x-text="(post?.views ? post.views.length : 0)"></span>
+                        </div>
+
                     </div>
                 </template>
                 <div x-show="getProfileGridItems().length === 0" class="col-span-3 text-center py-10 text-slate-400 text-sm">Nothing to see here yet.</div>
@@ -1147,6 +1170,33 @@
                     {text:'Go to Calendar', icon:'fa-calendar', action:'calendar'}
                 ],
 
+                // --- ADDED: FUNGSI OBSERVER UNTUK VIEW ---
+                observeView(el, item) {
+                    if (!item || !item.id) return;
+                    const observer = new IntersectionObserver((entries) => {
+                        if (entries[0].isIntersecting) {
+                            this.recordView(item);
+                            observer.disconnect();
+                        }
+                    }, { threshold: 0.5 }); // Terhitung saat 50% masuk ke layar
+                    observer.observe(el);
+                },
+                
+                async recordView(item) {
+                    if (!this.currentUser || !item.id) return;
+                    // Cegah double count dari user yang sama di sesi yang sama
+                    if (item.views && item.views.includes(this.currentUser.uid)) return;
+                    
+                    try {
+                        await window.fb.updateDoc(window.fb.doc(window.fb.db, "feed", item.id), {
+                            views: window.fb.arrayUnion(this.currentUser.uid)
+                        });
+                    } catch(e) {
+                        console.log("Error update view", e);
+                    }
+                },
+                // ----------------------------------------
+
                 compressImage(file) {
                     return new Promise((resolve, reject) => {
                         const reader = new FileReader();
@@ -1461,7 +1511,6 @@
                     };
                     await window.fb.updateDoc(window.fb.doc(window.fb.db, col, this.activeChat.id), payload); 
 
-                    // Notification trigger
                     if (this.activeChatType === 'dm') {
                         const otherUid = this.activeChat.members.find(u => u !== this.currentUser.uid);
                         if (otherUid) this.pushNotification(otherUid, 'message', txt, { chatId: this.activeChat.id, chatType: 'dm' });
@@ -1503,7 +1552,6 @@
                                         updatedAt: Date.now() 
                                     }); 
 
-                                    // Notification trigger for image upload
                                     if (this.activeChatType === 'dm') {
                                         const otherUid = this.activeChat.members.find(u => u !== this.currentUser.uid);
                                         if (otherUid) this.pushNotification(otherUid, 'message', 'Sent a photo', { chatId: this.activeChat.id, chatType: 'dm' });
@@ -1910,7 +1958,8 @@
                             mediaType: this.postFileType, 
                             time: Date.now(), 
                             likes: [], 
-                            comments: [] 
+                            comments: [],
+                            views: [] // <-- Penambahan field view baru
                         }); 
                         this.showCreatePost = false; 
                         this.showToast('Posted successfully!'); 
