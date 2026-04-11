@@ -272,7 +272,7 @@
                                             <i class="fa-heart" :class="(item?.likes && (item.likes.includes(currentUser?.uid) || item.likes.includes(currentUser?.name))) ? 'fas' : 'far'"></i>
                                         </button>
                                         <button @click="expanded = !expanded" class="text-[22px] text-slate-800 dark:text-white hover:text-slate-500 transition-colors"><i class="far fa-comment"></i></button>
-                                        <button @click="sharePost(item)" class="text-[22px] text-slate-800 dark:text-white hover:text-slate-500 transition-colors"><i class="far fa-paper-plane"></i></button>
+                                        <button @click="openShareModal(item)" class="text-[22px] text-slate-800 dark:text-white hover:text-slate-500 transition-colors"><i class="far fa-paper-plane"></i></button>
                                     </div>
                                     <button @click="toggleSavePost(item.id)" class="text-[22px] text-slate-800 dark:text-white hover:text-slate-500 transition-transform active:scale-75">
                                         <i :class="(myProfileData?.savedPosts && myProfileData.savedPosts.includes(item.id)) ? 'fas fa-bookmark text-brand-500' : 'far fa-bookmark'"></i>
@@ -455,7 +455,7 @@
                         <div class="flex-1 min-w-0">
                             <p class="text-sm dark:text-slate-200">
                                 <span class="font-bold mr-1" x-text="notif.fromName"></span>
-                                <span x-text="notif.type === 'like' ? 'liked your post.' : (notif.type === 'comment_like' ? 'liked your comment.' : (notif.type === 'comment' ? 'commented: ' + notif.data : (notif.type === 'message' ? 'sent you a message: ' + notif.data : 'started following you.')))"></span>
+                                <span x-text="notif.type === 'like' ? 'liked your post.' : (notif.type === 'comment_like' ? 'liked your comment: \'' + notif.data + '\'' : (notif.type === 'comment' ? 'commented: ' + notif.data : (notif.type === 'message' ? 'sent you a message: ' + notif.data : 'started following you.')))"></span>
                             </p>
                             <p class="text-xs text-slate-400 mt-0.5" x-text="getRelativeTime(notif.time)"></p>
                         </div>
@@ -542,7 +542,8 @@
                                 <template x-if="msg?.isImage">
                                     <div class="space-y-1"><img :src="msg?.text" class="rounded-lg w-full"><div class="text-[9px] opacity-70" x-text="msg?.fileName"></div></div>
                                 </template>
-                                <p class="text-sm" x-text="msg?.text" x-show="!msg?.isImage"></p>
+                                <p class="text-sm whitespace-pre-wrap" x-text="msg?.text" x-show="!msg?.isImage"></p>
+                                <button x-show="msg?.isPostShare" @click="openSharedPost(msg.sharedPostId)" class="mt-2 text-[10px] font-bold bg-white/20 text-brand-100 dark:text-brand-300 px-3 py-1.5 rounded-lg border border-white/20 hover:bg-white/30 transition-colors w-full text-center">View Post</button>
                             </div>
                         </div>
                     </template>
@@ -666,7 +667,7 @@
                                 <div class="flex gap-4">
                                     <button @click="toggleLike(activePost); activePost = feedItems.find(f=>f.id===activePost?.id) || activePost" class="text-[22px] transition-transform active:scale-75" :class="(activePost?.likes && (activePost.likes.includes(currentUser?.uid) || activePost.likes.includes(currentUser?.name))) ? 'text-red-500' : 'text-slate-800 dark:text-white'"><i class="fa-heart" :class="(activePost?.likes && (activePost.likes.includes(currentUser?.uid) || activePost.likes.includes(currentUser?.name))) ? 'fas' : 'far'"></i></button>
                                     <button class="text-[22px] text-slate-800 dark:text-white hover:text-slate-500"><i class="far fa-comment"></i></button>
-                                    <button @click="sharePost(activePost)" class="text-[22px] text-slate-800 dark:text-white hover:text-slate-500"><i class="far fa-paper-plane"></i></button>
+                                    <button @click="openShareModal(activePost)" class="text-[22px] text-slate-800 dark:text-white hover:text-slate-500"><i class="far fa-paper-plane"></i></button>
                                 </div>
                                 <button @click="toggleSavePost(activePost?.id)" class="text-[22px] text-slate-800 dark:text-white hover:text-slate-500 transition-transform active:scale-75"><i :class="(myProfileData?.savedPosts && myProfileData.savedPosts.includes(activePost?.id)) ? 'fas fa-bookmark text-brand-500' : 'far fa-bookmark'"></i></button>
                             </div>
@@ -758,12 +759,12 @@
                     <template x-if="postFileType === 'image'">
                         <div class="flex overflow-x-auto snap-x snap-mandatory hide-scroll gap-2 p-2 relative w-full h-full items-center">
                             <template x-if="!Array.isArray(postFileRaw)">
-                                <img :src="postFileRaw" class="w-full max-h-[60vh] object-contain snap-center rounded-xl mx-auto">
+                                <img :src="postFileRaw" class="max-w-full max-h-[60vh] object-contain snap-center rounded-xl mx-auto">
                             </template>
                             <template x-if="Array.isArray(postFileRaw)">
                                 <template x-for="(src, idx) in postFileRaw" :key="idx">
-                                    <div class="min-w-full flex-shrink-0 snap-center relative flex justify-center h-full items-center">
-                                        <img :src="src" class="w-full max-h-[60vh] object-contain rounded-xl">
+                                    <div class="min-w-full flex-shrink-0 snap-center relative flex justify-center h-[50vh] items-center">
+                                        <img :src="src" class="max-w-full max-h-[50vh] object-contain rounded-xl">
                                         <div class="absolute top-4 right-4 bg-black/60 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm shadow" x-text="(idx+1) + '/' + postFileRaw.length"></div>
                                     </div>
                                 </template>
@@ -785,7 +786,7 @@
             <div class="px-4 py-3 border-b dark:border-slate-800 flex justify-between items-center bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm sticky top-0 z-20">
                 <button @click="showEditPostModal=false" class="text-slate-800 dark:text-white text-2xl"><i class="fas fa-arrow-left"></i></button>
                 <h3 class="font-bold text-lg dark:text-white tracking-tight">Edit Post</h3>
-                <button @click="updatePost()" :disabled="!editPostData?.content && !editPostData?.media && !editPostNewMediaRaw" class="text-brand-500 font-bold text-base disabled:opacity-50">Update</button>
+                <button @click="updatePost()" :disabled="!editPostData?.content && editMediaList.length === 0" class="text-brand-500 font-bold text-base disabled:opacity-50">Update</button>
             </div>
             <div class="flex-1 overflow-y-auto custom-scroll p-4 relative flex flex-col">
                 <div x-show="isUploadingMedia" class="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
@@ -799,31 +800,56 @@
                     </div>
                 </div>
 
-                <div x-show="editPostNewMediaRaw || editPostData?.media" class="relative mt-2 mb-4 w-full bg-slate-100 dark:bg-black rounded-2xl overflow-hidden flex-1 flex justify-center items-center min-h-[40vh]">
+                <div x-show="editMediaList && editMediaList.length > 0" class="relative mt-2 mb-4 w-full bg-slate-100 dark:bg-black rounded-2xl overflow-hidden flex-1 flex justify-center items-center min-h-[40vh]">
                     <template x-if="editPostData?.mediaType === 'video'">
-                        <video :src="editPostNewMediaRaw || editPostData?.media" class="w-full max-h-[60vh] object-contain" controls></video>
+                        <video :src="editMediaList[0]" class="w-full max-h-[60vh] object-contain" controls></video>
                     </template>
-                    <template x-if="editPostData?.mediaType === 'image'">
+                    <template x-if="editPostData?.mediaType !== 'video'">
                         <div class="flex overflow-x-auto snap-x snap-mandatory hide-scroll gap-2 p-2 relative w-full h-full items-center">
-                            <template x-if="!Array.isArray(editPostNewMediaRaw || editPostData?.media)">
-                                <img :src="editPostNewMediaRaw || editPostData?.media" class="w-full max-h-[60vh] object-contain snap-center rounded-xl mx-auto">
-                            </template>
-                            <template x-if="Array.isArray(editPostNewMediaRaw || editPostData?.media)">
-                                <template x-for="(src, idx) in (editPostNewMediaRaw || editPostData?.media)" :key="idx">
-                                    <div class="min-w-full flex-shrink-0 snap-center relative flex justify-center h-full items-center">
-                                        <img :src="src" class="w-full max-h-[60vh] object-contain rounded-xl">
-                                        <div class="absolute top-4 right-4 bg-black/60 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm shadow" x-text="(idx+1) + '/' + (editPostNewMediaRaw || editPostData?.media).length"></div>
-                                    </div>
-                                </template>
+                            <template x-for="(src, idx) in editMediaList" :key="idx">
+                                <div class="min-w-full flex-shrink-0 snap-center relative flex justify-center h-[50vh] items-center group">
+                                    <img :src="src" class="max-w-full max-h-[50vh] object-contain rounded-xl">
+                                    <div class="absolute top-4 left-4 bg-black/60 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm shadow z-10" x-text="(idx+1) + '/' + editMediaList.length"></div>
+                                    <button @click="removeEditMedia(idx)" class="absolute top-4 right-4 bg-red-500/90 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm z-20 transition-transform active:scale-90 hover:bg-red-600">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
                             </template>
                         </div>
                     </template>
                 </div>
 
                 <div class="border-t dark:border-slate-800 pt-4 flex justify-between items-center mt-auto pb-safe">
-                    <span class="text-base font-bold text-slate-500">Change media</span>
+                    <span class="text-base font-bold text-slate-500">Add more photos</span>
                     <input type="file" x-ref="editMediaInput" class="hidden" multiple accept="image/*,video/*" @change="handleEditPostMedia($event)">
                     <button type="button" @click="$refs.editMediaInput.click()" class="text-brand-500 text-3xl hover:scale-110 transition-transform"><i class="far fa-images"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="showShareModal" class="fixed inset-0 z-[400] bg-black/60 flex items-end justify-center" x-cloak x-transition.opacity>
+            <div class="bg-white dark:bg-slate-900 w-full md:max-w-md rounded-t-3xl p-6 pb-safe transform transition-transform flex flex-col max-h-[85vh]" @click.outside="showShareModal = false">
+                <div class="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-4"></div>
+                <h3 class="font-bold text-xl dark:text-white mb-6 text-center">Share to...</h3>
+                
+                <button @click="sharePostViaApp(activeSharePost)" class="w-full flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border dark:border-slate-700 hover:border-brand-500 transition-colors mb-6 group">
+                    <div class="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-600 flex items-center justify-center text-lg group-hover:scale-110 transition-transform"><i class="fas fa-share-nodes"></i></div>
+                    <div class="text-left flex-1"><div class="font-bold text-sm dark:text-white">Share via other apps</div><div class="text-xs text-slate-500">WhatsApp, Instagram, Copy Link, dll.</div></div>
+                    <i class="fas fa-chevron-right text-slate-300"></i>
+                </button>
+
+                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Send to friends</h4>
+                <div class="overflow-y-auto custom-scroll flex-1 -mx-2 px-2">
+                    <template x-for="user in getFollowingUsers()" :key="user.uid">
+                        <div class="flex justify-between items-center p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl cursor-pointer transition-colors" @click="shareToUser(user)">
+                            <div class="flex items-center gap-3">
+                                <img :src="getAvatarByUid(user.uid, user.name)" class="w-10 h-10 rounded-full object-cover border dark:border-slate-700">
+                                <span class="text-sm font-bold dark:text-white" x-text="user.name"></span>
+                            </div>
+                            <button class="bg-brand-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm active:scale-95 transition-transform">Send</button>
+                        </div>
+                    </template>
+                    <div x-show="getFollowingUsers().length === 0" class="text-center py-6 text-slate-400 text-sm">You haven't followed anyone yet.</div>
                 </div>
             </div>
         </div>
@@ -888,7 +914,7 @@
                 postFileType: '', 
                 showEditPostModal: false,
                 editPostData: {},
-                editPostNewMediaRaw: null,
+                editMediaList: [], // Menggantikan editPostNewMediaRaw untuk multiple edit
                 isUploadingMedia: false, 
                 isDarkMode: localStorage.getItem('tf_dark') === 'true', 
                 exploreQuery: '', 
@@ -906,7 +932,6 @@
                 activeStoryIndex: 0,
                 storyTimer: null, 
                 storyProgress: 0,
-                get storyProgressStyle() { return `width: ${this.storyProgress}%`; },
                 showModal: false, 
                 showDetail: false, 
                 isEditMode: false, 
@@ -930,6 +955,8 @@
                 showPostModal: false, 
                 activePost: {}, 
                 showLogoutConfirm: false, 
+                showShareModal: false, // Untuk popup share
+                activeSharePost: null, // Data post yg mau dishare
                 calendarDays: [], 
                 calendarTitle: '', 
                 currentDate: new Date(), 
@@ -943,6 +970,7 @@
                     {text:'Toggle Dark Mode', icon:'fa-moon', action:'dark'}, 
                     {text:'Go to Calendar', icon:'fa-calendar', action:'calendar'}
                 ],
+                get storyProgressStyle() { return `width: ${this.storyProgress}%`; },
 
                 observeView(el, item) {
                     if (!item || !item.id) return;
@@ -1075,8 +1103,7 @@
                         const p = this.feedItems.find(x => x.id === notif.postId); 
                         if(p) {
                             this.switchView('feed');
-                            this.openPostDetail(p);
-                            setTimeout(() => { const replyInput = document.getElementById('reply-input-' + p.id); if (replyInput) replyInput.focus(); }, 500);
+                            this.openPostDetail(p); // Membuka postingan tempat komentar berada
                         } 
                     } else if (notif.chatId) {
                         this.switchView('messages'); this.messagesTab = notif.chatType === 'group' ? 'groups' : 'direct';
@@ -1121,7 +1148,7 @@
                 async sendChatMessage() { 
                     if(!this.chatInput.trim() || !this.activeChat?.id || !this.currentUser) return; 
                     const txt = this.chatInput; this.chatInput = ''; const col = this.activeChatType === 'dm' ? 'dms' : 'discussions';
-                    const payload = { messages: window.fb.arrayUnion({ sender: this.currentUser.name, text: txt, isImage: false, timestamp: Date.now() }), updatedAt: Date.now() };
+                    const payload = { messages: window.fb.arrayUnion({ sender: this.currentUser.name, text: txt, isImage: false, isPostShare: false, timestamp: Date.now() }), updatedAt: Date.now() };
                     await window.fb.updateDoc(window.fb.doc(window.fb.db, col, this.activeChat.id), payload); 
                     if (this.activeChatType === 'dm') {
                         const otherUid = this.activeChat.members.find(u => u !== this.currentUser.uid);
@@ -1183,10 +1210,50 @@
                 },
                 showHeartAnim(id) { this.heartAnimId = id; setTimeout(() => { this.heartAnimId = null; }, 800); },
                 
-                sharePost(item) { 
+                // --- FUNGSI SHARE BARU ---
+                openShareModal(item) {
+                    this.activeSharePost = item;
+                    this.showShareModal = true;
+                },
+                sharePostViaApp(item) { 
                     const shareData = { title: 'Yarch Post', text: item.content || 'Check out this post!', url: window.location.href };
                     if (navigator.share && navigator.canShare && navigator.canShare(shareData)) { navigator.share(shareData).catch(err => console.log('Share error', err)); } else { navigator.clipboard.writeText(`${shareData.text} - ${shareData.url}`).then(() => { this.showToast('Link tersalin ke clipboard!'); }).catch(() => { this.showToast('Share not supported', 'error'); }); } 
+                    this.showShareModal = false;
                 },
+                getFollowingUsers() { 
+                    const followingIds = this.myProfileData?.following || [];
+                    return this.allUsers.filter(u => followingIds.includes(u.uid));
+                },
+                async shareToUser(user) {
+                    if(!user || !this.currentUser || !this.activeSharePost) return;
+                    const chatId = this.currentUser.uid < user.uid ? `${this.currentUser.uid}_${user.uid}` : `${user.uid}_${this.currentUser.uid}`; 
+                    
+                    const existingChat = this.dms.find(d => d.id === chatId);
+                    if (!existingChat) {
+                        await window.fb.setDoc(window.fb.doc(window.fb.db, "dms", chatId), { members: [this.currentUser.uid, user.uid], messages: [], updatedAt: Date.now() });
+                    }
+                    
+                    const shortDesc = this.activeSharePost.content ? this.activeSharePost.content.substring(0, 50) + '...' : 'Photo/Video';
+                    const msgText = `Shared a post from @${this.activeSharePost.user}:\n"${shortDesc}"`;
+                    
+                    const payload = { messages: window.fb.arrayUnion({ sender: this.currentUser.name, text: msgText, isImage: false, isPostShare: true, sharedPostId: this.activeSharePost.id, timestamp: Date.now() }), updatedAt: Date.now() };
+                    await window.fb.updateDoc(window.fb.doc(window.fb.db, "dms", chatId), payload); 
+                    
+                    this.pushNotification(user.uid, 'message', 'Shared a post with you', { chatId: chatId, chatType: 'dm' });
+                    this.showToast('Post sent to ' + user.name);
+                    this.showShareModal = false;
+                },
+                openSharedPost(postId) {
+                    const post = this.feedItems.find(p => p.id === postId);
+                    if (post) {
+                        this.activeChat = {}; // Tutup chat
+                        this.switchView('feed');
+                        this.openPostDetail(post);
+                    } else {
+                        this.showToast('Post is no longer available', 'error');
+                    }
+                },
+                // ---------------------------
                 
                 async toggleSavePost(postId) {
                     if(!this.currentUser || !this.myProfileData?.uid) return;
@@ -1260,16 +1327,81 @@
                 }, 
                 async deletePost(id) { if(!id) return; if(confirm('Delete post?')) await window.fb.deleteDoc(window.fb.doc(window.fb.db, "feed", id)); },
                 
-                // --- FUNGSI EDIT POST DIPERBAIKI: Menutup detail modal agar z-index tidak menumpuk ---
+                // --- PERBAIKAN LOGIKA EDIT MEDIA ---
                 editPost(item) { 
                     if(!item || !item.id) return; 
                     this.editPostData = JSON.parse(JSON.stringify(item)); 
-                    this.editPostNewMediaRaw = null; 
-                    this.showPostModal = false; // Mematikan Detail Modal
-                    this.showEditPostModal = true; // Mengaktifkan Edit Modal
+                    
+                    if (Array.isArray(item.media)) {
+                        this.editMediaList = [...item.media];
+                    } else if (item.media) {
+                        this.editMediaList = [item.media];
+                    } else {
+                        this.editMediaList = [];
+                    }
+
+                    this.showPostModal = false; // Menutup Detail Post agar tidak bertumpuk
+                    this.showEditPostModal = true; 
                 },
-                async handleEditPostMedia(e) { const files = Array.from(e.target.files); if(!files.length) return; this.isUploadingMedia = true; this.editPostData.mediaType = files[0].type.startsWith('video/') ? 'video' : 'image'; try { if (this.editPostData.mediaType === 'video') { if(files[0].size > 5000000) { this.showToast('Video max 5MB', 'error'); this.isUploadingMedia = false; return; } const reader = new FileReader(); reader.onload = (event) => { this.editPostNewMediaRaw = event.target.result; this.isUploadingMedia = false; }; reader.readAsDataURL(files[0]); } else { let compressedArr = []; for(let f of files) { compressedArr.push(await this.compressImage(f)); } this.editPostNewMediaRaw = compressedArr; this.isUploadingMedia = false; } } catch(err) { this.showToast('Error processing media', 'error'); this.isUploadingMedia = false; } },
-                async updatePost() { if(!this.editPostData.id) return; this.isUploadingMedia = true; try { const payload = { content: this.editPostData.content }; if (this.editPostNewMediaRaw) { payload.media = this.editPostNewMediaRaw; payload.mediaType = this.editPostData.mediaType; } await window.fb.updateDoc(window.fb.doc(window.fb.db, "feed", this.editPostData.id), payload); this.showToast('Post updated successfully'); this.showEditPostModal = false; if(this.activePost && this.activePost.id === this.editPostData.id) { this.activePost.content = payload.content; if(payload.media) { this.activePost.media = payload.media; this.activePost.mediaType = payload.mediaType; } } } catch(e) { this.showToast('Error updating post', 'error'); } finally { this.isUploadingMedia = false; } },
+                removeEditMedia(idx) {
+                    this.editMediaList.splice(idx, 1);
+                },
+                async handleEditPostMedia(e) { 
+                    const files = Array.from(e.target.files); 
+                    if(!files.length) return; 
+                    this.isUploadingMedia = true; 
+                    
+                    const newType = files[0].type.startsWith('video/') ? 'video' : 'image';
+                    this.editPostData.mediaType = newType; 
+                    
+                    try { 
+                        if (newType === 'video') { 
+                            if(files[0].size > 5000000) { this.showToast('Video max 5MB', 'error'); this.isUploadingMedia = false; return; } 
+                            const reader = new FileReader(); 
+                            reader.onload = (event) => { 
+                                this.editMediaList = [event.target.result]; // Jika video, timpa semua media
+                                this.isUploadingMedia = false; 
+                            }; 
+                            reader.readAsDataURL(files[0]); 
+                        } else { 
+                            for(let f of files) { 
+                                this.editMediaList.push(await this.compressImage(f)); 
+                            } 
+                            this.isUploadingMedia = false; 
+                        } 
+                    } catch(err) { 
+                        this.showToast('Error processing media', 'error'); 
+                        this.isUploadingMedia = false; 
+                    } 
+                },
+                async updatePost() { 
+                    if(!this.editPostData.id) return; 
+                    this.isUploadingMedia = true; 
+                    try { 
+                        const payload = { content: this.editPostData.content }; 
+                        
+                        // Menangani penyimpananan foto setelah dihapus/ditambah
+                        if (this.editMediaList.length === 0) {
+                            payload.media = null;
+                            payload.mediaType = null;
+                        } else if (this.editMediaList.length === 1) {
+                            payload.media = this.editMediaList[0];
+                            payload.mediaType = this.editPostData.mediaType || 'image';
+                        } else {
+                            payload.media = this.editMediaList;
+                            payload.mediaType = 'image'; // Multiple pasti image
+                        }
+                        
+                        await window.fb.updateDoc(window.fb.doc(window.fb.db, "feed", this.editPostData.id), payload); 
+                        this.showToast('Post updated successfully'); 
+                        this.showEditPostModal = false; 
+                    } catch(e) { 
+                        this.showToast('Error updating post', 'error'); 
+                    } finally { 
+                        this.isUploadingMedia = false; 
+                    } 
+                },
+                // -----------------------------------
                 
                 openCreateStoryModal() { this.storyFilesRaw = []; this.storyFilesPreview = []; this.showCreateStory = true; },
                 async handleStoryMedia(e) { const files = Array.from(e.target.files); if (!files.length) return; this.isUploadingMedia = true; try { for(let f of files) { const compressed = await this.compressImage(f); this.storyFilesRaw.push(compressed); this.storyFilesPreview.push(compressed); } } catch(err) { this.showToast('Error processing images', 'error'); } finally { this.isUploadingMedia = false; } },
@@ -1311,9 +1443,15 @@
                     if (!comment.likes) comment.likes = [];
                     
                     const hasLiked = comment.likes.includes(this.currentUser.uid);
-                    if (hasLiked) { comment.likes = comment.likes.filter(uid => uid !== this.currentUser.uid); } else {
+                    if (hasLiked) { 
+                        comment.likes = comment.likes.filter(uid => uid !== this.currentUser.uid); 
+                    } else {
                         comment.likes.push(this.currentUser.uid);
-                        if (comment.uid && comment.uid !== this.currentUser.uid) { this.pushNotification(comment.uid, 'comment_like', 'liked your comment', { postId: postId }); }
+                        // PERBAIKAN: Mengirim teks komentar agar tampil jelas di notifikasi
+                        if (comment.uid && comment.uid !== this.currentUser.uid) { 
+                            const shortText = comment.text.length > 20 ? comment.text.substring(0, 20) + '...' : comment.text;
+                            this.pushNotification(comment.uid, 'comment_like', shortText, { postId: postId }); 
+                        }
                     }
 
                     await window.fb.updateDoc(window.fb.doc(window.fb.db, "feed", postId), { comments: comments });
