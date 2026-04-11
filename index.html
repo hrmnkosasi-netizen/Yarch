@@ -450,20 +450,22 @@
             </div>
             <div class="flex-1 pb-24">
                 <template x-for="notif in getMyNotifications()" :key="notif.id">
-                    <div class="px-5 py-4 border-b dark:border-slate-800 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer" @click="handleNotifClick(notif)">
+                    <div class="px-5 py-4 border-b dark:border-slate-800 flex items-center gap-4 cursor-pointer transition-all" 
+                         :class="notif.read ? 'opacity-60 bg-transparent' : 'bg-brand-50/50 dark:bg-brand-900/20'"
+                         @click="handleNotifClick(notif)">
                         <img :src="getAvatarByUid(notif.fromUid, notif.fromName)" class="w-11 h-11 rounded-full object-cover border dark:border-slate-700">
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm dark:text-slate-200">
-                                <span class="font-bold mr-1" x-text="notif.fromName"></span>
-                                <span x-text="notif.type === 'like' ? 'liked your post.' : (notif.type === 'comment_like' ? 'liked your comment: \'' + notif.data + '\'' : (notif.type === 'comment' ? 'commented: ' + notif.data : (notif.type === 'message' ? 'sent you a message: ' + notif.data : 'started following you.')))"></span>
+                            <p class="text-sm dark:text-slate-200" :class="notif.read ? 'font-normal' : 'font-extrabold'">
+                                <span :class="notif.read ? 'font-bold' : 'font-extrabold text-brand-600 dark:text-brand-400'" x-text="notif.fromName"></span>
+                                <span class="ml-1" x-text="notif.type === 'like' ? 'liked your post.' : (notif.type === 'comment_like' ? 'liked your comment: \'' + notif.data + '\'' : (notif.type === 'comment' ? 'commented: ' + notif.data : (notif.type === 'message' ? 'sent you a message: ' + notif.data : 'started following you.')))"></span>
                             </p>
-                            <p class="text-xs text-slate-400 mt-0.5" x-text="getRelativeTime(notif.time)"></p>
+                            <p class="text-xs mt-0.5" :class="notif.read ? 'text-slate-400' : 'text-brand-500 font-bold'" x-text="getRelativeTime(notif.time)"></p>
                         </div>
                         <template x-if="notif.type === 'follow'">
                             <button @click.stop="toggleFollowUser(notif.fromUid)" class="text-xs px-4 py-1.5 rounded-lg font-bold transition-colors" :class="getFollowBtnClass(notif.fromUid)" x-text="getFollowBtnText(notif.fromUid)"></button>
                         </template>
                         <template x-if="notif.type !== 'follow'">
-                            <i class="fas text-slate-300 text-lg" :class="(notif.type === 'like' || notif.type === 'comment_like') ? 'fa-heart text-red-400' : (notif.type === 'comment' ? 'fa-comment text-slate-400' : (notif.type === 'message' ? 'fa-envelope text-brand-500' : 'fa-bell text-slate-400'))"></i>
+                            <div x-show="!notif.read" class="w-2.5 h-2.5 bg-brand-500 rounded-full shadow-sm"></div>
                         </template>
                     </div>
                 </template>
@@ -507,7 +509,11 @@
                 <div x-show="messagesTab === 'groups'">
                     <template x-for="chat in getVisibleDiscussions()" :key="chat.id">
                         <div @click="openChatModal(chat, 'group')" class="px-5 py-4 border-b dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex items-center gap-4">
-                            <img :src="'https://ui-avatars.com/api/?name='+(chat?.topic || 'D')+'&background=random&color=fff'" class="w-12 h-12 rounded-full border dark:border-slate-700 object-cover">
+                            <div class="flex -space-x-3 shrink-0 mr-2">
+                                <template x-for="mUid in (chat.members || []).slice(0, 3)">
+                                    <img :src="getAvatarByUid(mUid, getUserName(mUid))" class="w-10 h-10 rounded-full border-2 border-white dark:border-slate-800 object-cover">
+                                </template>
+                            </div>
                             <div class="flex-1 min-w-0">
                                 <h3 class="text-sm truncate" :class="hasUnread(chat) ? 'font-extrabold text-brand-600 dark:text-brand-400' : 'font-bold dark:text-white'" x-text="chat?.topic"></h3>
                                 <p class="text-xs truncate mt-0.5" :class="hasUnread(chat) ? 'text-slate-800 font-bold dark:text-white' : 'text-slate-500'" x-text="(chat?.messages && chat.messages.length > 0) ? (chat.messages[chat.messages.length-1].sender + ': ' + (chat.messages[chat.messages.length-1].isImage ? 'Sent a photo' : chat.messages[chat.messages.length-1].text)) : 'No messages'"></p>
@@ -529,7 +535,7 @@
                     <h3 class="font-bold text-sm dark:text-white" x-text="activeChatType === 'dm' ? getOtherMember(activeChat).name : (activeChat?.topic || '')"></h3>
                 </div>
                 <div class="flex gap-3 items-center">
-                    <button x-show="activeChatType === 'group' && activeChat?.createdByUid === currentUser?.uid" @click="inviteMode='chat'; showInviteModal=true" class="text-slate-800 dark:text-white text-lg"><i class="fas fa-user-plus"></i></button>
+                    <button x-show="activeChatType === 'group' && activeChat?.createdByUid === currentUser?.uid" @click="inviteMode='chat'; showInviteModal=true" class="text-slate-800 dark:text-white text-lg hover:text-brand-500"><i class="fas fa-user-plus"></i></button>
                 </div>
             </div>
             <div class="flex-1 bg-slate-50 dark:bg-slate-950 p-4 space-y-4 overflow-y-auto chat-container custom-scroll" id="chatContainer">
@@ -701,15 +707,15 @@
                                                 </div>
                                             </div>
                                         </template>
-                                        <div x-show="!activePost?.comments || activePost.comments.length === 0" class="text-xs text-slate-400 italic py-2">No comments yet.</div>
                                     </div>
+                                    <div x-show="!activePost?.comments || activePost.comments.length === 0" class="text-xs text-slate-400 italic py-2">No comments yet.</div>
                                 </div>
+                            </div>
 
-                                <div class="flex items-center gap-3 mt-4 pt-3 border-t dark:border-slate-100 dark:border-slate-700">
-                                    <img :src="getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-6 h-6 rounded-full object-cover">
-                                    <input type="text" :id="'reply-input-' + activePost?.id" x-model="replyText" @keydown.enter="sendPostComment(activePost?.id, replyText, $data); activePost = feedItems.find(f=>f.id===activePost?.id) || activePost" class="flex-1 bg-transparent text-sm outline-none dark:text-white" placeholder="Add a comment...">
-                                    <button x-show="replyText.trim().length > 0" @click="sendPostComment(activePost?.id, replyText, $data); activePost = feedItems.find(f=>f.id===activePost?.id) || activePost" class="text-brand-500 font-bold text-sm">Post</button>
-                                </div>
+                            <div class="flex items-center gap-3 mt-4 pt-3 border-t dark:border-slate-100 dark:border-slate-700">
+                                <img :src="getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-6 h-6 rounded-full object-cover">
+                                <input type="text" :id="'reply-input-' + activePost?.id" x-model="replyText" @keydown.enter="sendPostComment(activePost?.id, replyText, $data); activePost = feedItems.find(f=>f.id===activePost?.id) || activePost" class="flex-1 bg-transparent text-sm outline-none dark:text-white" placeholder="Add a comment...">
+                                <button x-show="replyText.trim().length > 0" @click="sendPostComment(activePost?.id, replyText, $data); activePost = feedItems.find(f=>f.id===activePost?.id) || activePost" class="text-brand-500 font-bold text-sm">Post</button>
                             </div>
                         </div>
                     </template>
@@ -720,7 +726,26 @@
         <div x-show="showDetail" class="fixed inset-0 bg-black/50 z-[70] flex flex-col md:p-4" x-cloak x-transition.opacity><div class="flex-1 flex flex-col w-full md:max-w-3xl md:h-[85vh] md:mx-auto md:bg-white md:dark:bg-slate-800 md:rounded-2xl overflow-hidden relative bg-white dark:bg-slate-800" @click.outside="showDetail=false"><div class="px-5 py-4 border-b dark:border-slate-700 flex justify-between bg-slate-50 dark:bg-slate-900"><button @click="showDetail=false" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 shadow"><i class="fas fa-arrow-left"></i></button><div class="flex gap-2 items-center" x-show="!activeTask?.createdByUid || activeTask?.createdByUid === currentUser?.uid"><button @click="editFromDetail()" class="text-xs font-bold text-slate-400 hover:text-brand-500"><i class="fas fa-pen"></i> Edit</button><button @click="deleteTask(activeTask?.id)" class="text-xs font-bold text-red-400 ml-2"><i class="fas fa-trash"></i></button></div></div><div class="flex-1 overflow-y-auto p-5 relative"><h2 class="text-2xl font-extrabold dark:text-white mb-2" x-text="activeTask?.title"></h2><p class="text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border dark:border-slate-700 mb-6" x-text="activeTask?.desc || 'No description provided.'"></p><div class="mb-6 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border dark:border-slate-700"><h3 class="text-[10px] font-bold text-slate-400 uppercase mb-3"><i class="fas fa-users"></i> Team Members</h3><div class="flex flex-wrap gap-2 items-center"><template x-for="mUid in (activeTask?.members || [activeTask?.createdByUid])" :key="mUid"><div x-show="mUid" class="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-2 py-1.5 rounded-full shadow-sm border dark:border-slate-700"><img :src="getAvatarByUid(mUid, getUserName(mUid))" class="w-4 h-4 rounded-full object-cover"><span class="text-[10px] font-bold dark:text-white" x-text="getUserName(mUid)"></span></div></template><button x-show="activeTask?.createdByUid === currentUser?.uid" @click="inviteMode='task'; showInviteModal=true" class="bg-brand-50 text-brand-600 px-3 py-1.5 rounded-full text-[10px] font-bold border border-brand-200 shadow-sm"><i class="fas fa-plus"></i> Add Member</button></div></div><div><h3 class="text-xs font-bold text-slate-400 uppercase mb-3"><i class="fas fa-check-square"></i> Subtasks</h3><div class="space-y-2"><template x-for="(sub, index) in (activeTask?.subtasks || [])" :key="index"><div class="flex items-center gap-3 p-2 rounded-lg bg-slate-50 dark:bg-slate-900/50 border dark:border-slate-700 group"><input type="checkbox" class="cb-custom" :checked="sub?.isDone" @change="toggleSubtask(activeTask?.id, index, sub)"><span class="text-sm flex-1 dark:text-slate-200" :class="sub?.isDone ? 'line-through text-slate-400' : ''" x-text="sub?.text"></span><button x-show="!activeTask?.createdByUid || activeTask?.createdByUid === currentUser?.uid" @click="deleteSubtask(activeTask?.id, index)" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100"><i class="fas fa-trash"></i></button></div></template></div><div class="mt-3 flex gap-2" x-show="!activeTask?.createdByUid || activeTask?.createdByUid === currentUser?.uid"><input type="text" x-model="newSubtask" @keydown.enter="addSubtask(activeTask?.id)" class="flex-1 bg-slate-100 dark:bg-slate-900 rounded-lg px-3 py-2 text-xs outline-none dark:text-white" placeholder="Add subtask..."><button @click="addSubtask(activeTask?.id)" class="bg-slate-800 text-white rounded-lg px-3"><i class="fas fa-plus"></i></button></div></div></div><div class="p-4 border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex gap-3"><button x-show="activeTask?.status==='TODO' || activeTask?.status==='DONE'" @click="moveTask(activeTask?.id, 'DOING'); showDetail=false" class="flex-1 p-3 rounded-xl bg-blue-50 text-blue-600 font-bold border border-blue-100">Start Doing</button><button x-show="activeTask?.status==='TODO' || activeTask?.status==='DOING'" @click="moveTask(activeTask?.id, 'DONE'); showDetail=false" class="flex-1 bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-lg">MARK COMPLETE</button><button x-show="activeTask?.status==='DONE'" @click="moveTask(activeTask?.id, 'TODO'); showDetail=false" class="flex-1 bg-slate-200 text-slate-600 rounded-xl font-bold text-xs">REOPEN</button></div></div></div>
         <div x-show="showModal" class="fixed inset-0 bg-black/50 z-[260] flex items-end md:items-center justify-center md:p-4" x-cloak x-transition.opacity><div class="bg-white dark:bg-slate-800 w-full md:max-w-md rounded-t-3xl md:rounded-3xl p-6" @click.outside="showModal=false"><div class="flex justify-between items-center mb-6"><h3 class="font-extrabold text-xl dark:text-white" x-text="isEditMode ? 'Edit Task' : 'New Task'"></h3><button @click="showModal=false" class="text-slate-400"><i class="fas fa-times"></i></button></div><div class="space-y-4"><input type="text" x-model="form.title" class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-sm font-bold outline-none dark:text-white" placeholder="Task Title"><textarea x-model="form.desc" rows="3" class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-xs outline-none dark:text-white" placeholder="Description"></textarea><div class="grid grid-cols-2 gap-3"><select x-model="form.priority" class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-xs font-bold outline-none dark:text-white"><option>High</option><option>Medium</option><option>Low</option></select><input type="date" x-model="form.dueDate" class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-xs font-bold outline-none dark:text-white"></div></div><div class="flex gap-3 mt-8"><button @click="showModal=false" class="flex-1 py-3 rounded-xl font-bold text-xs bg-slate-100 text-slate-500">CANCEL</button><button @click="saveTask()" class="flex-[2] bg-brand-600 text-white py-3 rounded-xl font-bold text-xs shadow-lg"><span x-text="isEditMode ? 'UPDATE' : 'CREATE'"></span></button></div></div></div>
         <div x-show="showEditProfile" class="fixed inset-0 bg-black/50 z-[250] flex items-end md:items-center justify-center md:p-4" x-cloak x-transition.opacity><div class="bg-white dark:bg-slate-800 w-full md:max-w-md rounded-t-3xl md:rounded-3xl p-6" @click.outside="showEditProfile=false"><h3 class="font-bold text-lg mb-4 dark:text-white">Edit Profile</h3><div class="flex items-center gap-4 mb-4"><img :src="editProfileForm.avatar || getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-16 h-16 rounded-full object-cover border dark:border-slate-700"><div><input type="file" accept="image/*" x-ref="avatarInput" class="hidden" @change="handleAvatarUpload($event)"><button type="button" @click="$refs.avatarInput.click()" class="text-xs font-bold text-brand-500 bg-brand-50 dark:bg-brand-900/20 px-3 py-1.5 rounded-lg">Change Photo</button></div></div><div class="space-y-3"><div><label class="text-xs font-bold text-slate-400">Name</label><input type="text" x-model="editProfileForm.name" class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-sm outline-none dark:text-white"></div><div><label class="text-xs font-bold text-slate-400">Bio</label><textarea x-model="editProfileForm.bio" rows="3" class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-sm outline-none dark:text-white"></textarea></div><div><label class="text-xs font-bold text-slate-400">Website URL</label><input type="text" x-model="editProfileForm.website" class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-sm outline-none dark:text-white" placeholder="https://..."></div></div><div class="flex gap-2 mt-6"><button @click="showEditProfile=false" class="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-sm">Cancel</button><button @click="saveProfile()" class="flex-1 py-3 bg-brand-500 text-white rounded-xl font-bold text-sm">Save</button></div></div></div>
-        <div x-show="showInviteModal" class="fixed inset-0 bg-black/50 z-[250] flex items-center justify-center p-4" x-cloak><div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl p-6" @click.outside="showInviteModal = false"><h3 class="font-bold text-lg mb-4 dark:text-white" x-text="inviteMode === 'chat' ? 'Invite to Discussion' : 'Invite to Task'"></h3><div class="max-h-60 overflow-y-auto space-y-2 mb-4"><template x-for="user in allUsers" :key="user.uid"><div x-show="user?.uid !== currentUser?.uid" class="flex justify-between items-center p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg"><div class="flex items-center gap-2"><img :src="getAvatarByUid(user?.uid, user?.name)" class="w-8 h-8 rounded-full object-cover"><span class="text-sm font-bold dark:text-white" x-text="user?.name"></span></div><button x-show="!isMember(user?.uid)" @click="inviteUser(user?.uid)" class="text-xs bg-slate-200 dark:bg-slate-600 px-3 py-1 rounded font-bold">Invite</button><span x-show="isMember(user?.uid)" class="text-xs text-brand-500 font-bold"><i class="fas fa-check"></i> Added</span></div></template></div><button @click="showInviteModal = false" class="w-full py-2 bg-slate-100 dark:bg-slate-700 rounded-lg font-bold text-sm">Done</button></div></div>
+        
+        <div x-show="showInviteModal" class="fixed inset-0 bg-black/50 z-[250] flex items-center justify-center p-4" x-cloak>
+            <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl p-6" @click.outside="showInviteModal = false">
+                <h3 class="font-bold text-lg mb-4 dark:text-white" x-text="inviteMode === 'chat' ? 'Manage Discussion Members' : 'Invite to Task'"></h3>
+                <div class="max-h-60 overflow-y-auto space-y-2 mb-4">
+                    <template x-for="user in allUsers" :key="user.uid">
+                        <div x-show="user?.uid !== currentUser?.uid" class="flex justify-between items-center p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg">
+                            <div class="flex items-center gap-2">
+                                <img :src="getAvatarByUid(user?.uid, user?.name)" class="w-8 h-8 rounded-full object-cover">
+                                <span class="text-sm font-bold dark:text-white" x-text="user?.name"></span>
+                            </div>
+                            <button x-show="!isMember(user?.uid)" @click="inviteUser(user?.uid)" class="text-xs bg-brand-50 text-brand-600 px-3 py-1 rounded font-bold">Invite</button>
+                            <button x-show="isMember(user?.uid) && (inviteMode === 'chat' ? activeChat?.createdByUid === currentUser?.uid : activeTask?.createdByUid === currentUser?.uid)" @click="removeMember(user?.uid)" class="text-xs bg-red-50 text-red-500 px-3 py-1 rounded font-bold">Remove</button>
+                        </div>
+                    </template>
+                </div>
+                <button @click="showInviteModal = false" class="w-full py-2 bg-slate-100 dark:bg-slate-700 rounded-lg font-bold text-sm dark:text-white">Done</button>
+            </div>
+        </div>
+        
         <div x-show="showDiscussModal" class="fixed inset-0 bg-black/50 z-[210] flex items-center justify-center p-4" x-cloak><div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl shadow-2xl p-6"><h3 class="font-bold text-lg mb-4 dark:text-white">New Discussion Group</h3><input type="text" x-model="newDiscussTopic" class="w-full bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 text-sm mb-4 outline-none dark:text-white" placeholder="Group Name"><div class="flex gap-2"><button @click="showDiscussModal = false" class="flex-1 py-2 bg-slate-100 text-slate-500 rounded-lg font-bold text-xs">CANCEL</button><button @click="createDiscussion()" class="flex-1 py-2 bg-brand-500 text-white rounded-lg font-bold text-xs">CREATE</button></div></div></div>
         <div x-show="showCmd" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[300] flex justify-center pt-20 px-4" x-transition.opacity x-cloak><div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden" @click.outside="showCmd = false"><div class="p-4 border-b dark:border-slate-700 flex items-center gap-3"><i class="fas fa-search text-slate-400"></i><input type="text" x-model="cmdQuery" class="flex-1 bg-transparent outline-none font-bold text-lg dark:text-white" placeholder="Type command..." autofocus><span class="text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">ESC</span></div><div class="max-h-[300px] overflow-y-auto p-2"><template x-for="cmd in filteredCommands" :key="cmd.text"><button @click="runCommand(cmd.action)" class="w-full text-left px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 flex justify-between group"><div class="flex gap-3"><div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 flex items-center justify-center group-hover:text-brand-600"><i class="fas" :class="cmd.icon"></i></div><span class="font-bold text-sm dark:text-slate-200" x-text="cmd.text"></span></div><i class="fas fa-chevron-right text-slate-300"></i></button></template></div></div></div>
         <div x-show="showNewDMModal" class="fixed inset-0 bg-black/50 z-[210] flex items-center justify-center p-4" x-cloak><div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl shadow-2xl p-6" @click.outside="showNewDMModal = false"><div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg dark:text-white">New Message</h3><button @click="showNewDMModal=false" class="text-slate-400"><i class="fas fa-times"></i></button></div><div class="max-h-60 overflow-y-auto space-y-2"><template x-for="user in getSuggestedUsers()" :key="user.uid"><div class="flex justify-between items-center p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg cursor-pointer" @click="startDM(user)"><div class="flex items-center gap-3"><img :src="getAvatarByUid(user.uid, user.name)" class="w-10 h-10 rounded-full object-cover"><span class="text-sm font-bold dark:text-white" x-text="user.name"></span></div><i class="fas fa-chevron-right text-slate-300"></i></div></template></div></div></div>
@@ -914,7 +939,7 @@
                 postFileType: '', 
                 showEditPostModal: false,
                 editPostData: {},
-                editMediaList: [], // Menggantikan editPostNewMediaRaw untuk multiple edit
+                editMediaList: [], 
                 isUploadingMedia: false, 
                 isDarkMode: localStorage.getItem('tf_dark') === 'true', 
                 exploreQuery: '', 
@@ -955,8 +980,8 @@
                 showPostModal: false, 
                 activePost: {}, 
                 showLogoutConfirm: false, 
-                showShareModal: false, // Untuk popup share
-                activeSharePost: null, // Data post yg mau dishare
+                showShareModal: false, 
+                activeSharePost: null, 
                 calendarDays: [], 
                 calendarTitle: '', 
                 currentDate: new Date(), 
@@ -1058,6 +1083,10 @@
                 setupRealtimeData() {
                     window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "feed"), window.fb.orderBy("time", "desc")), snap => { 
                         this.feedItems = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); 
+                        // INSTAN UPDATE FIX: Memastikan modal postingan otomatis memuat data terbaru
+                        if(this.activePost && this.activePost.id) { 
+                            this.activePost = this.feedItems.find(p => p.id === this.activePost.id) || this.activePost; 
+                        }
                     });
                     window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "users")), snap => { 
                         this.allUsers = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); 
@@ -1073,7 +1102,11 @@
                     });
                     window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "discussions"), window.fb.orderBy("createdAt", "desc")), snap => { 
                         this.discussions = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); 
-                        if(this.activeChatType === 'group' && this.activeChat?.id) { this.activeChat = this.discussions.find(d => d.id === this.activeChat.id) || {}; this.scrollChat(); } 
+                        // INSTAN UPDATE FIX: Otomatis me-refresh isi chat grup yang sedang dibuka
+                        if(this.activeChatType === 'group' && this.activeChat?.id) { 
+                            this.activeChat = this.discussions.find(d => d.id === this.activeChat.id) || this.activeChat; 
+                            this.scrollChat(); 
+                        } 
                     });
                     window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "stories"), window.fb.orderBy("time", "desc")), snap => { 
                         this.stories = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); 
@@ -1083,7 +1116,11 @@
                     });
                     window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "dms"), window.fb.orderBy("updatedAt", "desc")), snap => { 
                         this.dms = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); 
-                        if(this.activeChatType === 'dm' && this.activeChat?.id) { this.activeChat = this.dms.find(d => d.id === this.activeChat.id) || {}; this.scrollChat(); } 
+                        // INSTAN UPDATE FIX: Otomatis me-refresh isi DM
+                        if(this.activeChatType === 'dm' && this.activeChat?.id) { 
+                            this.activeChat = this.dms.find(d => d.id === this.activeChat.id) || this.activeChat; 
+                            this.scrollChat(); 
+                        } 
                     });
                 },
 
@@ -1103,7 +1140,7 @@
                         const p = this.feedItems.find(x => x.id === notif.postId); 
                         if(p) {
                             this.switchView('feed');
-                            this.openPostDetail(p); // Membuka postingan tempat komentar berada
+                            this.openPostDetail(p);
                         } 
                     } else if (notif.chatId) {
                         this.switchView('messages'); this.messagesTab = notif.chatType === 'group' ? 'groups' : 'direct';
@@ -1111,6 +1148,10 @@
                         const chat = chats.find(c => c.id === notif.chatId);
                         if(chat) { this.openChatModal(chat, notif.chatType); }
                     } 
+                    // Set read status (BOLD FIX)
+                    if (!notif.read) {
+                        window.fb.updateDoc(window.fb.doc(window.fb.db, "notifications", notif.id), { read: true });
+                    }
                 },
 
                 getVisibleDMs() { return this.dms.filter(d => d.members.includes(this.currentUser?.uid)); },
@@ -1210,7 +1251,6 @@
                 },
                 showHeartAnim(id) { this.heartAnimId = id; setTimeout(() => { this.heartAnimId = null; }, 800); },
                 
-                // --- FUNGSI SHARE BARU ---
                 openShareModal(item) {
                     this.activeSharePost = item;
                     this.showShareModal = true;
@@ -1246,14 +1286,13 @@
                 openSharedPost(postId) {
                     const post = this.feedItems.find(p => p.id === postId);
                     if (post) {
-                        this.activeChat = {}; // Tutup chat
+                        this.activeChat = {}; 
                         this.switchView('feed');
                         this.openPostDetail(post);
                     } else {
                         this.showToast('Post is no longer available', 'error');
                     }
                 },
-                // ---------------------------
                 
                 async toggleSavePost(postId) {
                     if(!this.currentUser || !this.myProfileData?.uid) return;
@@ -1327,7 +1366,6 @@
                 }, 
                 async deletePost(id) { if(!id) return; if(confirm('Delete post?')) await window.fb.deleteDoc(window.fb.doc(window.fb.db, "feed", id)); },
                 
-                // --- PERBAIKAN LOGIKA EDIT MEDIA ---
                 editPost(item) { 
                     if(!item || !item.id) return; 
                     this.editPostData = JSON.parse(JSON.stringify(item)); 
@@ -1340,7 +1378,7 @@
                         this.editMediaList = [];
                     }
 
-                    this.showPostModal = false; // Menutup Detail Post agar tidak bertumpuk
+                    this.showPostModal = false;
                     this.showEditPostModal = true; 
                 },
                 removeEditMedia(idx) {
@@ -1359,7 +1397,7 @@
                             if(files[0].size > 5000000) { this.showToast('Video max 5MB', 'error'); this.isUploadingMedia = false; return; } 
                             const reader = new FileReader(); 
                             reader.onload = (event) => { 
-                                this.editMediaList = [event.target.result]; // Jika video, timpa semua media
+                                this.editMediaList = [event.target.result];
                                 this.isUploadingMedia = false; 
                             }; 
                             reader.readAsDataURL(files[0]); 
@@ -1380,7 +1418,6 @@
                     try { 
                         const payload = { content: this.editPostData.content }; 
                         
-                        // Menangani penyimpananan foto setelah dihapus/ditambah
                         if (this.editMediaList.length === 0) {
                             payload.media = null;
                             payload.mediaType = null;
@@ -1389,7 +1426,7 @@
                             payload.mediaType = this.editPostData.mediaType || 'image';
                         } else {
                             payload.media = this.editMediaList;
-                            payload.mediaType = 'image'; // Multiple pasti image
+                            payload.mediaType = 'image';
                         }
                         
                         await window.fb.updateDoc(window.fb.doc(window.fb.db, "feed", this.editPostData.id), payload); 
@@ -1401,7 +1438,6 @@
                         this.isUploadingMedia = false; 
                     } 
                 },
-                // -----------------------------------
                 
                 openCreateStoryModal() { this.storyFilesRaw = []; this.storyFilesPreview = []; this.showCreateStory = true; },
                 async handleStoryMedia(e) { const files = Array.from(e.target.files); if (!files.length) return; this.isUploadingMedia = true; try { for(let f of files) { const compressed = await this.compressImage(f); this.storyFilesRaw.push(compressed); this.storyFilesPreview.push(compressed); } } catch(err) { this.showToast('Error processing images', 'error'); } finally { this.isUploadingMedia = false; } },
@@ -1447,7 +1483,6 @@
                         comment.likes = comment.likes.filter(uid => uid !== this.currentUser.uid); 
                     } else {
                         comment.likes.push(this.currentUser.uid);
-                        // PERBAIKAN: Mengirim teks komentar agar tampil jelas di notifikasi
                         if (comment.uid && comment.uid !== this.currentUser.uid) { 
                             const shortText = comment.text.length > 20 ? comment.text.substring(0, 20) + '...' : comment.text;
                             this.pushNotification(comment.uid, 'comment_like', shortText, { postId: postId }); 
@@ -1459,9 +1494,49 @@
                 },
                 
                 openPostDetail(post) { this.activePost = post; this.showPostModal = true; },
+                
+                // DISKUSI: Logic Buat & Delete
+                async createDiscussion() {
+                    if(!this.newDiscussTopic) return;
+                    try {
+                        const res = await window.fb.addDoc(window.fb.collection(window.fb.db, "discussions"), {
+                            topic: this.newDiscussTopic,
+                            createdByUid: this.currentUser.uid,
+                            members: [this.currentUser.uid],
+                            messages: [],
+                            createdAt: Date.now()
+                        });
+                        this.showDiscussModal = false;
+                        this.newDiscussTopic = '';
+                        this.showToast('Discussion created!');
+                        const newChat = { id: res.id, topic: this.newDiscussTopic, members: [this.currentUser.uid], createdByUid: this.currentUser.uid };
+                        this.openChatModal(newChat, 'group');
+                    } catch(e) { this.showToast('Error: ' + e.message, 'error'); }
+                },
                 async deleteDiscussion(id) { if(!id) return; if(confirm('Delete group?')) { await window.fb.deleteDoc(window.fb.doc(window.fb.db, "discussions", id)); this.activeChat = {}; } }, 
+                
+                // DISKUSI: Logic Tambah / Hapus Anggota
                 isMember(uid) { if(this.inviteMode === 'chat') return (this.activeChat?.members || []).includes(uid); if(this.inviteMode === 'task') return (this.activeTask?.members || []).includes(uid); return false; }, 
-                async inviteUser(uid) { if(this.inviteMode === 'chat' && this.activeChat?.id) { await window.fb.updateDoc(window.fb.doc(window.fb.db, "discussions", this.activeChat.id), { members: window.fb.arrayUnion(uid) }); } if(this.inviteMode === 'task' && this.activeTask?.id) { await window.fb.updateDoc(window.fb.doc(window.fb.db, "tasks", this.activeTask.id), { members: window.fb.arrayUnion(uid) }); if(!this.activeTask.members) this.activeTask.members = []; if(!this.activeTask.members.includes(uid)) this.activeTask.members.push(uid); } this.showToast('Invited!'); },
+                async inviteUser(uid) { 
+                    if(this.inviteMode === 'chat' && this.activeChat?.id) { 
+                        await window.fb.updateDoc(window.fb.doc(window.fb.db, "discussions", this.activeChat.id), { members: window.fb.arrayUnion(uid) }); 
+                    } 
+                    if(this.inviteMode === 'task' && this.activeTask?.id) { 
+                        await window.fb.updateDoc(window.fb.doc(window.fb.db, "tasks", this.activeTask.id), { members: window.fb.arrayUnion(uid) }); 
+                        if(!this.activeTask.members) this.activeTask.members = []; 
+                        if(!this.activeTask.members.includes(uid)) this.activeTask.members.push(uid); 
+                    } 
+                    this.showToast('Invited!'); 
+                },
+                async removeMember(uid) {
+                    if(this.inviteMode === 'chat' && this.activeChat?.id) {
+                        await window.fb.updateDoc(window.fb.doc(window.fb.db, "discussions", this.activeChat.id), { members: window.fb.arrayRemove(uid) });
+                    }
+                    if(this.inviteMode === 'task' && this.activeTask?.id) {
+                        await window.fb.updateDoc(window.fb.doc(window.fb.db, "tasks", this.activeTask.id), { members: window.fb.arrayRemove(uid) });
+                    }
+                    this.showToast('Removed!');
+                },
                 
                 changeMonth(offset) { this.currentDate.setMonth(this.currentDate.getMonth() + offset); this.generateCalendar(); }, 
                 generateCalendar() { const y = this.currentDate.getFullYear(), m = this.currentDate.getMonth(); this.calendarTitle = new Date(y, m).toLocaleString('default', { month: 'long', year: 'numeric' }); const first = new Date(y, m, 1).getDay(), days = new Date(y, m+1, 0).getDate(); this.calendarDays = Array(first).fill({date:''}).concat([...Array(days).keys()].map(i => { const dStr = `${y}-${String(m+1).padStart(2,'0')}-${String(i+1).padStart(2,'0')}`; const dayTasks = this.getVisibleTasks().filter(t=>(t.dueDate || '').substring(0, 10)===dStr && t.status !== 'DONE'); return { date: i+1, fullDate: dStr, isToday: dStr === new Date().toISOString().split('T')[0], tasks: dayTasks }; })); }, 
