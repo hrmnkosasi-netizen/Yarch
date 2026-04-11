@@ -240,7 +240,7 @@
 
                     <div class="space-y-4 md:space-y-6 pb-6">
                          <template x-for="item in feedItems" :key="item.id">
-                            <div x-init="$nextTick(() => observeView($el, item))" x-data="{expanded: false, replyText: ''}" class="bg-white dark:bg-slate-800 md:rounded-[2rem] p-0 shadow-sm border-y md:border dark:border-slate-700 overflow-hidden">
+                            <div x-init="$nextTick(() => observeView($el, item))" x-data="{expanded: false, replyText: '', replyingToId: null, replyingToName: ''}" class="bg-white dark:bg-slate-800 md:rounded-[2rem] p-0 shadow-sm border-y md:border dark:border-slate-700 overflow-hidden">
                                 <div class="flex justify-between items-center p-4">
                                     <div class="flex gap-3 items-center cursor-pointer" @click="openProfile(item)">
                                         <img :src="getAvatarByUid(item?.uid, item?.user)" class="w-9 h-9 rounded-full object-cover border dark:border-slate-700">
@@ -302,21 +302,42 @@
                                         <h4 class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider mb-3">Comments</h4>
                                         <div class="space-y-3">
                                             <template x-for="msg in (item?.comments || [])" :key="msg.id || msg.time || msg.text">
-                                                <div class="flex gap-2.5">
+                                                <div class="flex gap-2.5 mb-3">
                                                     <img :src="getAvatarByUid(msg.uid, msg.sender)" class="w-7 h-7 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0 mt-0.5">
                                                     <div class="flex-1">
-                                                        <div class="bg-slate-100 dark:bg-slate-900 rounded-2xl rounded-tl-none px-3.5 py-2.5">
-                                                            <div class="flex justify-between items-center mb-1">
-                                                                <span class="font-bold text-[11px] dark:text-white" x-text="msg.sender"></span>
-                                                                <div class="flex items-center gap-3">
-                                                                    <span class="text-[9px] text-slate-400 font-medium" x-text="getRelativeTime(msg.time || item.time)"></span>
-                                                                    <button @click="toggleCommentLike(item.id, msg)" class="flex items-center gap-1 text-[10px] font-bold transition-colors" :class="(msg.likes && msg.likes.includes(currentUser?.uid)) ? 'text-red-500' : 'text-slate-400 hover:text-slate-600'">
-                                                                        <i class="fa-heart" :class="(msg.likes && msg.likes.includes(currentUser?.uid)) ? 'fas' : 'far'"></i>
-                                                                        <span x-show="msg.likes && msg.likes.length > 0" x-text="msg.likes.length"></span>
-                                                                    </button>
-                                                                </div>
-                                                            </div>
+                                                        <div class="bg-slate-100 dark:bg-slate-900 rounded-2xl rounded-tl-none px-3.5 py-2.5 inline-block min-w-[60%]">
+                                                            <span class="font-bold text-[11px] dark:text-white block mb-0.5" x-text="msg.sender"></span>
                                                             <div class="text-xs text-slate-700 dark:text-slate-300 leading-snug" x-text="msg.text"></div>
+                                                        </div>
+                                                        
+                                                        <div class="flex items-center gap-3 mt-1.5 ml-2">
+                                                            <span class="text-[9px] text-slate-400 font-medium" x-text="getRelativeTime(msg.time || item.time)"></span>
+                                                            <button @click="replyingToId = msg.id; replyingToName = msg.sender; $nextTick(() => document.getElementById('feed-reply-input-'+item.id)?.focus())" class="text-[10px] font-bold text-slate-500 hover:text-brand-500">Reply</button>
+                                                            <button @click="toggleCommentLike(item.id, msg)" class="flex items-center gap-1 text-[10px] font-bold transition-colors" :class="(msg.likes && msg.likes.includes(currentUser?.uid)) ? 'text-red-500' : 'text-slate-400 hover:text-slate-600'">
+                                                                <span x-show="msg.likes && msg.likes.length > 0" x-text="msg.likes.length"></span>
+                                                                <i class="fa-heart" :class="(msg.likes && msg.likes.includes(currentUser?.uid)) ? 'fas' : 'far'"></i>
+                                                            </button>
+                                                        </div>
+
+                                                        <div x-show="msg.replies && msg.replies.length > 0" class="mt-2 space-y-3 pl-3 border-l-2 border-slate-200 dark:border-slate-800 ml-3">
+                                                            <template x-for="reply in msg.replies" :key="reply.id">
+                                                                <div class="flex gap-2.5">
+                                                                    <img :src="getAvatarByUid(reply.uid, reply.sender)" class="w-6 h-6 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0 mt-0.5">
+                                                                    <div class="flex-1">
+                                                                        <div class="bg-slate-100 dark:bg-slate-900 rounded-2xl rounded-tl-none px-3 py-2 inline-block min-w-[60%]">
+                                                                            <span class="font-bold text-[10px] dark:text-white block mb-0.5" x-text="reply.sender"></span>
+                                                                            <div class="text-[11px] text-slate-700 dark:text-slate-300 leading-snug" x-text="reply.text"></div>
+                                                                        </div>
+                                                                        <div class="flex items-center gap-3 mt-1.5 ml-2">
+                                                                            <span class="text-[9px] text-slate-400 font-medium" x-text="getRelativeTime(reply.time)"></span>
+                                                                            <button @click="toggleCommentLike(item.id, reply, msg.id)" class="flex items-center gap-1 text-[10px] font-bold transition-colors" :class="(reply.likes && reply.likes.includes(currentUser?.uid)) ? 'text-red-500' : 'text-slate-400 hover:text-slate-600'">
+                                                                                <span x-show="reply.likes && reply.likes.length > 0" x-text="reply.likes.length"></span>
+                                                                                <i class="fa-heart" :class="(reply.likes && reply.likes.includes(currentUser?.uid)) ? 'fas' : 'far'"></i>
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </template>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -324,10 +345,16 @@
                                         </div>
                                         <button x-show="item?.comments && item.comments.length > 0" @click="expanded = false" class="text-slate-500 text-[11px] mt-4 uppercase font-bold tracking-wider hover:text-brand-500">Hide comments</button>
                                     </div>
-                                    <div class="flex items-center gap-3 mt-3 pt-3 border-t dark:border-slate-100 dark:border-slate-700">
-                                        <img :src="getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-6 h-6 rounded-full object-cover">
-                                        <input type="text" x-model="replyText" @keydown.enter="sendPostComment(item?.id, replyText, $data)" class="flex-1 bg-transparent text-sm outline-none dark:text-white" placeholder="Add a comment...">
-                                        <button x-show="replyText.trim().length > 0" @click="sendPostComment(item?.id, replyText, $data)" class="text-brand-500 font-bold text-sm">Post</button>
+                                    <div class="mt-3 pt-3 border-t dark:border-slate-100 dark:border-slate-700">
+                                        <div x-show="replyingToId" class="flex justify-between items-center text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-3 py-1.5 rounded-lg mb-2">
+                                            <span>Membalas <span class="font-bold text-slate-700 dark:text-white" x-text="replyingToName"></span></span>
+                                            <button @click="replyingToId = null; replyingToName = ''" class="hover:text-red-500"><i class="fas fa-times"></i></button>
+                                        </div>
+                                        <div class="flex items-center gap-3">
+                                            <img :src="getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-6 h-6 rounded-full object-cover">
+                                            <input type="text" :id="'feed-reply-input-' + item?.id" x-model="replyText" @keydown.enter="sendPostComment(item?.id, replyText, $data)" class="flex-1 bg-transparent text-sm outline-none dark:text-white" placeholder="Add a comment...">
+                                            <button x-show="replyText.trim().length > 0" @click="sendPostComment(item?.id, replyText, $data)" class="text-brand-500 font-bold text-sm">Post</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -681,7 +708,7 @@
                    <h3 class="font-bold text-sm dark:text-white">Post</h3>
                    <button @click="showPostModal=false" class="w-8 h-8 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
                </div>
-               <div class="overflow-y-auto custom-scroll flex-1 p-0" x-data="{replyText: ''}">
+               <div class="overflow-y-auto custom-scroll flex-1 p-0" x-data="{expanded: false, replyText: '', replyingToId: null, replyingToName: ''}">
                     <template x-if="activePost?.id">
                         <div class="pb-6">
                             <div class="flex justify-between items-center p-4">
@@ -737,22 +764,43 @@
                                     <h4 class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider mb-3">Comments</h4>
                                     
                                     <div class="space-y-3">
-                                        <template x-for="msg in (activePost?.comments || [])" :key="msg.id || msg.time || msg.text">
-                                            <div class="flex gap-2.5">
+                                        <template x-for="msg in (activePost?.comments || [])" :key="msg.id || msg.time">
+                                            <div class="flex gap-2.5 mb-3">
                                                 <img :src="getAvatarByUid(msg.uid, msg.sender)" class="w-7 h-7 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0 mt-0.5">
                                                 <div class="flex-1">
-                                                    <div class="bg-slate-100 dark:bg-slate-900 rounded-2xl rounded-tl-none px-3.5 py-2.5">
-                                                        <div class="flex justify-between items-center mb-1">
-                                                            <span class="font-bold text-[11px] dark:text-white" x-text="msg.sender"></span>
-                                                            <div class="flex items-center gap-3">
-                                                                <span class="text-[9px] text-slate-400 font-medium" x-text="getRelativeTime(msg.time || activePost.time)"></span>
-                                                                <button @click="toggleCommentLike(activePost.id, msg)" class="flex items-center gap-1 text-[10px] font-bold transition-colors" :class="(msg.likes && msg.likes.includes(currentUser?.uid)) ? 'text-red-500' : 'text-slate-400 hover:text-slate-600'">
-                                                                    <i class="fa-heart" :class="(msg.likes && msg.likes.includes(currentUser?.uid)) ? 'fas' : 'far'"></i>
-                                                                    <span x-show="msg.likes && msg.likes.length > 0" x-text="msg.likes.length"></span>
-                                                                </button>
-                                                            </div>
-                                                        </div>
+                                                    <div class="bg-slate-100 dark:bg-slate-900 rounded-2xl rounded-tl-none px-3.5 py-2.5 inline-block min-w-[60%]">
+                                                        <span class="font-bold text-[11px] dark:text-white block mb-0.5" x-text="msg.sender"></span>
                                                         <div class="text-xs text-slate-700 dark:text-slate-300 leading-snug" x-text="msg.text"></div>
+                                                    </div>
+                                                    
+                                                    <div class="flex items-center gap-3 mt-1.5 ml-2">
+                                                        <span class="text-[9px] text-slate-400 font-medium" x-text="getRelativeTime(msg.time || activePost.time)"></span>
+                                                        <button @click="replyingToId = msg.id; replyingToName = msg.sender; $nextTick(() => document.getElementById('reply-input-'+activePost.id)?.focus())" class="text-[10px] font-bold text-slate-500 hover:text-brand-500">Reply</button>
+                                                        <button @click="toggleCommentLike(activePost.id, msg)" class="flex items-center gap-1 text-[10px] font-bold transition-colors" :class="(msg.likes && msg.likes.includes(currentUser?.uid)) ? 'text-red-500' : 'text-slate-400 hover:text-slate-600'">
+                                                            <span x-show="msg.likes && msg.likes.length > 0" x-text="msg.likes.length"></span>
+                                                            <i class="fa-heart" :class="(msg.likes && msg.likes.includes(currentUser?.uid)) ? 'fas' : 'far'"></i>
+                                                        </button>
+                                                    </div>
+
+                                                    <div x-show="msg.replies && msg.replies.length > 0" class="mt-2 space-y-3 pl-3 border-l-2 border-slate-200 dark:border-slate-800 ml-3">
+                                                        <template x-for="reply in msg.replies" :key="reply.id">
+                                                            <div class="flex gap-2.5">
+                                                                <img :src="getAvatarByUid(reply.uid, reply.sender)" class="w-6 h-6 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0 mt-0.5">
+                                                                <div class="flex-1">
+                                                                    <div class="bg-slate-100 dark:bg-slate-900 rounded-2xl rounded-tl-none px-3 py-2 inline-block min-w-[60%]">
+                                                                        <span class="font-bold text-[10px] dark:text-white block mb-0.5" x-text="reply.sender"></span>
+                                                                        <div class="text-[11px] text-slate-700 dark:text-slate-300 leading-snug" x-text="reply.text"></div>
+                                                                    </div>
+                                                                    <div class="flex items-center gap-3 mt-1.5 ml-2">
+                                                                        <span class="text-[9px] text-slate-400 font-medium" x-text="getRelativeTime(reply.time)"></span>
+                                                                        <button @click="toggleCommentLike(activePost.id, reply, msg.id)" class="flex items-center gap-1 text-[10px] font-bold transition-colors" :class="(reply.likes && reply.likes.includes(currentUser?.uid)) ? 'text-red-500' : 'text-slate-400 hover:text-slate-600'">
+                                                                            <span x-show="reply.likes && reply.likes.length > 0" x-text="reply.likes.length"></span>
+                                                                            <i class="fa-heart" :class="(reply.likes && reply.likes.includes(currentUser?.uid)) ? 'fas' : 'far'"></i>
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </template>
                                                     </div>
                                                 </div>
                                             </div>
@@ -762,10 +810,16 @@
                                 </div>
                             </div>
 
-                            <div class="flex items-center gap-3 mt-4 pt-3 border-t dark:border-slate-100 dark:border-slate-700">
-                                <img :src="getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-6 h-6 rounded-full object-cover">
-                                <input type="text" :id="'reply-input-' + activePost?.id" x-model="replyText" @keydown.enter="sendPostComment(activePost?.id, replyText, $data); activePost = feedItems.find(f=>f.id===activePost?.id) || activePost" class="flex-1 bg-transparent text-sm outline-none dark:text-white" placeholder="Add a comment...">
-                                <button x-show="replyText.trim().length > 0" @click="sendPostComment(activePost?.id, replyText, $data); activePost = feedItems.find(f=>f.id===activePost?.id) || activePost" class="text-brand-500 font-bold text-sm">Post</button>
+                            <div class="mt-4 pt-3 border-t dark:border-slate-100 dark:border-slate-700 px-4">
+                                <div x-show="replyingToId" class="flex justify-between items-center text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-3 py-1.5 rounded-lg mb-2">
+                                    <span>Membalas <span class="font-bold text-slate-700 dark:text-white" x-text="replyingToName"></span></span>
+                                    <button @click="replyingToId = null; replyingToName = ''" class="hover:text-red-500"><i class="fas fa-times"></i></button>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <img :src="getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-6 h-6 rounded-full object-cover">
+                                    <input type="text" :id="'reply-input-' + activePost?.id" x-model="replyText" @keydown.enter="sendPostComment(activePost?.id, replyText, $data); activePost = feedItems.find(f=>f.id===activePost?.id) || activePost" class="flex-1 bg-transparent text-sm outline-none dark:text-white" placeholder="Add a comment...">
+                                    <button x-show="replyText.trim().length > 0" @click="sendPostComment(activePost?.id, replyText, $data); activePost = feedItems.find(f=>f.id===activePost?.id) || activePost" class="text-brand-500 font-bold text-sm">Post</button>
+                                </div>
                             </div>
                         </div>
                     </template>
@@ -1712,35 +1766,75 @@
                     if (hasUid || hasName) { if(hasUid) await window.fb.updateDoc(r, { likes: window.fb.arrayRemove(this.currentUser.uid) }); if(hasName) await window.fb.updateDoc(r, { likes: window.fb.arrayRemove(this.currentUser.name) }); } else { await window.fb.updateDoc(r, { likes: window.fb.arrayUnion(this.currentUser.uid) }); this.pushNotification(item.uid, 'like', '', { postId: item.id }); } 
                 }, 
                 
+                // NESTED COMMENT SEND FIX
                 async sendPostComment(pId, txt, d) { 
                     if(!txt || !this.currentUser || !pId) return; 
-                    const newComment = { id: Date.now().toString(36) + Math.random().toString(36).substring(2), uid: this.currentUser.uid, sender: this.currentUser.name, text: txt, time: Date.now(), likes: [] };
-                    await window.fb.updateDoc(window.fb.doc(window.fb.db, "feed", pId), { comments: window.fb.arrayUnion(newComment) }); 
-                    const postOwner = this.feedItems.find(p => p.id === pId)?.uid; 
-                    if (postOwner) this.pushNotification(postOwner, 'comment', txt, { postId: pId }); 
+                    
+                    const newComment = { 
+                        id: Date.now().toString(36) + Math.random().toString(36).substring(2), 
+                        uid: this.currentUser.uid, 
+                        sender: this.currentUser.name, 
+                        text: txt, 
+                        time: Date.now(), 
+                        likes: [],
+                        replies: [] 
+                    };
+                    
+                    const post = this.feedItems.find(p => p.id === pId);
+                    if(!post) return;
+                    const comments = [...(post.comments || [])];
+
+                    if (d.replyingToId) {
+                        const cIndex = comments.findIndex(c => c.id === d.replyingToId);
+                        if(cIndex > -1) {
+                            if(!comments[cIndex].replies) comments[cIndex].replies = [];
+                            comments[cIndex].replies.push(newComment);
+                            if(comments[cIndex].uid && comments[cIndex].uid !== this.currentUser.uid) {
+                                this.pushNotification(comments[cIndex].uid, 'comment', 'Membalas komentar kamu: ' + txt, { postId: pId });
+                            }
+                        }
+                    } else {
+                        comments.push(newComment);
+                        if (post.uid && post.uid !== this.currentUser.uid) { 
+                            this.pushNotification(post.uid, 'comment', txt, { postId: pId }); 
+                        }
+                    }
+
+                    await window.fb.updateDoc(window.fb.doc(window.fb.db, "feed", pId), { comments: comments }); 
                     d.replyText = ''; 
+                    d.replyingToId = null;
+                    d.replyingToName = '';
                 }, 
 
-                async toggleCommentLike(postId, commentObj) {
+                // NESTED COMMENT LIKE FIX
+                async toggleCommentLike(postId, commentObj, parentCommentId = null) {
                     if(!this.currentUser || !postId || !commentObj) return;
                     const post = this.feedItems.find(p => p.id === postId);
                     if (!post) return;
                     
-                    const comments = [...(post.comments || [])];
-                    const cIndex = comments.findIndex(c => (c.id && c.id === commentObj.id) || (c.time && c.time === commentObj.time) || (c.text === commentObj.text));
-                    if (cIndex === -1) return;
+                    const comments = JSON.parse(JSON.stringify(post.comments || []));
+                    let targetObj = null;
 
-                    const comment = comments[cIndex];
-                    if (!comment.likes) comment.likes = [];
-                    
-                    const hasLiked = comment.likes.includes(this.currentUser.uid);
-                    if (hasLiked) { 
-                        comment.likes = comment.likes.filter(uid => uid !== this.currentUser.uid); 
+                    if (parentCommentId) {
+                        const parent = comments.find(c => c.id === parentCommentId);
+                        if(parent && parent.replies) {
+                            targetObj = parent.replies.find(r => r.id === commentObj.id);
+                        }
                     } else {
-                        comment.likes.push(this.currentUser.uid);
-                        if (comment.uid && comment.uid !== this.currentUser.uid) { 
-                            const shortText = comment.text.length > 20 ? comment.text.substring(0, 20) + '...' : comment.text;
-                            this.pushNotification(comment.uid, 'comment_like', shortText, { postId: postId }); 
+                        targetObj = comments.find(c => c.id === commentObj.id);
+                    }
+
+                    if(!targetObj) return;
+                    if(!targetObj.likes) targetObj.likes = [];
+
+                    const hasLiked = targetObj.likes.includes(this.currentUser.uid);
+                    if (hasLiked) { 
+                        targetObj.likes = targetObj.likes.filter(uid => uid !== this.currentUser.uid); 
+                    } else {
+                        targetObj.likes.push(this.currentUser.uid);
+                        if (targetObj.uid && targetObj.uid !== this.currentUser.uid) { 
+                            const shortText = targetObj.text.length > 20 ? targetObj.text.substring(0, 20) + '...' : targetObj.text;
+                            this.pushNotification(targetObj.uid, 'comment_like', shortText, { postId: postId }); 
                         }
                     }
 
