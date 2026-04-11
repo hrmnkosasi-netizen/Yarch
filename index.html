@@ -248,9 +248,18 @@
                                         <video :src="item?.media" controls class="w-full max-h-[80vh] object-contain"></video>
                                     </template>
                                     <template x-if="item?.mediaType !== 'video' && item?.media && !item?.media?.includes('.mp4')">
-                                        <div class="relative w-full cursor-pointer" @click="setTimeout(() => openPostDetail(item), 250)">
-                                            <img :src="Array.isArray(item?.media) ? item.media[0] : item.media" class="w-full max-h-[80vh] object-cover">
-                                            <div x-show="Array.isArray(item?.media) && item.media.length > 1" class="absolute top-3 right-3 bg-black/60 text-white rounded-md p-1.5 text-xs shadow-lg z-10"><i class="fas fa-clone"></i></div>
+                                        <div class="relative w-full flex overflow-x-auto snap-x snap-mandatory hide-scroll bg-black cursor-pointer" @click="setTimeout(() => openPostDetail(item), 250)">
+                                            <template x-if="!Array.isArray(item?.media)">
+                                                <img :src="item?.media" class="w-full max-h-[80vh] object-contain snap-center">
+                                            </template>
+                                            <template x-if="Array.isArray(item?.media)">
+                                                <template x-for="(imgSrc, idx) in item.media" :key="idx">
+                                                    <div class="min-w-full relative snap-center flex justify-center">
+                                                        <img :src="imgSrc" class="w-full max-h-[80vh] object-contain">
+                                                        <div class="absolute top-3 right-3 bg-black/60 text-white rounded-md px-2 py-1 text-xs shadow-lg z-10"><i class="fas fa-clone mr-1"></i> <span x-text="(idx+1) + '/' + item.media.length"></span></div>
+                                                    </div>
+                                                </template>
+                                            </template>
                                         </div>
                                     </template>
                                     <div x-show="heartAnimId === item.id" class="absolute inset-0 flex items-center justify-center bg-black/10 z-20 pointer-events-none">
@@ -409,7 +418,7 @@
                         <div class="flex-1 min-w-0">
                             <p class="text-sm dark:text-slate-200">
                                 <span class="font-bold mr-1" x-text="notif.fromName"></span>
-                                <span x-text="notif.type === 'like' ? 'liked your post.' : (notif.type === 'comment' ? 'commented: ' + notif.data : 'started following you.')"></span>
+                                <span x-text="notif.type === 'like' ? 'liked your post.' : (notif.type === 'comment' ? 'commented: ' + notif.data : (notif.type === 'message' ? 'sent you a message: ' + notif.data : 'started following you.'))"></span>
                             </p>
                             <p class="text-xs text-slate-400 mt-0.5" x-text="getRelativeTime(notif.time)"></p>
                         </div>
@@ -417,10 +426,11 @@
                             <button @click.stop="toggleFollowUser(notif.fromUid)" class="text-xs px-4 py-1.5 rounded-lg font-bold transition-colors" :class="getFollowBtnClass(notif.fromUid)" x-text="getFollowBtnText(notif.fromUid)"></button>
                         </template>
                         <template x-if="notif.type !== 'follow'">
-                            <i class="fas text-slate-300 text-lg" :class="notif.type === 'like' ? 'fa-heart text-red-400' : 'fa-comment'"></i>
+                            <i class="fas text-slate-300 text-lg" :class="notif.type === 'like' ? 'fa-heart text-red-400' : (notif.type === 'comment' ? 'fa-comment text-slate-400' : (notif.type === 'message' ? 'fa-envelope text-brand-500' : 'fa-bell text-slate-400'))"></i>
                         </template>
                     </div>
                 </template>
+                <div x-show="getMyNotifications().length === 0" class="text-center p-10 text-slate-400">No notifications yet.</div>
             </div>
         </div>
 
@@ -827,6 +837,53 @@
             </div>
         </div>
 
+        <div x-show="showEditPostModal" class="fixed inset-0 bg-black/80 z-[260] flex items-center justify-center p-4" x-cloak x-transition.opacity>
+            <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-3xl overflow-hidden flex flex-col max-h-[90vh]" @click.outside="showEditPostModal=false">
+                <div class="px-4 py-3 border-b dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900">
+                    <button @click="showEditPostModal=false" class="text-slate-800 dark:text-white text-lg px-2"><i class="fas fa-times"></i></button>
+                    <h3 class="font-bold text-base dark:text-white">Edit Post</h3>
+                    <button @click="updatePost()" :disabled="!editPostData?.content && !editPostData?.media && !editPostNewMediaRaw" class="text-brand-500 font-bold text-sm disabled:opacity-50 px-2">Update</button>
+                </div>
+                <div class="p-5 overflow-y-auto relative custom-scroll flex-1">
+                    <div x-show="isUploadingMedia" class="absolute inset-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
+                        <i class="fas fa-spinner fa-spin text-brand-500 text-3xl mb-2"></i>
+                    </div>
+                    <div class="flex gap-3 mb-4">
+                        <img :src="getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-10 h-10 rounded-full object-cover">
+                        <div class="flex-1 relative">
+                            <textarea x-model="editPostData.content" rows="4" class="w-full bg-transparent text-sm outline-none dark:text-white resize-none" placeholder="Write a caption..."></textarea>
+                        </div>
+                    </div>
+
+                    <div x-show="editPostNewMediaRaw || editPostData?.media" class="relative mt-2 mb-4 w-full bg-slate-100 dark:bg-slate-950 rounded-xl overflow-hidden">
+                        <template x-if="editPostData?.mediaType === 'video'">
+                            <video :src="editPostNewMediaRaw || editPostData?.media" class="max-h-64 object-contain mx-auto" controls></video>
+                        </template>
+                        <template x-if="editPostData?.mediaType === 'image'">
+                            <div class="flex overflow-x-auto snap-x snap-mandatory hide-scroll gap-2 p-2 relative">
+                                <template x-if="!Array.isArray(editPostNewMediaRaw || editPostData?.media)">
+                                    <img :src="editPostNewMediaRaw || editPostData?.media" class="max-h-64 object-contain mx-auto snap-center rounded-lg">
+                                </template>
+                                <template x-if="Array.isArray(editPostNewMediaRaw || editPostData?.media)">
+                                    <template x-for="(src, idx) in (editPostNewMediaRaw || editPostData?.media)" :key="idx">
+                                        <div class="min-w-full flex-shrink-0 snap-center relative flex justify-center">
+                                            <img :src="src" class="max-h-64 object-contain rounded-lg">
+                                        </div>
+                                    </template>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="border-t dark:border-slate-700 pt-4 flex justify-between items-center">
+                        <span class="text-sm font-bold text-slate-500">Change media</span>
+                        <input type="file" x-ref="editMediaInput" class="hidden" multiple accept="image/*,video/*" @change="handleEditPostMedia($event)">
+                        <button type="button" @click="$refs.editMediaInput.click()" class="text-brand-500 text-2xl hover:scale-110 transition-transform"><i class="far fa-images"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div x-show="showCreateStory" class="fixed inset-0 bg-black/95 z-[260] flex flex-col" x-cloak x-transition.opacity>
             <div class="px-4 py-4 flex justify-between items-center text-white bg-gradient-to-b from-black/50 to-transparent absolute top-0 w-full z-20">
                 <button @click="showCreateStory=false; storyFilesRaw=[]; storyFilesPreview=[]" class="text-2xl"><i class="fas fa-times"></i></button>
@@ -1032,6 +1089,9 @@
                 postFileRaw: null, 
                 postFilePreview: null, 
                 postFileType: '', 
+                showEditPostModal: false,
+                editPostData: {},
+                editPostNewMediaRaw: null,
                 isUploadingMedia: false, 
                 isDarkMode: localStorage.getItem('tf_dark') === 'true', 
                 exploreQuery: '', 
@@ -1272,7 +1332,7 @@
                     } 
                 },
                 
-                async pushNotification(toUid, type, dataText = '') { 
+                async pushNotification(toUid, type, dataText = '', extra = {}) { 
                     if (!toUid || toUid === this.currentUser?.uid) return; 
                     await window.fb.addDoc(window.fb.collection(window.fb.db, "notifications"), { 
                         toUid, 
@@ -1281,7 +1341,8 @@
                         type, 
                         data: dataText, 
                         time: Date.now(), 
-                        read: false 
+                        read: false,
+                        ...extra 
                     }); 
                 },
                 
@@ -1291,12 +1352,21 @@
                     } else if (notif.postId) { 
                         const p = this.feedItems.find(x => x.id === notif.postId); 
                         if(p) {
+                            this.switchView('feed');
                             this.openPostDetail(p);
                             setTimeout(() => {
                                 const replyInput = document.getElementById('reply-input-' + p.id);
                                 if (replyInput) replyInput.focus();
                             }, 500);
                         } 
+                    } else if (notif.chatId) {
+                        this.switchView('messages');
+                        this.messagesTab = notif.chatType === 'group' ? 'groups' : 'direct';
+                        const chats = notif.chatType === 'group' ? this.discussions : this.dms;
+                        const chat = chats.find(c => c.id === notif.chatId);
+                        if(chat) {
+                            this.openChatModal(chat, notif.chatType);
+                        }
                     } 
                 },
 
@@ -1390,6 +1460,18 @@
                         updatedAt: Date.now() 
                     };
                     await window.fb.updateDoc(window.fb.doc(window.fb.db, col, this.activeChat.id), payload); 
+
+                    // Notification trigger
+                    if (this.activeChatType === 'dm') {
+                        const otherUid = this.activeChat.members.find(u => u !== this.currentUser.uid);
+                        if (otherUid) this.pushNotification(otherUid, 'message', txt, { chatId: this.activeChat.id, chatType: 'dm' });
+                    } else {
+                        const otherMembers = (this.activeChat.members || []).filter(u => u !== this.currentUser.uid);
+                        otherMembers.forEach(uid => {
+                            this.pushNotification(uid, 'message', txt, { chatId: this.activeChat.id, chatType: 'group' });
+                        });
+                    }
+
                     this.markChatAsRead(this.activeChat.id); 
                     this.scrollChat(); 
                 },
@@ -1420,6 +1502,18 @@
                                         }), 
                                         updatedAt: Date.now() 
                                     }); 
+
+                                    // Notification trigger for image upload
+                                    if (this.activeChatType === 'dm') {
+                                        const otherUid = this.activeChat.members.find(u => u !== this.currentUser.uid);
+                                        if (otherUid) this.pushNotification(otherUid, 'message', 'Sent a photo', { chatId: this.activeChat.id, chatType: 'dm' });
+                                    } else {
+                                        const otherMembers = (this.activeChat.members || []).filter(u => u !== this.currentUser.uid);
+                                        otherMembers.forEach(uid => {
+                                            this.pushNotification(uid, 'message', 'Sent a photo', { chatId: this.activeChat.id, chatType: 'group' });
+                                        });
+                                    }
+
                                     this.markChatAsRead(this.activeChat.id); 
                                     this.scrollChat(); 
                                 }; 
@@ -1832,13 +1926,69 @@
                     if(confirm('Delete post?')) await window.fb.deleteDoc(window.fb.doc(window.fb.db, "feed", id)); 
                 },
                 
-                async editPost(item) {
+                editPost(item) {
                     if(!item || !item.id) return;
-                    const newContent = prompt('Edit your post caption:', item.content || '');
-                    if(newContent !== null && newContent !== item.content) {
-                        await window.fb.updateDoc(window.fb.doc(window.fb.db, "feed", item.id), { content: newContent });
+                    this.editPostData = JSON.parse(JSON.stringify(item));
+                    this.editPostNewMediaRaw = null;
+                    this.showEditPostModal = true;
+                },
+
+                async handleEditPostMedia(e) {
+                    const files = Array.from(e.target.files);
+                    if(!files.length) return;
+                    this.isUploadingMedia = true;
+                    this.editPostData.mediaType = files[0].type.startsWith('video/') ? 'video' : 'image';
+
+                    try {
+                        if (this.editPostData.mediaType === 'video') {
+                            if(files[0].size > 5000000) {
+                                this.showToast('Video max 5MB', 'error');
+                                this.isUploadingMedia = false;
+                                return;
+                            }
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                                this.editPostNewMediaRaw = event.target.result;
+                                this.isUploadingMedia = false;
+                            };
+                            reader.readAsDataURL(files[0]);
+                        } else {
+                            let compressedArr = [];
+                            for(let f of files) {
+                                compressedArr.push(await this.compressImage(f));
+                            }
+                            this.editPostNewMediaRaw = compressedArr;
+                            this.isUploadingMedia = false;
+                        }
+                    } catch(err) {
+                        this.showToast('Error processing media', 'error');
+                        this.isUploadingMedia = false;
+                    }
+                },
+
+                async updatePost() {
+                    if(!this.editPostData.id) return;
+                    this.isUploadingMedia = true;
+                    try {
+                        const payload = { content: this.editPostData.content };
+                        if (this.editPostNewMediaRaw) {
+                            payload.media = this.editPostNewMediaRaw;
+                            payload.mediaType = this.editPostData.mediaType;
+                        }
+                        await window.fb.updateDoc(window.fb.doc(window.fb.db, "feed", this.editPostData.id), payload);
                         this.showToast('Post updated successfully');
-                        if(this.activePost?.id === item.id) this.activePost.content = newContent;
+                        this.showEditPostModal = false;
+                        if(this.activePost && this.activePost.id === this.editPostData.id) {
+                            this.activePost.content = payload.content;
+                            if(payload.media) {
+                                this.activePost.media = payload.media;
+                                this.activePost.mediaType = payload.mediaType;
+                            }
+                        }
+                    } catch(e) {
+                        this.showToast('Error updating post', 'error');
+                    } finally {
+                        this.isUploadingMedia = false;
                     }
                 },
                 
@@ -1975,7 +2125,7 @@
                         if(hasName) await window.fb.updateDoc(r, { likes: window.fb.arrayRemove(this.currentUser.name) }); 
                     } else { 
                         await window.fb.updateDoc(r, { likes: window.fb.arrayUnion(this.currentUser.uid) }); 
-                        this.pushNotification(item.uid, 'like', { postId: item.id }); 
+                        this.pushNotification(item.uid, 'like', '', { postId: item.id }); 
                     } 
                 }, 
                 
@@ -1985,7 +2135,7 @@
                         comments: window.fb.arrayUnion({ sender: this.currentUser.name, text: txt }) 
                     }); 
                     const postOwner = this.feedItems.find(p => p.id === pId)?.uid; 
-                    if (postOwner) this.pushNotification(postOwner, 'comment', txt); 
+                    if (postOwner) this.pushNotification(postOwner, 'comment', txt, { postId: pId }); 
                     d.replyText = ''; 
                 }, 
                 
