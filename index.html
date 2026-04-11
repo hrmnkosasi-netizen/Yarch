@@ -295,18 +295,17 @@
                                                     <img :src="getAvatarByUid(msg.uid, msg.sender)" class="w-7 h-7 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0 mt-0.5">
                                                     <div class="flex-1">
                                                         <div class="bg-slate-100 dark:bg-slate-900 rounded-2xl rounded-tl-none px-3.5 py-2.5">
-                                                            <div class="flex justify-between items-start mb-0.5">
+                                                            <div class="flex justify-between items-center mb-1">
                                                                 <span class="font-bold text-[11px] dark:text-white" x-text="msg.sender"></span>
-                                                                <span class="text-[9px] text-slate-400 font-medium ml-2" x-text="getRelativeTime(msg.time || item.time)"></span>
+                                                                <div class="flex items-center gap-3">
+                                                                    <span class="text-[9px] text-slate-400 font-medium" x-text="getRelativeTime(msg.time || item.time)"></span>
+                                                                    <button @click="toggleCommentLike(item.id, msg)" class="flex items-center gap-1 text-[10px] font-bold transition-colors" :class="(msg.likes && msg.likes.includes(currentUser?.uid)) ? 'text-red-500' : 'text-slate-400 hover:text-slate-600'">
+                                                                        <i class="fa-heart" :class="(msg.likes && msg.likes.includes(currentUser?.uid)) ? 'fas' : 'far'"></i>
+                                                                        <span x-show="msg.likes && msg.likes.length > 0" x-text="msg.likes.length"></span>
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                             <div class="text-xs text-slate-700 dark:text-slate-300 leading-snug" x-text="msg.text"></div>
-                                                        </div>
-                                                        <div class="flex items-center gap-4 mt-1.5 px-2">
-                                                            <button @click="toggleCommentLike(item.id, msg)" class="flex items-center gap-1.5 text-[10px] font-bold transition-colors" :class="(msg.likes && msg.likes.includes(currentUser?.uid)) ? 'text-red-500' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'">
-                                                                <i class="fa-heart" :class="(msg.likes && msg.likes.includes(currentUser?.uid)) ? 'fas' : 'far'"></i>
-                                                                <span x-show="msg.likes && msg.likes.length > 0" x-text="msg.likes.length"></span>
-                                                                <span x-show="!msg.likes || msg.likes.length === 0">Like</span>
-                                                            </button>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -451,11 +450,11 @@
             <div class="flex-1 pb-24">
                 <template x-for="notif in getMyNotifications()" :key="notif.id">
                     <div class="px-5 py-4 border-b dark:border-slate-800 flex items-center gap-4 cursor-pointer transition-all" 
-                         :class="notif.read ? 'opacity-60 bg-transparent' : 'bg-brand-50/50 dark:bg-brand-900/20'"
+                         :class="notif.read ? 'bg-transparent text-slate-500 dark:text-slate-400' : 'bg-brand-50/80 dark:bg-brand-900/40 text-slate-900 dark:text-white'"
                          @click="handleNotifClick(notif)">
-                        <img :src="getAvatarByUid(notif.fromUid, notif.fromName)" class="w-11 h-11 rounded-full object-cover border dark:border-slate-700">
+                        <img :src="getAvatarByUid(notif.fromUid, notif.fromName)" class="w-11 h-11 rounded-full object-cover border dark:border-slate-700" :class="notif.read ? 'opacity-70' : ''">
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm dark:text-slate-200" :class="notif.read ? 'font-normal' : 'font-extrabold'">
+                            <p class="text-sm" :class="notif.read ? 'font-normal' : 'font-extrabold'">
                                 <span :class="notif.read ? 'font-bold' : 'font-extrabold text-brand-600 dark:text-brand-400'" x-text="notif.fromName"></span>
                                 <span class="ml-1" x-text="notif.type === 'like' ? 'liked your post.' : (notif.type === 'comment_like' ? 'liked your comment: \'' + notif.data + '\'' : (notif.type === 'comment' ? 'commented: ' + notif.data : (notif.type === 'message' ? 'sent you a message: ' + notif.data : 'started following you.')))"></span>
                             </p>
@@ -535,15 +534,16 @@
                     <h3 class="font-bold text-sm dark:text-white" x-text="activeChatType === 'dm' ? getOtherMember(activeChat).name : (activeChat?.topic || '')"></h3>
                 </div>
                 <div class="flex gap-3 items-center">
-                    <button x-show="activeChatType === 'group' && activeChat?.createdByUid === currentUser?.uid" @click="inviteMode='chat'; showInviteModal=true" class="text-slate-800 dark:text-white text-lg hover:text-brand-500"><i class="fas fa-user-plus"></i></button>
+                    <button x-show="activeChatType === 'group' && activeChat?.createdByUid === currentUser?.uid" @click="inviteMode='chat'; showInviteModal=true" class="text-slate-800 dark:text-white text-lg hover:text-brand-500" title="Manage Members"><i class="fas fa-users-cog"></i></button>
+                    <button x-show="activeChatType === 'group' && activeChat?.createdByUid !== currentUser?.uid" @click="leaveGroup(activeChat?.id)" class="text-red-500 text-lg hover:text-red-600" title="Leave Discussion"><i class="fas fa-sign-out-alt"></i></button>
                 </div>
             </div>
             <div class="flex-1 bg-slate-50 dark:bg-slate-950 p-4 space-y-4 overflow-y-auto chat-container custom-scroll" id="chatContainer">
                 <template x-if="activeChat?.id">
                     <template x-for="(msg, index) in (activeChat?.messages || [])" :key="index">
-                        <div class="flex gap-2" :class="msg?.sender === currentUser?.name ? 'flex-row-reverse' : ''">
+                        <div class="flex gap-2 group" :class="msg?.sender === currentUser?.name ? 'flex-row-reverse' : ''">
                             <img x-show="activeChatType === 'group' || msg?.sender !== currentUser?.name" :src="getAvatarByUid(null, msg?.sender)" class="w-8 h-8 rounded-full object-cover self-end">
-                            <div class="p-3 rounded-2xl max-w-[75%] shadow-sm" :class="msg?.sender === currentUser?.name ? 'bg-brand-500 text-white rounded-br-none' : 'bg-white dark:bg-slate-800 dark:text-white rounded-bl-none'">
+                            <div class="p-3 rounded-2xl max-w-[75%] shadow-sm relative" :class="msg?.sender === currentUser?.name ? 'bg-brand-500 text-white rounded-br-none' : 'bg-white dark:bg-slate-800 dark:text-white rounded-bl-none'">
                                 <p x-show="activeChatType === 'group' && msg?.sender !== currentUser?.name" class="text-[10px] font-bold mb-1 opacity-60" x-text="msg?.sender"></p>
                                 <template x-if="msg?.isImage">
                                     <div class="space-y-1"><img :src="msg?.text" class="rounded-lg w-full"><div class="text-[9px] opacity-70" x-text="msg?.fileName"></div></div>
@@ -551,6 +551,7 @@
                                 <p class="text-sm whitespace-pre-wrap" x-text="msg?.text" x-show="!msg?.isImage"></p>
                                 <button x-show="msg?.isPostShare" @click="openSharedPost(msg.sharedPostId)" class="mt-2 text-[10px] font-bold bg-white/20 text-brand-100 dark:text-brand-300 px-3 py-1.5 rounded-lg border border-white/20 hover:bg-white/30 transition-colors w-full text-center">View Post</button>
                             </div>
+                            <button x-show="msg?.sender === currentUser?.name" @click="deleteChatMessage(activeChat?.id, index)" class="text-red-400 opacity-0 group-hover:opacity-100 transition-opacity text-xs self-center px-2 cursor-pointer" title="Delete Message"><i class="fas fa-trash"></i></button>
                         </div>
                     </template>
                 </template>
@@ -691,18 +692,17 @@
                                                 <img :src="getAvatarByUid(msg.uid, msg.sender)" class="w-7 h-7 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0 mt-0.5">
                                                 <div class="flex-1">
                                                     <div class="bg-slate-100 dark:bg-slate-900 rounded-2xl rounded-tl-none px-3.5 py-2.5">
-                                                        <div class="flex justify-between items-start mb-0.5">
+                                                        <div class="flex justify-between items-center mb-1">
                                                             <span class="font-bold text-[11px] dark:text-white" x-text="msg.sender"></span>
-                                                            <span class="text-[9px] text-slate-400 font-medium ml-2" x-text="getRelativeTime(msg.time || activePost.time)"></span>
+                                                            <div class="flex items-center gap-3">
+                                                                <span class="text-[9px] text-slate-400 font-medium" x-text="getRelativeTime(msg.time || activePost.time)"></span>
+                                                                <button @click="toggleCommentLike(activePost.id, msg)" class="flex items-center gap-1 text-[10px] font-bold transition-colors" :class="(msg.likes && msg.likes.includes(currentUser?.uid)) ? 'text-red-500' : 'text-slate-400 hover:text-slate-600'">
+                                                                    <i class="fa-heart" :class="(msg.likes && msg.likes.includes(currentUser?.uid)) ? 'fas' : 'far'"></i>
+                                                                    <span x-show="msg.likes && msg.likes.length > 0" x-text="msg.likes.length"></span>
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                         <div class="text-xs text-slate-700 dark:text-slate-300 leading-snug" x-text="msg.text"></div>
-                                                    </div>
-                                                    <div class="flex items-center gap-4 mt-1.5 px-2">
-                                                        <button @click="toggleCommentLike(activePost.id, msg)" class="flex items-center gap-1.5 text-[10px] font-bold transition-colors" :class="(msg.likes && msg.likes.includes(currentUser?.uid)) ? 'text-red-500' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'">
-                                                            <i class="fa-heart" :class="(msg.likes && msg.likes.includes(currentUser?.uid)) ? 'fas' : 'far'"></i>
-                                                            <span x-show="msg.likes && msg.likes.length > 0" x-text="msg.likes.length"></span>
-                                                            <span x-show="!msg.likes || msg.likes.length === 0">Like</span>
-                                                        </button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1083,7 +1083,6 @@
                 setupRealtimeData() {
                     window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "feed"), window.fb.orderBy("time", "desc")), snap => { 
                         this.feedItems = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); 
-                        // INSTAN UPDATE FIX: Memastikan modal postingan otomatis memuat data terbaru
                         if(this.activePost && this.activePost.id) { 
                             this.activePost = this.feedItems.find(p => p.id === this.activePost.id) || this.activePost; 
                         }
@@ -1102,7 +1101,6 @@
                     });
                     window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "discussions"), window.fb.orderBy("createdAt", "desc")), snap => { 
                         this.discussions = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); 
-                        // INSTAN UPDATE FIX: Otomatis me-refresh isi chat grup yang sedang dibuka
                         if(this.activeChatType === 'group' && this.activeChat?.id) { 
                             this.activeChat = this.discussions.find(d => d.id === this.activeChat.id) || this.activeChat; 
                             this.scrollChat(); 
@@ -1116,7 +1114,6 @@
                     });
                     window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "dms"), window.fb.orderBy("updatedAt", "desc")), snap => { 
                         this.dms = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); 
-                        // INSTAN UPDATE FIX: Otomatis me-refresh isi DM
                         if(this.activeChatType === 'dm' && this.activeChat?.id) { 
                             this.activeChat = this.dms.find(d => d.id === this.activeChat.id) || this.activeChat; 
                             this.scrollChat(); 
@@ -1134,6 +1131,10 @@
                 },
                 
                 handleNotifClick(notif) { 
+                    if (!notif.read) {
+                        notif.read = true; // Update local state seketika agar tidak delay
+                        window.fb.updateDoc(window.fb.doc(window.fb.db, "notifications", notif.id), { read: true });
+                    }
                     if (notif.type === 'follow') { 
                         this.openProfile({ uid: notif.fromUid }); 
                     } else if (notif.postId) { 
@@ -1148,10 +1149,6 @@
                         const chat = chats.find(c => c.id === notif.chatId);
                         if(chat) { this.openChatModal(chat, notif.chatType); }
                     } 
-                    // Set read status (BOLD FIX)
-                    if (!notif.read) {
-                        window.fb.updateDoc(window.fb.doc(window.fb.db, "notifications", notif.id), { read: true });
-                    }
                 },
 
                 getVisibleDMs() { return this.dms.filter(d => d.members.includes(this.currentUser?.uid)); },
@@ -1199,6 +1196,21 @@
                         otherMembers.forEach(uid => { this.pushNotification(uid, 'message', txt, { chatId: this.activeChat.id, chatType: 'group' }); });
                     }
                     this.markChatAsRead(this.activeChat.id); this.scrollChat(); 
+                },
+
+                async deleteChatMessage(chatId, index) {
+                    if(!confirm('Hapus pesan ini?')) return;
+                    const newMsgs = [...this.activeChat.messages];
+                    newMsgs.splice(index, 1);
+                    const col = this.activeChatType === 'dm' ? 'dms' : 'discussions';
+                    await window.fb.updateDoc(window.fb.doc(window.fb.db, col, chatId), { messages: newMsgs });
+                },
+
+                async leaveGroup(chatId) {
+                    if(!confirm('Apakah kamu yakin ingin keluar dari diskusi ini?')) return;
+                    await window.fb.updateDoc(window.fb.doc(window.fb.db, "discussions", chatId), { members: window.fb.arrayRemove(this.currentUser.uid) });
+                    this.activeChat = {};
+                    this.showToast('Kamu telah keluar dari grup');
                 },
                 
                 handleChatUpload(e) { 
@@ -1495,7 +1507,6 @@
                 
                 openPostDetail(post) { this.activePost = post; this.showPostModal = true; },
                 
-                // DISKUSI: Logic Buat & Delete
                 async createDiscussion() {
                     if(!this.newDiscussTopic) return;
                     try {
@@ -1515,7 +1526,6 @@
                 },
                 async deleteDiscussion(id) { if(!id) return; if(confirm('Delete group?')) { await window.fb.deleteDoc(window.fb.doc(window.fb.db, "discussions", id)); this.activeChat = {}; } }, 
                 
-                // DISKUSI: Logic Tambah / Hapus Anggota
                 isMember(uid) { if(this.inviteMode === 'chat') return (this.activeChat?.members || []).includes(uid); if(this.inviteMode === 'task') return (this.activeTask?.members || []).includes(uid); return false; }, 
                 async inviteUser(uid) { 
                     if(this.inviteMode === 'chat' && this.activeChat?.id) { 
