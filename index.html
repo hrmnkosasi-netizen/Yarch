@@ -43,12 +43,13 @@
     </style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        // AUTH FIX: Ditambahkan GoogleAuthProvider, signInWithPopup, sendEmailVerification, dan sendPasswordResetEmail
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, sendEmailVerification, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         
         const firebaseConfig = { apiKey: "AIzaSyBR9Fn4fUPmJDFRufysD36fWHDrq5Am_oo", authDomain: "yarch-v73.firebaseapp.com", projectId: "yarch-v73", storageBucket: "yarch-v73.firebasestorage.app", messagingSenderId: "684931554564", appId: "1:684931554564:web:9392fe77035a599ac20451" };
         const app = initializeApp(firebaseConfig);
-        window.fb = { auth: getAuth(app), db: getFirestore(app), signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, signOut, collection, addDoc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, arrayUnion, arrayRemove };
+        window.fb = { auth: getAuth(app), db: getFirestore(app), signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, sendEmailVerification, sendPasswordResetEmail, collection, addDoc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, arrayUnion, arrayRemove };
     </script>
 </head>
 <body class="text-slate-800 dark:text-slate-200 h-screen flex flex-col overflow-hidden bg-sky-50/50" x-data="taskApp()" x-init="initApp()" @keydown.escape="showCmd = false" :class="{ 'dark': isDarkMode }">
@@ -61,14 +62,25 @@
 
     <div x-show="!currentUser && !showWelcome" class="fixed inset-0 z-[1000] bg-sky-50 dark:bg-slate-900 flex items-center justify-center p-6 transition-all duration-500" x-transition.opacity x-cloak>
         <div class="w-full max-w-sm">
-            <div class="text-center mb-10"><div class="w-20 h-20 rounded-3xl bg-gradient-to-br from-brand-500 to-blue-600 flex items-center justify-center text-white shadow-xl mx-auto mb-6 transform rotate-3"><i class="fas fa-cubes text-3xl"></i></div><h1 class="font-extrabold text-3xl text-slate-900 dark:text-white mb-2">Yarch App</h1><p class="text-sm text-slate-400 font-medium" x-text="authMode === 'login' ? 'Welcome back, please sign in' : 'Create your account'"></p></div>
+            <div class="text-center mb-8"><div class="w-20 h-20 rounded-3xl bg-gradient-to-br from-brand-500 to-blue-600 flex items-center justify-center text-white shadow-xl mx-auto mb-6 transform rotate-3"><i class="fas fa-cubes text-3xl"></i></div><h1 class="font-extrabold text-3xl text-slate-900 dark:text-white mb-2">Yarch App</h1><p class="text-sm text-slate-400 font-medium" x-text="authMode === 'login' ? 'Welcome back, please sign in' : 'Create your account'"></p></div>
+            
             <form @submit.prevent="login()" class="space-y-4" x-show="authMode === 'login'">
                 <input type="email" x-model="loginForm.email" class="w-full bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-2xl p-4 text-sm outline-none dark:text-white" placeholder="Email" required>
-                <input type="password" x-model="loginForm.password" class="w-full bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-2xl p-4 text-sm outline-none dark:text-white" placeholder="Password" required>
+                <div>
+                    <input type="password" x-model="loginForm.password" class="w-full bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-2xl p-4 text-sm outline-none dark:text-white" placeholder="Password" required>
+                    <div class="flex justify-end mt-2"><a href="#" @click.prevent="forgotPassword()" class="text-xs text-brand-500 font-bold hover:underline">Forgot Password?</a></div>
+                </div>
                 <div x-show="loginError" class="text-red-500 text-xs text-center font-bold px-2" x-text="loginError"></div>
                 <button type="submit" class="w-full py-4 bg-brand-600 text-white rounded-2xl font-bold shadow-xl flex justify-center items-center gap-2" :disabled="authLoading"><span x-show="!authLoading">Sign In</span><i x-show="authLoading" class="fas fa-spinner fa-spin"></i></button>
+                
+                <div class="my-5 flex items-center before:mt-0.5 before:flex-1 before:border-t before:border-slate-300 after:mt-0.5 after:flex-1 after:border-t after:border-slate-300 dark:before:border-slate-700 dark:after:border-slate-700"><p class="mx-4 mb-0 text-center font-semibold text-slate-400 text-[10px] uppercase tracking-wider">Or continue with</p></div>
+                <button type="button" @click="loginWithGoogle()" class="w-full py-3.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white rounded-2xl font-bold shadow-sm flex justify-center items-center gap-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700" :disabled="authLoading">
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google"> Google
+                </button>
+
                 <div class="text-center mt-6"><p class="text-xs text-slate-400">Don't have an account? <a href="#" @click.prevent="authMode = 'register'; loginError=''" class="text-brand-600 font-bold">Sign up</a></p></div>
             </form>
+
             <form @submit.prevent="register()" class="space-y-4" x-show="authMode === 'register'">
                 <input type="text" x-model="regForm.name" class="w-full bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-2xl p-4 text-sm outline-none dark:text-white" placeholder="Username" required>
                 <input type="email" x-model="regForm.email" class="w-full bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-2xl p-4 text-sm outline-none dark:text-white" placeholder="Email" required>
@@ -548,8 +560,16 @@
                                 <template x-if="msg?.isImage">
                                     <div class="space-y-1"><img :src="msg?.text" class="rounded-lg w-full"><div class="text-[9px] opacity-70" x-text="msg?.fileName"></div></div>
                                 </template>
-                                <p class="text-sm whitespace-pre-wrap" x-text="msg?.text" x-show="!msg?.isImage"></p>
-                                <button x-show="msg?.isPostShare" @click="openSharedPost(msg.sharedPostId)" class="mt-2 text-[10px] font-bold bg-white/20 text-brand-100 dark:text-brand-300 px-3 py-1.5 rounded-lg border border-white/20 hover:bg-white/30 transition-colors w-full text-center">View Post</button>
+                                <p class="text-sm whitespace-pre-wrap" x-text="msg?.text" x-show="!msg?.isImage && !msg?.isPostShare"></p>
+                                
+                                <p class="text-sm whitespace-pre-wrap" x-text="msg?.text" x-show="msg?.isPostShare"></p>
+                                
+                                <div x-show="msg?.isPostShare" class="mt-2 rounded-xl overflow-hidden border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5">
+                                    <template x-if="msg?.sharedPostMedia">
+                                        <img :src="msg.sharedPostMedia" class="w-full h-28 object-cover">
+                                    </template>
+                                    <button @click="openSharedPost(msg.sharedPostId)" class="text-[10px] font-bold text-brand-600 dark:text-brand-300 px-3 py-2 hover:bg-black/5 dark:hover:bg-white/10 transition-colors w-full text-center border-t border-black/10 dark:border-white/10">Lihat Postingan</button>
+                                </div>
                             </div>
                             <button x-show="msg?.sender === currentUser?.name" @click="deleteChatMessage(activeChat?.id, index)" class="text-red-400 opacity-0 group-hover:opacity-100 transition-opacity text-xs self-center px-2 cursor-pointer" title="Delete Message"><i class="fas fa-trash"></i></button>
                         </div>
@@ -570,8 +590,10 @@
             <div class="flex justify-between items-center p-4 border-b dark:border-slate-800 sticky top-0 z-20 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm">
                 <button @click="switchView('board')" class="text-xl px-2 dark:text-white"><i class="fas fa-arrow-left"></i></button>
                 <h2 class="font-bold text-base dark:text-white" x-text="viewedProfile?.name || currentUser?.name || ''"></h2>
-                <button @click="toggleDarkMode()" class="text-xl dark:text-white"><i class="fas" :class="isDarkMode ? 'fa-sun' : 'fa-moon'"></i></button>
+                
+                <button @click="showProfileMenu = true" class="text-xl dark:text-white px-2 hover:text-brand-500 transition-colors"><i class="fas fa-ellipsis-v"></i></button>
             </div>
+            
             <div class="px-5 pt-4">
                 <div class="flex justify-between items-center mb-5">
                     <img :src="getAvatarByUid(viewedProfile?.uid || currentUser?.uid, viewedProfile?.name || currentUser?.name)" class="w-20 h-20 rounded-full border shadow-sm object-cover">
@@ -622,6 +644,35 @@
                     </div>
                 </template>
                 <div x-show="getProfileGridItems().length === 0" class="col-span-3 text-center py-10 text-slate-400 text-sm">Nothing to see here yet.</div>
+            </div>
+        </div>
+
+        <div x-show="showProfileMenu" class="fixed inset-0 bg-black/50 z-[300] flex items-end justify-center md:p-4" x-cloak x-transition.opacity>
+            <div class="bg-white dark:bg-slate-800 w-full md:max-w-sm rounded-t-3xl md:rounded-3xl p-6 pb-safe" @click.outside="showProfileMenu = false">
+                <div class="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-6"></div>
+                <h3 class="font-bold text-lg dark:text-white mb-4">Settings</h3>
+                <div class="space-y-2">
+                    <button @click="toggleDarkMode(); showProfileMenu = false" class="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-700 rounded-xl transition-colors border dark:border-slate-700">
+                        <div class="flex items-center gap-3 dark:text-white font-bold"><i class="fas fa-palette text-brand-500 text-lg w-6"></i> Ubah Warna (Tema)</div>
+                        <i class="fas text-xl" :class="isDarkMode ? 'fa-moon text-blue-400' : 'fa-sun text-orange-400'"></i>
+                    </button>
+                    <button @click="showProfileMenu = false; showAboutApp = true" class="w-full flex items-center p-4 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-700 rounded-xl transition-colors border dark:border-slate-700">
+                        <div class="flex items-center gap-3 dark:text-white font-bold"><i class="fas fa-info-circle text-slate-500 text-lg w-6"></i> Tentang Aplikasi</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div x-show="showAboutApp" class="fixed inset-0 bg-black/60 z-[400] flex items-center justify-center p-4" x-cloak x-transition.opacity>
+            <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl p-6 text-center" @click.outside="showAboutApp=false">
+                <div class="w-16 h-16 rounded-3xl bg-brand-500 text-white flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg transform rotate-3"><i class="fas fa-cubes"></i></div>
+                <h3 class="font-extrabold text-xl mb-1 dark:text-white">Yarch App</h3>
+                <p class="text-sm text-slate-500 mb-6">Versi 1.0.0</p>
+                <div class="bg-brand-50 dark:bg-slate-900 p-4 rounded-2xl mb-6 border border-brand-100 dark:border-slate-700">
+                    <p class="font-bold text-xs text-brand-600 dark:text-brand-400 uppercase tracking-wider mb-1">Dikembangkan oleh</p>
+                    <p class="font-extrabold text-xl text-slate-800 dark:text-white">Herman Kosasi</p>
+                </div>
+                <button @click="showAboutApp=false" class="w-full py-3 bg-slate-100 dark:bg-slate-700 dark:text-white rounded-xl font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">Tutup</button>
             </div>
         </div>
 
@@ -857,12 +908,15 @@
                 <div class="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-4"></div>
                 <h3 class="font-bold text-xl dark:text-white mb-6 text-center">Share to...</h3>
                 
-                <button @click="sharePostViaApp(activeSharePost)" class="w-full flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border dark:border-slate-700 hover:border-brand-500 transition-colors mb-6 group">
-                    <div class="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-600 flex items-center justify-center text-lg group-hover:scale-110 transition-transform"><i class="fas fa-share-nodes"></i></div>
-                    <div class="text-left flex-1"><div class="font-bold text-sm dark:text-white">Share via other apps</div><div class="text-xs text-slate-500">WhatsApp, Instagram, Copy Link, dll.</div></div>
-                    <i class="fas fa-chevron-right text-slate-300"></i>
-                </button>
+                <div class="grid grid-cols-4 gap-4 mb-6">
+                    <button @click="shareCustom('whatsapp')" class="flex flex-col items-center gap-2 group"><div class="w-12 h-12 rounded-full bg-[#25D366] text-white flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shadow-md"><i class="fab fa-whatsapp"></i></div><span class="text-[10px] font-bold text-slate-500 dark:text-slate-400">WhatsApp</span></button>
+                    <button @click="shareCustom('facebook')" class="flex flex-col items-center gap-2 group"><div class="w-12 h-12 rounded-full bg-[#1877F2] text-white flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shadow-md"><i class="fab fa-facebook-f"></i></div><span class="text-[10px] font-bold text-slate-500 dark:text-slate-400">Facebook</span></button>
+                    <button @click="shareCustom('twitter')" class="flex flex-col items-center gap-2 group"><div class="w-12 h-12 rounded-full bg-black text-white flex items-center justify-center text-xl group-hover:scale-110 transition-transform shadow-md"><i class="fa-brands fa-x-twitter"></i></div><span class="text-[10px] font-bold text-slate-500 dark:text-slate-400">X</span></button>
+                    <button @click="shareCustom('copy')" class="flex flex-col items-center gap-2 group"><div class="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-white flex items-center justify-center text-xl group-hover:scale-110 transition-transform shadow-md"><i class="fas fa-link"></i></div><span class="text-[10px] font-bold text-slate-500 dark:text-slate-400">Copy Link</span></button>
+                </div>
 
+                <div class="h-px w-full bg-slate-200 dark:bg-slate-700 mb-4"></div>
+                
                 <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Send to friends</h4>
                 <div class="overflow-y-auto custom-scroll flex-1 -mx-2 px-2">
                     <template x-for="user in getFollowingUsers()" :key="user.uid">
@@ -889,7 +943,7 @@
                 <button @click="switchView('board')" class="flex flex-col items-center w-14 transition-transform active:scale-90" :class="currentView==='board' ? 'text-brand-600' : 'text-slate-800 dark:text-white'"><i class="fas fa-home text-[22px]"></i></button>
                 <button @click="switchView('feed')" class="flex flex-col items-center w-14 transition-transform active:scale-90" :class="currentView==='feed' ? 'text-brand-600' : 'text-slate-800 dark:text-white'"><i class="fas fa-compass text-[22px]"></i></button>
                 <button @click="showCreateSocial = true" class="flex flex-col items-center w-14 transition-transform active:scale-90 text-slate-800 dark:text-white"><i class="far fa-plus-square text-[24px]"></i></button>
-                <button @click="switchView('activity'); markNotificationsRead()" class="flex flex-col items-center w-14 transition-transform active:scale-90 relative" :class="currentView==='activity' ? 'text-brand-600' : 'text-slate-800 dark:text-white'">
+                <button @click="switchView('activity')" class="flex flex-col items-center w-14 transition-transform active:scale-90 relative" :class="currentView==='activity' ? 'text-brand-600' : 'text-slate-800 dark:text-white'">
                     <i class="fas fa-heart text-[22px]"></i>
                     <span x-show="getUnreadNotifCount() > 0" class="absolute top-0 right-2 w-2 h-2 bg-red-500 rounded-full border border-white dark:border-slate-900"></span>
                 </button>
@@ -981,7 +1035,9 @@
                 activePost: {}, 
                 showLogoutConfirm: false, 
                 showShareModal: false, 
-                activeSharePost: null, 
+                activeSharePost: null,
+                showProfileMenu: false, // Tambahan state Profil Menu
+                showAboutApp: false,    // Tambahan state Modal Tentang
                 calendarDays: [], 
                 calendarTitle: '', 
                 currentDate: new Date(), 
@@ -1049,10 +1105,16 @@
                                         const userSnap = await window.fb.getDoc(userRef); 
                                         let finalName = user.displayName;
                                         if (!userSnap.exists()) { 
-                                            await window.fb.setDoc(userRef, { uid: user.uid, name: finalName || 'User', email: user.email, bio: '', website: '', avatar: '', followers: [], following: [], savedPosts: [], lastReadChats: {} }); 
+                                            await window.fb.setDoc(userRef, { uid: user.uid, name: finalName || 'User', email: user.email, bio: '', website: '', avatar: user.photoURL || '', followers: [], following: [], savedPosts: [], lastReadChats: {} }); 
                                         } else { finalName = userSnap.data().name || finalName; }
                                         this.currentUser = { name: finalName || 'User', email: user.email, uid: user.uid }; 
                                         this.currentView = 'board'; 
+                                        
+                                        // Notif verifikasi (opsional/ringan)
+                                        if(!user.emailVerified && user.providerData[0]?.providerId === 'password') {
+                                            setTimeout(() => { this.showToast('Email belum diverifikasi. Cek inbox kamu.', 'error'); }, 3000);
+                                        }
+
                                         this.setupRealtimeData();
                                     } else { this.currentUser = null; }
                                 } catch (err) { this.loginError = "Database Error: " + err.message; this.currentUser = null; await window.fb.signOut(window.fb.auth); 
@@ -1074,8 +1136,46 @@
                         const userCred = await window.fb.createUserWithEmailAndPassword(window.fb.auth, this.regForm.email, this.regForm.password); 
                         await window.fb.updateProfile(userCred.user, { displayName: this.regForm.name }); 
                         await window.fb.setDoc(window.fb.doc(window.fb.db, "users", userCred.user.uid), { uid: userCred.user.uid, name: this.regForm.name, email: this.regForm.email, bio: '', website: '', avatar: '', followers: [], following: [], savedPosts: [], lastReadChats: {} }); 
-                        this.regForm = { name: '', email: '', password: '' }; this.showWelcome = true; 
+                        
+                        // Kirim Email Verifikasi
+                        await window.fb.sendEmailVerification(userCred.user);
+                        
+                        this.regForm = { name: '', email: '', password: '' }; 
+                        this.showWelcome = true; 
+                        this.showToast('Registrasi sukses! Silakan cek email kamu untuk verifikasi.');
                     } catch(e) { this.loginError = "Register Gagal: " + e.message; this.authLoading = false; this.showWelcome = false; } 
+                },
+
+                async loginWithGoogle() {
+                    this.authLoading = true; this.loginError = '';
+                    try {
+                        const provider = new window.fb.GoogleAuthProvider();
+                        const result = await window.fb.signInWithPopup(window.fb.auth, provider);
+                        const user = result.user;
+                        
+                        const userRef = window.fb.doc(window.fb.db, "users", user.uid);
+                        const userSnap = await window.fb.getDoc(userRef);
+                        
+                        if (!userSnap.exists()) {
+                            await window.fb.setDoc(userRef, { uid: user.uid, name: user.displayName || 'Google User', email: user.email, bio: '', website: '', avatar: user.photoURL || '', followers: [], following: [], savedPosts: [], lastReadChats: {} });
+                        }
+                        this.showWelcome = true;
+                    } catch(e) { 
+                        this.loginError = "Google Login Dibatalkan/Gagal."; 
+                        this.authLoading = false; 
+                    }
+                },
+
+                async forgotPassword() {
+                    const email = prompt("Masukkan email kamu untuk reset password:");
+                    if(email) {
+                        try {
+                            await window.fb.sendPasswordResetEmail(window.fb.auth, email);
+                            alert("Link reset password telah dikirim ke " + email);
+                        } catch(e) { 
+                            alert("Error: Pastikan email benar."); 
+                        }
+                    }
                 },
                 
                 async logout() { this.showLogoutConfirm = false; this.showWelcome = true; setTimeout(async () => { await window.fb.signOut(window.fb.auth); location.reload(); }, 800); },
@@ -1123,7 +1223,6 @@
 
                 getMyNotifications() { return this.notifications.filter(n => n.toUid === this.currentUser?.uid); },
                 getUnreadNotifCount() { return this.getMyNotifications().filter(n => !n.read).length; },
-                async markNotificationsRead() { const unread = this.getMyNotifications().filter(n => !n.read); for (const n of unread) { await window.fb.updateDoc(window.fb.doc(window.fb.db, "notifications", n.id), { read: true }); } },
                 
                 async pushNotification(toUid, type, dataText = '', extra = {}) { 
                     if (!toUid || toUid === this.currentUser?.uid) return; 
@@ -1267,11 +1366,25 @@
                     this.activeSharePost = item;
                     this.showShareModal = true;
                 },
-                sharePostViaApp(item) { 
-                    const shareData = { title: 'Yarch Post', text: item.content || 'Check out this post!', url: window.location.href };
-                    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) { navigator.share(shareData).catch(err => console.log('Share error', err)); } else { navigator.clipboard.writeText(`${shareData.text} - ${shareData.url}`).then(() => { this.showToast('Link tersalin ke clipboard!'); }).catch(() => { this.showToast('Share not supported', 'error'); }); } 
+
+                // SHARE CUSTOM APP FIX
+                shareCustom(platform) {
+                    const shareText = encodeURIComponent(`Lihat post dari @${this.activeSharePost?.user || 'seseorang'} di Yarch App!`);
+                    const shareUrl = encodeURIComponent(window.location.href);
+
+                    if(platform === 'whatsapp') {
+                        window.open(`https://api.whatsapp.com/send?text=${shareText}%20${shareUrl}`, '_blank');
+                    } else if(platform === 'facebook') {
+                        window.open(`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`, '_blank');
+                    } else if(platform === 'twitter') {
+                        window.open(`https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`, '_blank');
+                    } else if(platform === 'copy') {
+                        navigator.clipboard.writeText(`${decodeURIComponent(shareText)} ${decodeURIComponent(shareUrl)}`);
+                        this.showToast('Link berhasil disalin!');
+                    }
                     this.showShareModal = false;
                 },
+
                 getFollowingUsers() { 
                     const followingIds = this.myProfileData?.following || [];
                     return this.allUsers.filter(u => followingIds.includes(u.uid));
@@ -1288,7 +1401,15 @@
                     const shortDesc = this.activeSharePost.content ? this.activeSharePost.content.substring(0, 50) + '...' : 'Photo/Video';
                     const msgText = `Shared a post from @${this.activeSharePost.user}:\n"${shortDesc}"`;
                     
-                    const payload = { messages: window.fb.arrayUnion({ sender: this.currentUser.name, text: msgText, isImage: false, isPostShare: true, sharedPostId: this.activeSharePost.id, timestamp: Date.now() }), updatedAt: Date.now() };
+                    const payload = { messages: window.fb.arrayUnion({ 
+                        sender: this.currentUser.name, 
+                        text: msgText, 
+                        isImage: false, 
+                        isPostShare: true, 
+                        sharedPostId: this.activeSharePost.id, 
+                        sharedPostMedia: Array.isArray(this.activeSharePost.media) ? this.activeSharePost.media[0] : this.activeSharePost.media, // AMBIL MEDIA DARI POST
+                        timestamp: Date.now() 
+                    }), updatedAt: Date.now() };
                     await window.fb.updateDoc(window.fb.doc(window.fb.db, "dms", chatId), payload); 
                     
                     this.pushNotification(user.uid, 'message', 'Shared a post with you', { chatId: chatId, chatType: 'dm' });
