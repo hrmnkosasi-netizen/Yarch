@@ -248,7 +248,10 @@
                                         <video :src="item?.media" controls class="w-full max-h-[80vh] object-contain"></video>
                                     </template>
                                     <template x-if="item?.mediaType !== 'video' && item?.media && !item?.media?.includes('.mp4')">
-                                        <img :src="item?.media" class="w-full max-h-[80vh] object-cover cursor-pointer" @click="setTimeout(() => openPostDetail(item), 250)">
+                                        <div class="relative w-full cursor-pointer" @click="setTimeout(() => openPostDetail(item), 250)">
+                                            <img :src="Array.isArray(item?.media) ? item.media[0] : item.media" class="w-full max-h-[80vh] object-cover">
+                                            <div x-show="Array.isArray(item?.media) && item.media.length > 1" class="absolute top-3 right-3 bg-black/60 text-white rounded-md p-1.5 text-xs shadow-lg z-10"><i class="fas fa-clone"></i></div>
+                                        </div>
                                     </template>
                                     <div x-show="heartAnimId === item.id" class="absolute inset-0 flex items-center justify-center bg-black/10 z-20 pointer-events-none">
                                         <i class="fas fa-heart text-white text-7xl drop-shadow-lg anim-pop-heart"></i>
@@ -309,7 +312,10 @@
                                 <video :src="post?.media" class="w-full h-full object-cover" muted></video>
                             </template>
                             <template x-if="post?.mediaType !== 'video' && !post?.media?.includes('.mp4')">
-                                <img :src="post?.media" class="w-full h-full object-cover">
+                                <div class="w-full h-full relative">
+                                    <img :src="Array.isArray(post?.media) ? post.media[0] : post.media" class="w-full h-full object-cover">
+                                    <div x-show="Array.isArray(post?.media) && post.media.length > 1" class="absolute top-2 right-2 text-white bg-black/50 p-1 rounded text-[10px] shadow z-10"><i class="fas fa-clone"></i></div>
+                                </div>
                             </template>
                             <div x-show="post?.mediaType === 'video' || post?.media?.includes('.mp4')" class="absolute top-2 right-2 text-white bg-black/60 w-6 h-6 rounded-full flex items-center justify-center text-[10px] shadow"><i class="fas fa-play ml-0.5"></i></div>
                         </div>
@@ -549,7 +555,10 @@
                             <video :src="post?.media" class="w-full h-full object-cover" muted></video>
                         </template>
                         <template x-if="post?.mediaType !== 'video' && !post?.media?.includes('.mp4')">
-                            <img x-show="post?.media" :src="post?.media" class="w-full h-full object-cover">
+                            <div class="w-full h-full relative">
+                                <img x-show="post?.media" :src="Array.isArray(post?.media) ? post.media[0] : post.media" class="w-full h-full object-cover">
+                                <div x-show="Array.isArray(post?.media) && post.media.length > 1" class="absolute top-2 right-2 text-white bg-black/50 p-1 rounded text-[10px] shadow z-10"><i class="fas fa-clone"></i></div>
+                            </div>
                         </template>
                         <div x-show="!post?.media" class="w-full h-full p-2 flex items-center justify-center text-center">
                             <p class="text-[9px] dark:text-slate-300 line-clamp-4" x-text="post?.content"></p>
@@ -787,14 +796,31 @@
                             </div>
                         </div>
                     </div>
-                    <div x-show="postFilePreview" class="relative mt-2 mb-4 w-full flex justify-center bg-slate-100 dark:bg-slate-950 rounded-xl overflow-hidden">
-                        <template x-if="postFileType === 'video'"><video :src="postFilePreview" class="max-h-64 object-contain" controls></video></template>
-                        <template x-if="postFileType === 'image'"><img :src="postFilePreview" class="max-h-64 object-contain"></template>
+                    
+                    <div x-show="postFileRaw" class="relative mt-2 mb-4 w-full bg-slate-100 dark:bg-slate-950 rounded-xl overflow-hidden">
+                        <template x-if="postFileType === 'video'">
+                            <video :src="postFileRaw" class="max-h-64 object-contain mx-auto" controls></video>
+                        </template>
+                        <template x-if="postFileType === 'image'">
+                            <div class="flex overflow-x-auto snap-x snap-mandatory hide-scroll gap-2 p-2 relative">
+                                <template x-if="!Array.isArray(postFileRaw)">
+                                    <img :src="postFileRaw" class="max-h-64 object-contain mx-auto snap-center rounded-lg">
+                                </template>
+                                <template x-if="Array.isArray(postFileRaw)">
+                                    <template x-for="(src, idx) in postFileRaw" :key="idx">
+                                        <div class="min-w-full flex-shrink-0 snap-center relative flex justify-center">
+                                            <img :src="src" class="max-h-64 object-contain rounded-lg">
+                                        </div>
+                                    </template>
+                                </template>
+                            </div>
+                        </template>
                         <button type="button" @click.prevent="postFileRaw=null; postFilePreview=null; postFileType=''" class="absolute top-2 right-2 bg-slate-800/70 text-white w-8 h-8 rounded-full flex items-center justify-center shadow backdrop-blur z-20"><i class="fas fa-times"></i></button>
                     </div>
+
                     <div class="border-t dark:border-slate-700 pt-4 flex justify-between items-center">
                         <span class="text-sm font-bold text-slate-500">Add to your post</span>
-                        <input type="file" x-ref="mediaInput" class="hidden" accept="image/*,video/*" @change="handleFeedMedia($event)">
+                        <input type="file" x-ref="mediaInput" class="hidden" multiple accept="image/*,video/*" @change="handleFeedMedia($event)">
                         <button type="button" @click="$refs.mediaInput.click()" class="text-green-500 text-2xl hover:scale-110 transition-transform"><i class="far fa-images"></i></button>
                     </div>
                 </div>
@@ -824,7 +850,7 @@
                     </template>
                 </div>
                 <button x-show="storyFilesPreview.length > 0" @click="$refs.storyInput.click()" class="mt-6 text-white text-sm font-bold bg-white/20 px-5 py-2.5 rounded-full backdrop-blur-sm border border-white/30 hover:bg-white/30"><i class="fas fa-plus mr-2"></i>Add More Photos</button>
-                <div x-show="isUploadingMedia" class="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white z-30"><i class="fas fa-spinner fa-spin text-4xl mb-4"></i><span class="text-sm font-bold">Adding stories...</span></div>
+                <div x-show="isUploadingMedia" class="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white z-30"><i class="fas fa-spinner fa-spin text-4xl mb-4"></i><span class="text-sm font-bold">Processing images...</span></div>
             </div>
             <div class="p-6 bg-gradient-to-t from-black/80 to-transparent flex justify-end">
                 <button x-show="storyFilesPreview.length > 0" @click="createStory()" :disabled="isUploadingMedia" class="bg-white text-black px-6 py-3 rounded-full font-bold text-sm shadow-xl flex items-center gap-2 hover:bg-slate-200">Share (<span x-text="storyFilesRaw.length"></span>) <i class="fas fa-chevron-right text-xs"></i></button>
@@ -879,11 +905,29 @@
                                      <button @click="deletePost(activePost?.id); showPostModal=false" class="text-slate-400 hover:text-red-500 w-8 h-8 flex items-center justify-center"><i class="fas fa-trash"></i></button>
                                 </div>
                             </div>
+                            
                             <div class="relative bg-slate-100 dark:bg-slate-950 flex justify-center group" @dblclick="toggleLike(activePost); activePost = feedItems.find(f=>f.id===activePost?.id) || activePost; showHeartAnim(activePost?.id)">
-                                <template x-if="activePost?.mediaType === 'video' || activePost?.media?.includes('.mp4')"><video :src="activePost?.media" controls class="w-full max-h-[70vh] object-contain bg-black"></video></template>
-                                <template x-if="activePost?.mediaType !== 'video' && activePost?.media && !activePost?.media?.includes('.mp4')"><img :src="activePost?.media" class="w-full max-h-[70vh] object-contain bg-black"></template>
+                                <template x-if="activePost?.mediaType === 'video' || activePost?.media?.includes('.mp4')">
+                                    <video :src="activePost?.media" controls class="w-full max-h-[70vh] object-contain bg-black"></video>
+                                </template>
+                                <template x-if="activePost?.mediaType !== 'video' && activePost?.media && !activePost?.media?.includes('.mp4')">
+                                    <div class="relative w-full flex overflow-x-auto snap-x snap-mandatory hide-scroll bg-black">
+                                        <template x-if="!Array.isArray(activePost?.media)">
+                                            <img :src="activePost?.media" class="w-full max-h-[70vh] object-contain snap-center">
+                                        </template>
+                                        <template x-if="Array.isArray(activePost?.media)">
+                                            <template x-for="(imgSrc, index) in activePost.media" :key="index">
+                                                <div class="min-w-full relative snap-center flex justify-center">
+                                                    <img :src="imgSrc" class="max-h-[70vh] w-full object-contain">
+                                                    <div class="absolute top-4 right-4 bg-black/60 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm" x-text="(index+1) + '/' + activePost.media.length"></div>
+                                                </div>
+                                            </template>
+                                        </template>
+                                    </div>
+                                </template>
                                 <div x-show="heartAnimId === activePost?.id" class="absolute inset-0 flex items-center justify-center bg-black/10 z-20 pointer-events-none"><i class="fas fa-heart text-white text-7xl drop-shadow-lg anim-pop-heart"></i></div>
                             </div>
+
                             <div class="px-4 pt-3 pb-1 flex justify-between items-center">
                                 <div class="flex gap-4">
                                     <button @click="toggleLike(activePost); activePost = feedItems.find(f=>f.id===activePost?.id) || activePost" class="text-[22px] transition-transform active:scale-75" :class="(activePost?.likes && (activePost.likes.includes(currentUser?.uid) || activePost.likes.includes(currentUser?.name))) ? 'text-red-500' : 'text-slate-800 dark:text-white'"><i class="fa-heart" :class="(activePost?.likes && (activePost.likes.includes(currentUser?.uid) || activePost.likes.includes(currentUser?.name))) ? 'fas' : 'far'"></i></button>
@@ -898,7 +942,7 @@
                                 <div class="space-y-2 mt-4"><template x-for="msg in (activePost?.comments || [])"><div class="text-[13px] leading-tight"><span class="font-bold dark:text-white mr-1" x-text="msg.sender"></span><span class="text-slate-700 dark:text-slate-300" x-text="msg.text"></span></div></template></div>
                                 <div class="flex items-center gap-3 mt-4 pt-3 border-t dark:border-slate-100 dark:border-slate-700">
                                     <img :src="getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-6 h-6 rounded-full object-cover">
-                                    <input type="text" x-model="replyText" @keydown.enter="sendPostComment(activePost?.id, replyText, $data); activePost = feedItems.find(f=>f.id===activePost?.id) || activePost" class="flex-1 bg-transparent text-sm outline-none dark:text-white" placeholder="Add a comment...">
+                                    <input type="text" :id="'reply-input-' + activePost?.id" x-model="replyText" @keydown.enter="sendPostComment(activePost?.id, replyText, $data); activePost = feedItems.find(f=>f.id===activePost?.id) || activePost" class="flex-1 bg-transparent text-sm outline-none dark:text-white" placeholder="Add a comment...">
                                     <button x-show="replyText.trim().length > 0" @click="sendPostComment(activePost?.id, replyText, $data); activePost = feedItems.find(f=>f.id===activePost?.id) || activePost" class="text-brand-500 font-bold text-sm">Post</button>
                                 </div>
                             </div>
@@ -1042,6 +1086,29 @@
                     {text:'Toggle Dark Mode', icon:'fa-moon', action:'dark'}, 
                     {text:'Go to Calendar', icon:'fa-calendar', action:'calendar'}
                 ],
+
+                compressImage(file) {
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.readAsDataURL(file);
+                        reader.onload = (event) => {
+                            const img = new Image();
+                            img.onload = () => {
+                                const canvas = document.createElement('canvas');
+                                let w = img.width, h = img.height;
+                                const max = 1080;
+                                if(w > h) { if(w > max) { h *= max/w; w = max; } } else { if(h > max) { w *= max/h; h = max; } }
+                                canvas.width = w; canvas.height = h;
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(img, 0, 0, w, h);
+                                resolve(canvas.toDataURL('image/jpeg', 0.6));
+                            };
+                            img.onerror = reject;
+                            img.src = event.target.result;
+                        };
+                        reader.onerror = reject;
+                    });
+                },
 
                 initApp() {
                     this.$watch('isDarkMode', v => localStorage.setItem('tf_dark', v));
@@ -1223,7 +1290,13 @@
                         this.openProfile({ uid: notif.fromUid }); 
                     } else if (notif.postId) { 
                         const p = this.feedItems.find(x => x.id === notif.postId); 
-                        if(p) this.openPostDetail(p); 
+                        if(p) {
+                            this.openPostDetail(p);
+                            setTimeout(() => {
+                                const replyInput = document.getElementById('reply-input-' + p.id);
+                                if (replyInput) replyInput.focus();
+                            }, 500);
+                        } 
                     } 
                 },
 
@@ -1425,7 +1498,6 @@
                     if (navigator.share && navigator.canShare && navigator.canShare(shareData)) { 
                         navigator.share(shareData).catch(err => console.log('Share error', err)); 
                     } else { 
-                        // Fallback jika tombol ditekan di desktop/web tanpa support PWA share
                         navigator.clipboard.writeText(`${shareData.text} - ${shareData.url}`).then(() => {
                             this.showToast('Link tersalin ke clipboard!');
                         }).catch(() => {
@@ -1697,36 +1769,39 @@
                     this.showCreatePost = true; 
                 }, 
                 
-                handleFeedMedia(e) { 
-                    const f = e.target.files[0]; 
-                    if(!f) return; 
-                    this.postFileType = f.type.startsWith('video/') ? 'video' : 'image'; 
-                    if (this.postFileType === 'video' && f.size > 2000000) { 
-                        this.showToast('Video max 2MB.', 'error'); 
-                        return; 
-                    } 
-                    const reader = new FileReader(); 
-                    reader.onload = (event) => { 
-                        if (this.postFileType === 'image') { 
-                            const img = new Image(); 
-                            img.onload = () => { 
-                                const canvas = document.createElement('canvas'); 
-                                let w = img.width, h = img.height; 
-                                const max = 1024; 
-                                if(w > h) { if(w > max) { h *= max/w; w = max; } } else { if(h > max) { w *= max/h; h = max; } } 
-                                canvas.width = w; canvas.height = h; 
-                                const ctx = canvas.getContext('2d'); 
-                                ctx.drawImage(img, 0, 0, w, h); 
-                                this.postFileRaw = canvas.toDataURL('image/jpeg', 0.75); 
-                                this.postFilePreview = this.postFileRaw; 
+                async handleFeedMedia(e) { 
+                    const files = Array.from(e.target.files); 
+                    if(!files.length) return; 
+                    this.isUploadingMedia = true; 
+                    this.postFileType = files[0].type.startsWith('video/') ? 'video' : 'image'; 
+                    
+                    try {
+                        if (this.postFileType === 'video') { 
+                            if(files[0].size > 5000000) { 
+                                this.showToast('Video max 5MB', 'error');
+                                this.isUploadingMedia = false;
+                                return;
+                            }
+                            const reader = new FileReader(); 
+                            reader.onload = (event) => { 
+                                this.postFileRaw = event.target.result; 
+                                this.postFilePreview = event.target.result; 
+                                this.isUploadingMedia = false;
                             }; 
-                            img.src = event.target.result; 
+                            reader.readAsDataURL(files[0]); 
                         } else { 
-                            this.postFileRaw = event.target.result; 
-                            this.postFilePreview = event.target.result; 
-                        } 
-                    }; 
-                    reader.readAsDataURL(f); 
+                            let compressedArr = [];
+                            for(let f of files) {
+                                compressedArr.push(await this.compressImage(f));
+                            }
+                            this.postFileRaw = compressedArr; 
+                            this.postFilePreview = compressedArr[0];
+                            this.isUploadingMedia = false;
+                        }
+                    } catch(err) {
+                        this.showToast('Error processing media', 'error');
+                        this.isUploadingMedia = false;
+                    }
                 }, 
                 
                 async createPost() { 
@@ -1767,24 +1842,27 @@
                     }
                 },
                 
-                // --- KUMPULAN FUNGSI STORY YANG HILANG (DIKEMBALIKAN) ---
                 openCreateStoryModal() {
                     this.storyFilesRaw = [];
                     this.storyFilesPreview = [];
                     this.showCreateStory = true;
                 },
                 
-                handleStoryMedia(e) {
+                async handleStoryMedia(e) {
                     const files = Array.from(e.target.files);
                     if (!files.length) return;
-                    files.forEach(f => {
-                        const r = new FileReader();
-                        r.onload = (event) => {
-                            this.storyFilesRaw.push(event.target.result);
-                            this.storyFilesPreview.push(event.target.result);
-                        };
-                        r.readAsDataURL(f);
-                    });
+                    this.isUploadingMedia = true;
+                    try {
+                        for(let f of files) {
+                            const compressed = await this.compressImage(f);
+                            this.storyFilesRaw.push(compressed);
+                            this.storyFilesPreview.push(compressed);
+                        }
+                    } catch(err) {
+                        this.showToast('Error processing images', 'error');
+                    } finally {
+                        this.isUploadingMedia = false;
+                    }
                 },
                 
                 async createStory() {
@@ -1812,7 +1890,7 @@
                 
                 getGroupedStories() {
                     const now = Date.now();
-                    const validStories = this.stories.filter(s => (now - s.time) < 24 * 60 * 60 * 1000); // Bertahan 24 Jam
+                    const validStories = this.stories.filter(s => (now - s.time) < 24 * 60 * 60 * 1000); 
                     const groups = {};
                     validStories.forEach(s => {
                         if (!groups[s.uid]) groups[s.uid] = { uid: s.uid, userName: s.userName, items: [] };
@@ -1842,7 +1920,7 @@
                     clearInterval(this.storyTimer);
                     this.storyProgress = 0;
                     this.storyTimer = setInterval(() => {
-                        this.storyProgress += 2; // 2% per 100ms = 5 Detik total durasi
+                        this.storyProgress += 2; 
                         if (this.storyProgress >= 100) {
                             this.nextStory();
                         }
@@ -1865,7 +1943,7 @@
                         this.activeStoryData = this.activeStoryGroup.items[this.activeStoryIndex];
                         this.startStoryTimer();
                     } else {
-                        this.startStoryTimer(); // Mengulang progress dari awal jika di story pertama
+                        this.startStoryTimer(); 
                     }
                 },
                 
@@ -1886,7 +1964,6 @@
                         this.openCreateStoryModal();
                     }
                 },
-                // --- AKHIR KUMPULAN FUNGSI STORY ---
                 
                 async toggleLike(item) { 
                     if(!this.currentUser || !item?.id) return; 
