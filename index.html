@@ -43,7 +43,6 @@
     </style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        // AUTH FIX: Ditambahkan GoogleAuthProvider, signInWithPopup, sendEmailVerification, dan sendPasswordResetEmail
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, sendEmailVerification, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         
@@ -284,7 +283,7 @@
                                             <i class="fa-heart" :class="(item?.likes && (item.likes.includes(currentUser?.uid) || item.likes.includes(currentUser?.name))) ? 'fas' : 'far'"></i>
                                         </button>
                                         <button @click="expanded = !expanded" class="text-[22px] text-slate-800 dark:text-white hover:text-slate-500 transition-colors"><i class="far fa-comment"></i></button>
-                                        <button @click="openShareModal(item)" class="text-[22px] text-slate-800 dark:text-white hover:text-slate-500 transition-colors"><i class="far fa-paper-plane"></i></button>
+                                        <button @click="openShareModal(item, 'post')" class="text-[22px] text-slate-800 dark:text-white hover:text-slate-500 transition-colors"><i class="far fa-paper-plane"></i></button>
                                     </div>
                                     <button @click="toggleSavePost(item.id)" class="text-[22px] text-slate-800 dark:text-white hover:text-slate-500 transition-transform active:scale-75">
                                         <i :class="(myProfileData?.savedPosts && myProfileData.savedPosts.includes(item.id)) ? 'fas fa-bookmark text-brand-500' : 'far fa-bookmark'"></i>
@@ -566,7 +565,7 @@
                                 
                                 <div x-show="msg?.isPostShare" class="mt-2 rounded-xl overflow-hidden border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5">
                                     <template x-if="msg?.sharedPostMedia">
-                                        <img :src="msg.sharedPostMedia" class="w-full h-28 object-cover">
+                                        <img :src="msg.sharedPostMedia" class="w-full h-32 object-cover">
                                     </template>
                                     <button @click="openSharedPost(msg.sharedPostId)" class="text-[10px] font-bold text-brand-600 dark:text-brand-300 px-3 py-2 hover:bg-black/5 dark:hover:bg-white/10 transition-colors w-full text-center border-t border-black/10 dark:border-white/10">Lihat Postingan</button>
                                 </div>
@@ -725,7 +724,7 @@
                                 <div class="flex gap-4">
                                     <button @click="toggleLike(activePost); activePost = feedItems.find(f=>f.id===activePost?.id) || activePost" class="text-[22px] transition-transform active:scale-75" :class="(activePost?.likes && (activePost.likes.includes(currentUser?.uid) || activePost.likes.includes(currentUser?.name))) ? 'text-red-500' : 'text-slate-800 dark:text-white'"><i class="fa-heart" :class="(activePost?.likes && (activePost.likes.includes(currentUser?.uid) || activePost.likes.includes(currentUser?.name))) ? 'fas' : 'far'"></i></button>
                                     <button class="text-[22px] text-slate-800 dark:text-white hover:text-slate-500"><i class="far fa-comment"></i></button>
-                                    <button @click="openShareModal(activePost)" class="text-[22px] text-slate-800 dark:text-white hover:text-slate-500"><i class="far fa-paper-plane"></i></button>
+                                    <button @click="openShareModal(activePost, 'post')" class="text-[22px] text-slate-800 dark:text-white hover:text-slate-500"><i class="far fa-paper-plane"></i></button>
                                 </div>
                                 <button @click="toggleSavePost(activePost?.id)" class="text-[22px] text-slate-800 dark:text-white hover:text-slate-500 transition-transform active:scale-75"><i :class="(myProfileData?.savedPosts && myProfileData.savedPosts.includes(activePost?.id)) ? 'fas fa-bookmark text-brand-500' : 'far fa-bookmark'"></i></button>
                             </div>
@@ -934,7 +933,32 @@
         </div>
 
         <div x-show="showCreateStory" class="fixed inset-0 bg-black/95 z-[260] flex flex-col" x-cloak x-transition.opacity><div class="px-4 py-4 flex justify-between items-center text-white bg-gradient-to-b from-black/50 to-transparent absolute top-0 w-full z-20"><button @click="showCreateStory=false; storyFilesRaw=[]; storyFilesPreview=[]" class="text-2xl"><i class="fas fa-times"></i></button><h3 class="font-bold text-sm shadow-sm">Add to Story</h3><div class="w-8"></div></div><div class="flex-1 flex flex-col items-center justify-center relative p-4"><div x-show="storyFilesPreview.length === 0" class="text-center"><input type="file" multiple x-ref="storyInput" class="hidden" accept="image/*" @change="handleStoryMedia($event)"><button type="button" @click="$refs.storyInput.click()" class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center text-3xl text-white backdrop-blur-md border-2 border-white/50 hover:bg-white/30 transition-colors mx-auto mb-4"><i class="fas fa-images"></i></button><p class="text-white text-sm font-bold">Select Photos</p><p class="text-white/60 text-xs mt-2">You can select multiple photos at once</p></div><div x-show="storyFilesPreview.length > 0" class="flex gap-4 overflow-x-auto w-full max-w-sm pb-4 snap-x snap-mandatory hide-scroll items-center"><template x-for="(src, index) in storyFilesPreview" :key="index"><div class="min-w-full h-[60vh] relative snap-center rounded-2xl overflow-hidden shadow-2xl border border-white/20"><img :src="src" class="w-full h-full object-contain bg-black/50"><button @click="storyFilesPreview.splice(index,1); storyFilesRaw.splice(index,1)" class="absolute top-4 right-4 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-sm"><i class="fas fa-times"></i></button><div class="absolute bottom-4 right-4 bg-black/60 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm" x-text="(index+1) + '/' + storyFilesPreview.length"></div></div></template></div><button x-show="storyFilesPreview.length > 0" @click="$refs.storyInput.click()" class="mt-6 text-white text-sm font-bold bg-white/20 px-5 py-2.5 rounded-full backdrop-blur-sm border border-white/30 hover:bg-white/30"><i class="fas fa-plus mr-2"></i>Add More Photos</button><div x-show="isUploadingMedia" class="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white z-30"><i class="fas fa-spinner fa-spin text-4xl mb-4"></i><span class="text-sm font-bold">Processing images...</span></div></div><div class="p-6 bg-gradient-to-t from-black/80 to-transparent flex justify-end"><button x-show="storyFilesPreview.length > 0" @click="createStory()" :disabled="isUploadingMedia" class="bg-white text-black px-6 py-3 rounded-full font-bold text-sm shadow-xl flex items-center gap-2 hover:bg-slate-200">Share (<span x-text="storyFilesRaw.length"></span>) <i class="fas fa-chevron-right text-xs"></i></button></div></div>
-        <div x-show="showStoryViewer" class="fixed inset-0 bg-black z-[400] flex flex-col" x-cloak x-transition.opacity><div class="absolute top-0 left-0 w-full p-2 z-20 flex gap-1"><div class="h-0.5 bg-white/30 rounded-full flex-1 overflow-hidden"><div class="h-full bg-white transition-all duration-100 ease-linear" :style="storyProgressStyle"></div></div></div><div class="absolute top-4 left-0 w-full p-4 z-20 flex justify-between items-center text-white bg-gradient-to-b from-black/50 to-transparent"><div class="flex items-center gap-3"><img :src="getAvatarByUid(activeStoryGroup?.uid, activeStoryGroup?.userName)" class="w-8 h-8 rounded-full object-cover border border-white/50"><span class="font-bold text-sm shadow-sm" x-text="activeStoryGroup?.userName"></span><span class="text-[10px] text-white/70" x-text="getRelativeTime(activeStoryData?.time)"></span></div><button @click="closeStoryViewer()" class="text-2xl drop-shadow-md"><i class="fas fa-times"></i></button></div><div class="flex-1 relative flex items-center justify-center" @click="handleStoryTap($event)"><img :src="activeStoryData?.media" class="w-full h-full object-contain"><div class="absolute left-0 top-0 w-1/3 h-full z-10"></div><div class="absolute right-0 top-0 w-1/3 h-full z-10"></div></div><div class="p-4 bg-gradient-to-t from-black/80 to-transparent z-20 pb-safe"><div class="flex gap-3"><input type="text" class="flex-1 bg-transparent border border-white/40 rounded-full px-4 py-3 text-sm text-white placeholder-white/70 outline-none focus:border-white" placeholder="Send message..."><button class="text-white text-2xl px-2"><i class="far fa-heart"></i></button><button class="text-white text-2xl px-2"><i class="far fa-paper-plane"></i></button></div></div></div>
+        
+        <div x-show="showStoryViewer" class="fixed inset-0 bg-black z-[400] flex flex-col" x-cloak x-transition.opacity>
+            <div class="absolute top-0 left-0 w-full p-2 z-20 flex gap-1"><div class="h-0.5 bg-white/30 rounded-full flex-1 overflow-hidden"><div class="h-full bg-white transition-all duration-100 ease-linear" :style="storyProgressStyle"></div></div></div>
+            <div class="absolute top-4 left-0 w-full p-4 z-20 flex justify-between items-center text-white bg-gradient-to-b from-black/50 to-transparent">
+                <div class="flex items-center gap-3">
+                    <img :src="getAvatarByUid(activeStoryGroup?.uid, activeStoryGroup?.userName)" class="w-8 h-8 rounded-full object-cover border border-white/50">
+                    <span class="font-bold text-sm shadow-sm" x-text="activeStoryGroup?.userName"></span>
+                    <span class="text-[10px] text-white/70" x-text="getRelativeTime(activeStoryData?.time)"></span>
+                </div>
+                <button @click="closeStoryViewer()" class="text-2xl drop-shadow-md"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="flex-1 relative flex items-center justify-center" @click="handleStoryTap($event)"><img :src="activeStoryData?.media" class="w-full h-full object-contain"><div class="absolute left-0 top-0 w-1/3 h-full z-10"></div><div class="absolute right-0 top-0 w-1/3 h-full z-10"></div></div>
+            
+            <div class="p-4 bg-gradient-to-t from-black/80 to-transparent z-20 pb-safe">
+                <div class="flex gap-3 items-center">
+                    <input type="text" x-model="storyReplyText" @keydown.enter="sendStoryReply()" class="flex-1 bg-transparent border border-white/40 rounded-full px-4 py-3 text-sm text-white placeholder-white/70 outline-none focus:border-white" placeholder="Kirim pesan...">
+                    <button x-show="storyReplyText.trim().length > 0" @click="sendStoryReply()" class="text-white text-2xl px-2 drop-shadow-md transition-transform active:scale-90"><i class="fas fa-paper-plane"></i></button>
+                    
+                    <div class="flex items-center" x-show="storyReplyText.trim().length === 0">
+                        <button @click="toggleStoryLike(activeStoryData)" class="text-2xl px-2 transition-transform active:scale-75" :class="(activeStoryData?.likes && activeStoryData.likes.includes(currentUser?.uid)) ? 'text-red-500' : 'text-white'"><i class="fa-heart" :class="(activeStoryData?.likes && activeStoryData.likes.includes(currentUser?.uid)) ? 'fas' : 'far'"></i></button>
+                        <button @click="openShareModal(activeStoryData, 'story')" class="text-white text-2xl px-2 hover:text-slate-300 transition-transform active:scale-90"><i class="far fa-share-square"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div x-show="showFollowModal" class="fixed inset-0 bg-black/50 z-[250] flex items-center justify-center p-4" x-cloak x-transition.opacity><div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl p-6" @click.outside="showFollowModal = false"><div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg dark:text-white" x-text="followListTitle"></h3><button @click="showFollowModal=false" class="text-slate-400"><i class="fas fa-times"></i></button></div><div class="max-h-60 overflow-y-auto space-y-2"><template x-for="user in followListData" :key="user.uid"><div class="flex justify-between items-center p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg cursor-pointer" @click="openProfile(user); showFollowModal=false"><div class="flex items-center gap-2"><img :src="getAvatarByUid(user.uid, user.name)" class="w-8 h-8 rounded-full object-cover"><span class="text-sm font-bold dark:text-white" x-text="user.name"></span></div><button x-show="currentUser && user.uid !== currentUser.uid" @click.stop="toggleFollowUser(user.uid); updateFollowListData()" class="text-[10px] px-3 py-1.5 rounded-lg font-bold transition-colors" :class="getFollowBtnClass(user.uid)" x-text="getFollowBtnText(user.uid)"></button></div></template><div x-show="followListData.length === 0" class="text-center text-sm text-slate-400 py-4">No users found.</div></div></div></div>
         <div x-show="showLogoutConfirm" class="fixed inset-0 bg-black/60 z-[400] flex items-center justify-center p-4" x-cloak x-transition.opacity><div class="bg-white dark:bg-slate-800 w-full max-w-xs rounded-3xl p-6 text-center" @click.outside="showLogoutConfirm=false"><div class="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 text-red-500 flex items-center justify-center text-2xl mx-auto mb-4"><i class="fas fa-sign-out-alt"></i></div><h3 class="font-extrabold text-lg mb-2 dark:text-white">Sign Out?</h3><p class="text-xs text-slate-500 mb-6">Are you sure you want to log out of your account?</p><div class="flex gap-2"><button @click="showLogoutConfirm=false" class="flex-1 py-3 bg-slate-100 dark:bg-slate-700 dark:text-white rounded-xl font-bold text-sm">Cancel</button><button @click="logout()" class="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold text-sm shadow-lg">Sign Out</button></div></div></div>
 
@@ -1011,6 +1035,7 @@
                 activeStoryIndex: 0,
                 storyTimer: null, 
                 storyProgress: 0,
+                storyReplyText: '', 
                 showModal: false, 
                 showDetail: false, 
                 isEditMode: false, 
@@ -1036,8 +1061,9 @@
                 showLogoutConfirm: false, 
                 showShareModal: false, 
                 activeSharePost: null,
-                showProfileMenu: false, // Tambahan state Profil Menu
-                showAboutApp: false,    // Tambahan state Modal Tentang
+                activeShareType: 'post', 
+                showProfileMenu: false, 
+                showAboutApp: false,    
                 calendarDays: [], 
                 calendarTitle: '', 
                 currentDate: new Date(), 
@@ -1101,6 +1127,13 @@
                             window.fb.onAuthStateChanged(window.fb.auth, async (user) => {
                                 try {
                                     if (user) {
+                                        if (!user.emailVerified && user.providerData.some(p => p.providerId === 'password')) {
+                                            this.authMode = 'login';
+                                            await window.fb.signOut(window.fb.auth);
+                                            this.currentUser = null;
+                                            return;
+                                        }
+
                                         const userRef = window.fb.doc(window.fb.db, "users", user.uid); 
                                         const userSnap = await window.fb.getDoc(userRef); 
                                         let finalName = user.displayName;
@@ -1110,11 +1143,6 @@
                                         this.currentUser = { name: finalName || 'User', email: user.email, uid: user.uid }; 
                                         this.currentView = 'board'; 
                                         
-                                        // Notif verifikasi (opsional/ringan)
-                                        if(!user.emailVerified && user.providerData[0]?.providerId === 'password') {
-                                            setTimeout(() => { this.showToast('Email belum diverifikasi. Cek inbox kamu.', 'error'); }, 3000);
-                                        }
-
                                         this.setupRealtimeData();
                                     } else { this.currentUser = null; }
                                 } catch (err) { this.loginError = "Database Error: " + err.message; this.currentUser = null; await window.fb.signOut(window.fb.auth); 
@@ -1126,8 +1154,25 @@
 
                 async login() { 
                     this.authLoading = true; this.loginError = ''; 
-                    try { await window.fb.signInWithEmailAndPassword(window.fb.auth, this.loginForm.email, this.loginForm.password); this.loginForm = { email: '', password: '' }; this.showWelcome = true; 
-                    } catch(e) { this.loginError = "Login Gagal: " + e.message; this.authLoading = false; this.showWelcome = false; } 
+                    try { 
+                        const userCred = await window.fb.signInWithEmailAndPassword(window.fb.auth, this.loginForm.email, this.loginForm.password); 
+                        
+                        if (!userCred.user.emailVerified) {
+                            await window.fb.sendEmailVerification(userCred.user);
+                            await window.fb.signOut(window.fb.auth);
+                            this.loginError = "Akun belum diverifikasi. Link verifikasi baru saja dikirim ulang ke email kamu. Silakan cek inbox/spam.";
+                            this.authLoading = false;
+                            this.showWelcome = false;
+                            return;
+                        }
+
+                        this.loginForm = { email: '', password: '' }; 
+                        this.showWelcome = true; 
+                    } catch(e) { 
+                        this.loginError = "Login Gagal: " + e.message; 
+                        this.authLoading = false; 
+                        this.showWelcome = false; 
+                    } 
                 },
                 
                 async register() { 
@@ -1137,12 +1182,13 @@
                         await window.fb.updateProfile(userCred.user, { displayName: this.regForm.name }); 
                         await window.fb.setDoc(window.fb.doc(window.fb.db, "users", userCred.user.uid), { uid: userCred.user.uid, name: this.regForm.name, email: this.regForm.email, bio: '', website: '', avatar: '', followers: [], following: [], savedPosts: [], lastReadChats: {} }); 
                         
-                        // Kirim Email Verifikasi
                         await window.fb.sendEmailVerification(userCred.user);
+                        await window.fb.signOut(window.fb.auth); 
                         
                         this.regForm = { name: '', email: '', password: '' }; 
-                        this.showWelcome = true; 
-                        this.showToast('Registrasi sukses! Silakan cek email kamu untuk verifikasi.');
+                        this.authMode = 'login';
+                        this.loginError = 'Registrasi sukses! Silakan cek email kamu dan klik link verifikasi sebelum login.';
+                        this.authLoading = false;
                     } catch(e) { this.loginError = "Register Gagal: " + e.message; this.authLoading = false; this.showWelcome = false; } 
                 },
 
@@ -1161,7 +1207,13 @@
                         }
                         this.showWelcome = true;
                     } catch(e) { 
-                        this.loginError = "Google Login Dibatalkan/Gagal."; 
+                        if (e.code === 'auth/operation-not-allowed') {
+                            this.loginError = "Gagal: Google Sign-in belum diaktifkan di Firebase Console.";
+                        } else if (e.code === 'auth/popup-closed-by-user') {
+                            this.loginError = "Login dibatalkan.";
+                        } else {
+                            this.loginError = "Google Login Gagal: " + e.message; 
+                        }
                         this.authLoading = false; 
                     }
                 },
@@ -1173,7 +1225,7 @@
                             await window.fb.sendPasswordResetEmail(window.fb.auth, email);
                             alert("Link reset password telah dikirim ke " + email);
                         } catch(e) { 
-                            alert("Error: Pastikan email benar."); 
+                            alert("Error: Pastikan email yang kamu masukkan benar."); 
                         }
                     }
                 },
@@ -1231,7 +1283,7 @@
                 
                 handleNotifClick(notif) { 
                     if (!notif.read) {
-                        notif.read = true; // Update local state seketika agar tidak delay
+                        notif.read = true; 
                         window.fb.updateDoc(window.fb.doc(window.fb.db, "notifications", notif.id), { read: true });
                     }
                     if (notif.type === 'follow') { 
@@ -1355,30 +1407,41 @@
                 },
 
                 formatText(text) { 
-                    if(!text) return ''; return text.replace(/#(\w+)/g, '<span class="text-brand-500 font-bold cursor-pointer hover:underline">#$1</span>').replace(/@(\w+)/g, '<span class="text-red-500 font-bold cursor-pointer hover:underline">@$1</span>'); 
+                    if(!text) return ''; 
+                    let formatted = text.replace(/#(\w+)/g, '<span class="text-brand-500 font-bold cursor-pointer hover:underline">#$1</span>'); 
+                    
+                    const sortedUsers = [...this.allUsers].sort((a, b) => b.name.length - a.name.length);
+                    sortedUsers.forEach(u => {
+                        if(!u.name) return;
+                        const safeName = u.name.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+                        const regex = new RegExp('@' + safeName, 'gi');
+                        formatted = formatted.replace(regex, `<span class="text-red-500 font-bold cursor-pointer hover:underline">@${u.name}</span>`);
+                    });
+                    
+                    formatted = formatted.replace(/(^|\s)@(\w+)/g, '$1<span class="text-red-500 font-bold cursor-pointer hover:underline">@$2</span>');
+                    return formatted; 
                 },
+                
                 getRelativeTime(time) { 
                     if(!time) return ''; const diff = Date.now() - time; const sec = Math.floor(diff / 1000); if(sec < 60) return sec + 's'; const min = Math.floor(sec / 60); if(min < 60) return min + 'm'; const hr = Math.floor(min / 60); if(hr < 24) return hr + 'h'; const d = Math.floor(hr / 24); return d + 'd'; 
                 },
                 showHeartAnim(id) { this.heartAnimId = id; setTimeout(() => { this.heartAnimId = null; }, 800); },
                 
-                openShareModal(item) {
+                openShareModal(item, type = 'post') {
                     this.activeSharePost = item;
+                    this.activeShareType = type; 
                     this.showShareModal = true;
                 },
 
-                // SHARE CUSTOM APP FIX
                 shareCustom(platform) {
-                    const shareText = encodeURIComponent(`Lihat post dari @${this.activeSharePost?.user || 'seseorang'} di Yarch App!`);
+                    const postType = this.activeShareType === 'story' ? 'story' : 'post';
+                    const shareText = encodeURIComponent(`Lihat ${postType} dari @${this.activeSharePost?.user || this.activeSharePost?.userName || 'seseorang'} di Yarch App!`);
                     const shareUrl = encodeURIComponent(window.location.href);
 
-                    if(platform === 'whatsapp') {
-                        window.open(`https://api.whatsapp.com/send?text=${shareText}%20${shareUrl}`, '_blank');
-                    } else if(platform === 'facebook') {
-                        window.open(`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`, '_blank');
-                    } else if(platform === 'twitter') {
-                        window.open(`https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`, '_blank');
-                    } else if(platform === 'copy') {
+                    if(platform === 'whatsapp') { window.open(`https://api.whatsapp.com/send?text=${shareText}%20${shareUrl}`, '_blank'); } 
+                    else if(platform === 'facebook') { window.open(`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`, '_blank'); } 
+                    else if(platform === 'twitter') { window.open(`https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`, '_blank'); } 
+                    else if(platform === 'copy') {
                         navigator.clipboard.writeText(`${decodeURIComponent(shareText)} ${decodeURIComponent(shareUrl)}`);
                         this.showToast('Link berhasil disalin!');
                     }
@@ -1389,6 +1452,7 @@
                     const followingIds = this.myProfileData?.following || [];
                     return this.allUsers.filter(u => followingIds.includes(u.uid));
                 },
+                
                 async shareToUser(user) {
                     if(!user || !this.currentUser || !this.activeSharePost) return;
                     const chatId = this.currentUser.uid < user.uid ? `${this.currentUser.uid}_${user.uid}` : `${user.uid}_${this.currentUser.uid}`; 
@@ -1398,8 +1462,10 @@
                         await window.fb.setDoc(window.fb.doc(window.fb.db, "dms", chatId), { members: [this.currentUser.uid, user.uid], messages: [], updatedAt: Date.now() });
                     }
                     
-                    const shortDesc = this.activeSharePost.content ? this.activeSharePost.content.substring(0, 50) + '...' : 'Photo/Video';
-                    const msgText = `Shared a post from @${this.activeSharePost.user}:\n"${shortDesc}"`;
+                    const isStory = this.activeShareType === 'story';
+                    const authorName = isStory ? this.activeSharePost.userName : this.activeSharePost.user;
+                    const shortDesc = isStory ? 'Membagikan cerita' : (this.activeSharePost.content ? this.activeSharePost.content.substring(0, 50) + '...' : 'Photo/Video');
+                    const msgText = `Membagikan ${isStory ? 'cerita' : 'post'} dari @${authorName}:\n"${shortDesc}"`;
                     
                     const payload = { messages: window.fb.arrayUnion({ 
                         sender: this.currentUser.name, 
@@ -1407,15 +1473,16 @@
                         isImage: false, 
                         isPostShare: true, 
                         sharedPostId: this.activeSharePost.id, 
-                        sharedPostMedia: Array.isArray(this.activeSharePost.media) ? this.activeSharePost.media[0] : this.activeSharePost.media, // AMBIL MEDIA DARI POST
+                        sharedPostMedia: Array.isArray(this.activeSharePost.media) ? this.activeSharePost.media[0] : this.activeSharePost.media,
                         timestamp: Date.now() 
                     }), updatedAt: Date.now() };
-                    await window.fb.updateDoc(window.fb.doc(window.fb.db, "dms", chatId), payload); 
                     
-                    this.pushNotification(user.uid, 'message', 'Shared a post with you', { chatId: chatId, chatType: 'dm' });
-                    this.showToast('Post sent to ' + user.name);
+                    await window.fb.updateDoc(window.fb.doc(window.fb.db, "dms", chatId), payload); 
+                    this.pushNotification(user.uid, 'message', 'Membagikan post', { chatId: chatId, chatType: 'dm' });
+                    this.showToast('Berhasil dikirim ke ' + user.name);
                     this.showShareModal = false;
                 },
+                
                 openSharedPost(postId) {
                     const post = this.feedItems.find(p => p.id === postId);
                     if (post) {
@@ -1423,7 +1490,7 @@
                         this.switchView('feed');
                         this.openPostDetail(post);
                     } else {
-                        this.showToast('Post is no longer available', 'error');
+                        this.showToast('Gagal dibuka (bisa jadi itu Story atau Post sudah dihapus)', 'error');
                     }
                 },
                 
@@ -1574,7 +1641,17 @@
                 
                 openCreateStoryModal() { this.storyFilesRaw = []; this.storyFilesPreview = []; this.showCreateStory = true; },
                 async handleStoryMedia(e) { const files = Array.from(e.target.files); if (!files.length) return; this.isUploadingMedia = true; try { for(let f of files) { const compressed = await this.compressImage(f); this.storyFilesRaw.push(compressed); this.storyFilesPreview.push(compressed); } } catch(err) { this.showToast('Error processing images', 'error'); } finally { this.isUploadingMedia = false; } },
-                async createStory() { if (!this.storyFilesRaw.length || !this.currentUser) return; this.isUploadingMedia = true; try { for (const media of this.storyFilesRaw) { await window.fb.addDoc(window.fb.collection(window.fb.db, "stories"), { uid: this.currentUser.uid, userName: this.currentUser.name, media: media, time: Date.now() }); } this.showCreateStory = false; this.storyFilesRaw = []; this.storyFilesPreview = []; this.showToast('Story shared!'); } catch (e) { this.showToast('Failed to share story', 'error'); } finally { this.isUploadingMedia = false; } },
+                
+                async createStory() { 
+                    if (!this.storyFilesRaw.length || !this.currentUser) return; 
+                    this.isUploadingMedia = true; 
+                    try { 
+                        for (const media of this.storyFilesRaw) { 
+                            await window.fb.addDoc(window.fb.collection(window.fb.db, "stories"), { uid: this.currentUser.uid, userName: this.currentUser.name, media: media, time: Date.now(), likes: [] }); 
+                        } 
+                        this.showCreateStory = false; this.storyFilesRaw = []; this.storyFilesPreview = []; this.showToast('Story shared!'); 
+                    } catch (e) { this.showToast('Failed to share story', 'error'); } finally { this.isUploadingMedia = false; } 
+                },
                 
                 getGroupedStories() { const now = Date.now(); const validStories = this.stories.filter(s => (now - s.time) < 24 * 60 * 60 * 1000); const groups = {}; validStories.forEach(s => { if (!groups[s.uid]) groups[s.uid] = { uid: s.uid, userName: s.userName, items: [] }; groups[s.uid].items.push(s); }); return Object.values(groups).sort((a,b) => b.items[0].time - a.items[0].time); },
                 openStoryViewer(group) { if (!group || !group.items || !group.items.length) return; this.activeStoryGroup = group; this.activeStoryIndex = 0; this.activeStoryData = group.items[0]; this.showStoryViewer = true; this.startStoryTimer(); },
@@ -1584,6 +1661,51 @@
                 prevStory() { if (this.activeStoryGroup && this.activeStoryIndex > 0) { this.activeStoryIndex--; this.activeStoryData = this.activeStoryGroup.items[this.activeStoryIndex]; this.startStoryTimer(); } else { this.startStoryTimer(); } },
                 handleStoryTap(e) { const w = window.innerWidth; if (e.clientX < w / 3) { this.prevStory(); } else { this.nextStory(); } },
                 handleMyStoryClick() { const myGroup = this.getGroupedStories().find(g => g.uid === this.currentUser?.uid); if (myGroup) { this.openStoryViewer(myGroup); } else { this.openCreateStoryModal(); } },
+                
+                async toggleStoryLike(story) {
+                    if(!this.currentUser || !story?.id) return;
+                    const r = window.fb.doc(window.fb.db, "stories", story.id);
+                    const hasLiked = story.likes && story.likes.includes(this.currentUser.uid);
+                    
+                    if(!story.likes) story.likes = [];
+                    if(hasLiked) {
+                        story.likes = story.likes.filter(id => id !== this.currentUser.uid);
+                        await window.fb.updateDoc(r, { likes: window.fb.arrayRemove(this.currentUser.uid) });
+                    } else {
+                        story.likes.push(this.currentUser.uid);
+                        await window.fb.updateDoc(r, { likes: window.fb.arrayUnion(this.currentUser.uid) });
+                        this.pushNotification(story.uid, 'like', 'menyukai ceritamu.', { storyId: story.id });
+                    }
+                },
+
+                async sendStoryReply() {
+                    if(!this.storyReplyText.trim() || !this.currentUser || !this.activeStoryData) return;
+                    const targetUser = this.allUsers.find(u => u.uid === this.activeStoryData.uid);
+                    if (!targetUser) return;
+                    
+                    const txt = `Membalas cerita kamu:\n"${this.storyReplyText}"`;
+                    const chatId = this.currentUser.uid < targetUser.uid ? `${this.currentUser.uid}_${targetUser.uid}` : `${targetUser.uid}_${this.currentUser.uid}`;
+                    
+                    const existingChat = this.dms.find(d => d.id === chatId);
+                    if (!existingChat) { await window.fb.setDoc(window.fb.doc(window.fb.db, "dms", chatId), { members: [this.currentUser.uid, targetUser.uid], messages: [], updatedAt: Date.now() }); }
+                    
+                    const payload = { messages: window.fb.arrayUnion({ 
+                        sender: this.currentUser.name, 
+                        text: txt, 
+                        isImage: false, 
+                        isPostShare: true, 
+                        sharedPostId: this.activeStoryData.id, 
+                        sharedPostMedia: this.activeStoryData.media,
+                        timestamp: Date.now() 
+                    }), updatedAt: Date.now() };
+                    
+                    await window.fb.updateDoc(window.fb.doc(window.fb.db, "dms", chatId), payload);
+                    this.pushNotification(targetUser.uid, 'message', 'Membalas cerita kamu', { chatId: chatId, chatType: 'dm' });
+                    
+                    this.storyReplyText = '';
+                    this.showToast('Pesan terkirim ke DM!');
+                    this.closeStoryViewer();
+                },
                 
                 async toggleLike(item) { 
                     if(!this.currentUser || !item?.id) return; const r = window.fb.doc(window.fb.db, "feed", item.id); const hasUid = item.likes?.includes(this.currentUser.uid); const hasName = item.likes?.includes(this.currentUser.name); 
