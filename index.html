@@ -308,12 +308,12 @@
                                         <span x-html="formatText(item?.content)"></span>
                                     </div>
                                     
-                                    <button x-show="item?.comments && item.comments.length > 0 && !expanded" @click="expanded = true" class="text-slate-500 text-[13px] mt-1.5 font-medium hover:text-brand-500">View all <span x-text="item.comments.length"></span> comments</button>
+                                    <button x-show="getTotalComments(item) > 0 && !expanded" @click="expanded = true" class="text-slate-500 text-[13px] mt-1.5 font-medium hover:text-brand-500">View all <span x-text="getTotalComments(item)"></span> comments</button>
                                     
                                     <div x-show="expanded" class="mt-4 pt-3 border-t dark:border-slate-800" x-transition>
                                         <h4 class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider mb-3">Comments</h4>
                                         <div class="space-y-3">
-                                            <template x-for="msg in (item?.comments || [])" :key="msg.id || msg.time || msg.text">
+                                            <template x-for="msg in (item?.comments || [])" :key="msg.id">
                                                 <div class="flex gap-2.5 mb-3">
                                                     <img :src="getAvatarByUid(msg.uid, msg.sender)" class="w-7 h-7 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0 mt-0.5">
                                                     <div class="flex-1">
@@ -355,7 +355,7 @@
                                                 </div>
                                             </template>
                                         </div>
-                                        <button x-show="item?.comments && item.comments.length > 0" @click="expanded = false" class="text-slate-500 text-[11px] mt-4 uppercase font-bold tracking-wider hover:text-brand-500">Hide comments</button>
+                                        <button x-show="getTotalComments(item) > 0" @click="expanded = false" class="text-slate-500 text-[11px] mt-4 uppercase font-bold tracking-wider hover:text-brand-500">Hide comments</button>
                                     </div>
                                     <div class="mt-3 pt-3 border-t dark:border-slate-100 dark:border-slate-700">
                                         <div x-show="replyingToId" class="flex justify-between items-center text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-3 py-1.5 rounded-lg mb-2">
@@ -823,7 +823,7 @@
                                     <h4 class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider mb-3">Comments</h4>
                                     
                                     <div class="space-y-3">
-                                        <template x-for="msg in (activePost?.comments || [])" :key="msg.id || msg.time">
+                                        <template x-for="msg in (activePost?.comments || [])" :key="msg.id">
                                             <div class="flex gap-2.5 mb-3">
                                                 <img :src="getAvatarByUid(msg.uid, msg.sender)" class="w-7 h-7 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0 mt-0.5">
                                                 <div class="flex-1">
@@ -1197,6 +1197,11 @@
                 ],
                 get storyProgressStyle() { return `width: ${this.storyProgress}%`; },
 
+                getTotalComments(item) {
+                    if (!item || !item.comments) return 0;
+                    return item.comments.reduce((total, c) => total + 1 + (c.replies ? c.replies.length : 0), 0);
+                },
+
                 observeView(el, item) {
                     if (!item || !item.id) return;
                     const observer = new IntersectionObserver((entries) => {
@@ -1327,11 +1332,12 @@
                     } catch(e) { 
                         if (e.code === 'auth/operation-not-allowed') {
                             this.loginError = "Gagal: Google Sign-in belum diaktifkan di Firebase Console.";
-                        } else if (e.code === 'auth/popup-closed-by-user') {
+                        } else if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') {
                             this.loginError = "Login dibatalkan.";
                         } else {
                             this.loginError = "Google Login Gagal: " + e.message; 
                         }
+                    } finally {
                         this.authLoading = false; 
                     }
                 },
@@ -1392,7 +1398,20 @@
                     this.feedUnsubscribe = window.fb.onSnapshot(
                         window.fb.query(window.fb.collection(window.fb.db, "feed"), window.fb.orderBy("time", "desc"), window.fb.limit(this.feedLimit)),
                         snap => {
-                            this.feedItems = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                            this.feedItems = snap.docs.map(doc => {
+                                const data = doc.data();
+                                // Auto Generate ID untuk comment lawas agar Alpine.js tidak error saat render ulang (Like Bug)
+                                if (data.comments) {
+                                    const ensureIds = (arr) => arr.map(c => {
+                                        if (!c.id) c.id = 'c_' + (c.time || Date.now()) + Math.random().toString(36).substr(2, 5);
+                                        if (c.replies) c.replies = ensureIds(c.replies);
+                                        return c;
+                                    });
+                                    data.comments = ensureIds(data.comments);
+                                }
+                                return { id: doc.id, ...data };
+                            });
+                            
                             if(this.activePost && this.activePost.id) {
                                 this.activePost = this.feedItems.find(p => p.id === this.activePost.id) || this.activePost;
                             }
@@ -1889,7 +1908,7 @@
                     if(!txt || !this.currentUser || !pId) return; 
                     
                     const newComment = { 
-                        id: Date.now().toString(36) + Math.random().toString(36).substring(2), 
+                        id: 'c_' + Date.now() + Math.random().toString(36).substr(2, 5), 
                         uid: this.currentUser.uid, 
                         sender: this.currentUser.name, 
                         text: txt, 
@@ -1956,7 +1975,6 @@
                     }
 
                     await window.fb.updateDoc(window.fb.doc(window.fb.db, "feed", postId), { comments: comments });
-                    if (this.activePost && this.activePost.id === postId) { this.activePost.comments = comments; }
                 },
                 
                 openPostDetail(post) { this.activePost = post; this.showPostModal = true; },
