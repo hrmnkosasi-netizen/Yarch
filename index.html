@@ -216,7 +216,7 @@
                 </div>
             </div>
 
-            <div x-show="feedTab === 'feed'" class="flex-1 overflow-y-auto w-full custom-scroll" @scroll="handleFeedScroll($event)">
+            <div x-show="feedTab === 'feed'" class="flex-1 overflow-y-auto w-full custom-scroll">
                 <div class="bg-white dark:bg-slate-800 border-b md:border dark:border-slate-700 py-3 mb-2 max-w-xl mx-auto md:mt-2 md:rounded-3xl">
                     <div class="flex overflow-x-auto gap-3 px-4 hide-scroll">
                         <div class="flex flex-col items-center gap-1 cursor-pointer shrink-0" @click="handleMyStoryClick()">
@@ -371,10 +371,6 @@
                                 </div>
                             </div>
                          </template>
-                    </div>
-                    
-                    <div x-show="loadingMoreFeed" class="text-center py-6 text-brand-500">
-                        <i class="fas fa-circle-notch fa-spin text-3xl"></i>
                     </div>
                 </div>
             </div>
@@ -1113,9 +1109,7 @@
                 messagesTab: 'direct', 
                 tasks: [], 
                 feedItems: [], 
-                feedLimit: 10,
                 feedUnsubscribe: null,
-                loadingMoreFeed: false,
                 discussions: [], 
                 dms: [], 
                 notifications: [], 
@@ -1357,7 +1351,7 @@
                 async logout() { this.showLogoutConfirm = false; this.showWelcome = true; setTimeout(async () => { await window.fb.signOut(window.fb.auth); location.reload(); }, 800); },
 
                 setupRealtimeData() {
-                    this.listenFeed(); // Initialize feed listener with limit
+                    this.listenFeed(); // Initialize feed listener
                     
                     window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "users")), snap => { 
                         this.allUsers = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); 
@@ -1396,7 +1390,7 @@
                 listenFeed() {
                     if (this.feedUnsubscribe) this.feedUnsubscribe();
                     this.feedUnsubscribe = window.fb.onSnapshot(
-                        window.fb.query(window.fb.collection(window.fb.db, "feed"), window.fb.orderBy("time", "desc"), window.fb.limit(this.feedLimit)),
+                        window.fb.query(window.fb.collection(window.fb.db, "feed"), window.fb.orderBy("time", "desc")),
                         snap => {
                             this.feedItems = snap.docs.map(doc => {
                                 const data = doc.data();
@@ -1417,16 +1411,6 @@
                             }
                         }
                     );
-                },
-
-                handleFeedScroll(e) {
-                    const bottom = e.target.scrollHeight - e.target.scrollTop <= e.target.clientHeight + 100;
-                    if (bottom && !this.loadingMoreFeed && this.feedItems.length >= this.feedLimit) {
-                        this.loadingMoreFeed = true;
-                        this.feedLimit += 10;
-                        this.listenFeed();
-                        setTimeout(() => { this.loadingMoreFeed = false; }, 800);
-                    }
                 },
 
                 getMyNotifications() { return this.notifications.filter(n => n.toUid === this.currentUser?.uid); },
