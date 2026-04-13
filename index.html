@@ -83,9 +83,16 @@
         
         <div x-show="currentView === 'board'" class="h-full w-full bg-black snap-y snap-mandatory overflow-y-auto hide-scroll pb-[56px] relative" x-cloak>
             <div class="fixed top-0 left-0 w-full p-4 z-30 flex justify-center items-center bg-gradient-to-b from-black/70 to-transparent pointer-events-auto">
-                <div class="flex gap-6 drop-shadow-md">
+                <button @click="openCreateReelModal()" class="absolute left-4 top-4 text-2xl text-white drop-shadow-md transition-transform active:scale-90 hover:text-slate-300">
+                    <i class="fas fa-plus-square"></i>
+                </button>
+                
+                <div class="flex gap-4 drop-shadow-md">
                     <button @click="reelsTab = 'following'" class="font-bold text-lg transition-colors" :class="reelsTab === 'following' ? 'text-white' : 'text-white/50 hover:text-white/80'">Following</button>
                     <button @click="reelsTab = 'for_you'" class="font-bold text-lg transition-colors" :class="reelsTab === 'for_you' ? 'text-white' : 'text-white/50 hover:text-white/80'">For You</button>
+                    <button @click="reelsTab = 'live'" class="font-bold text-lg transition-colors flex items-center gap-1" :class="reelsTab === 'live' ? 'text-white' : 'text-white/50 hover:text-white/80'">
+                        Live <span x-show="mockActiveLives.length > 0" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                    </button>
                 </div>
                 <button @click="switchView('messages')" class="absolute right-4 top-4 text-2xl text-white drop-shadow-md transition-transform active:scale-90 hover:text-slate-300">
                     <i class="fab fa-facebook-messenger"></i>
@@ -93,75 +100,102 @@
                 </button>
             </div>
             
-            <template x-for="(item, index) in getReelsItems()" :key="item.id">
-                <div class="w-full h-full snap-start relative flex items-center justify-center bg-black overflow-hidden group" x-init="$nextTick(() => { observeReelVideo($el, item); observeAudio($el, item); })">
-                    <template x-if="item.mediaType === 'video' || (item.media && item.media.includes('.mp4'))">
-                        <video :src="item.media" class="w-full h-full object-cover" loop playsinline autoplay @click="toggleReelPlay($event)"></video>
-                    </template>
-                    <template x-if="item.mediaType !== 'video' && item.media && !item.media.includes('.mp4')">
-                        <img :src="Array.isArray(item.media) ? item.media[0] : item.media" class="w-full h-full object-cover">
-                    </template>
-                    
-                    <div x-show="heartAnimId === item.id" class="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-                        <i class="fas fa-heart text-red-500 text-8xl drop-shadow-2xl anim-pop-heart"></i>
-                    </div>
+            <template x-if="reelsTab !== 'live'">
+                <template x-for="(item, index) in getReelsItems()" :key="item.id">
+                    <div class="w-full h-full snap-start relative flex items-center justify-center bg-black overflow-hidden group" x-init="$nextTick(() => { observeReelVideo($el, item); observeAudio($el, item); })">
+                        <template x-if="item.mediaType === 'video' || (item.media && item.media.includes('.mp4'))">
+                            <video :src="item.media" class="w-full h-full object-cover" loop playsinline autoplay @click="toggleReelPlay($event)"></video>
+                        </template>
+                        <template x-if="item.mediaType !== 'video' && item.media && !item.media.includes('.mp4')">
+                            <img :src="Array.isArray(item.media) ? item.media[0] : item.media" class="w-full h-full object-cover">
+                        </template>
+                        
+                        <div x-show="heartAnimId === item.id" class="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+                            <i class="fas fa-heart text-red-500 text-8xl drop-shadow-2xl anim-pop-heart"></i>
+                        </div>
 
-                    <div class="absolute bottom-0 left-0 w-full h-2/3 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10 pointer-events-none"></div>
+                        <div class="absolute bottom-0 left-0 w-full h-2/3 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10 pointer-events-none"></div>
 
-                    <div class="absolute bottom-20 right-4 flex flex-col items-center gap-5 z-20">
-                        <button class="flex flex-col items-center gap-1 group/btn" @click="toggleLike(item); showHeartAnim(item.id)">
-                            <div class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center transition-transform active:scale-75">
-                                <i class="fa-heart text-2xl drop-shadow-md" :class="(item?.likes && (item.likes.includes(currentUser?.uid) || item.likes.includes(currentUser?.name))) ? 'fas text-red-500' : 'far text-white'"></i>
-                            </div>
-                            <span class="text-white text-[10px] font-bold drop-shadow-md" x-text="item?.likes ? item.likes.length : 0"></span>
-                        </button>
-                        <button class="flex flex-col items-center gap-1 group/btn" @click="openPostDetail(item, 'half')">
-                            <div class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center transition-transform active:scale-75">
-                                <i class="fas fa-comment-dots text-2xl text-white drop-shadow-md"></i>
-                            </div>
-                            <span class="text-white text-[10px] font-bold drop-shadow-md" x-text="getTotalComments(item)"></span>
-                        </button>
-                        <button class="flex flex-col items-center gap-1 group/btn" @click="toggleSavePost(item.id)">
-                            <div class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center transition-transform active:scale-75">
-                                <i class="fa-bookmark text-2xl drop-shadow-md" :class="(myProfileData?.savedPosts && myProfileData.savedPosts.includes(item.id)) ? 'fas text-brand-400' : 'far text-white'"></i>
-                            </div>
-                            <span class="text-white text-[10px] font-bold drop-shadow-md">Save</span>
-                        </button>
-                        <button class="flex flex-col items-center gap-1 group/btn" @click="openShareModal(item, 'post')">
-                            <div class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center transition-transform active:scale-75">
-                                <i class="fas fa-share text-2xl text-white drop-shadow-md"></i>
-                            </div>
-                            <span class="text-white text-[10px] font-bold drop-shadow-md">Share</span>
-                        </button>
-                    </div>
+                        <div class="absolute bottom-20 right-4 flex flex-col items-center gap-5 z-20">
+                            <button class="flex flex-col items-center gap-1 group/btn" @click="toggleLike(item); showHeartAnim(item.id)">
+                                <div class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center transition-transform active:scale-75">
+                                    <i class="fa-heart text-2xl drop-shadow-md" :class="(item?.likes && (item.likes.includes(currentUser?.uid) || item.likes.includes(currentUser?.name))) ? 'fas text-red-500' : 'far text-white'"></i>
+                                </div>
+                                <span class="text-white text-[10px] font-bold drop-shadow-md" x-text="item?.likes ? item.likes.length : 0"></span>
+                            </button>
+                            <button class="flex flex-col items-center gap-1 group/btn" @click="openPostDetail(item, 'half')">
+                                <div class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center transition-transform active:scale-75">
+                                    <i class="fas fa-comment-dots text-2xl text-white drop-shadow-md"></i>
+                                </div>
+                                <span class="text-white text-[10px] font-bold drop-shadow-md" x-text="getTotalComments(item)"></span>
+                            </button>
+                            <button class="flex flex-col items-center gap-1 group/btn" @click="toggleSavePost(item.id)">
+                                <div class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center transition-transform active:scale-75">
+                                    <i class="fa-bookmark text-2xl drop-shadow-md" :class="(myProfileData?.savedPosts && myProfileData.savedPosts.includes(item.id)) ? 'fas text-brand-400' : 'far text-white'"></i>
+                                </div>
+                                <span class="text-white text-[10px] font-bold drop-shadow-md">Save</span>
+                            </button>
+                            <button class="flex flex-col items-center gap-1 group/btn" @click="openShareModal(item, 'post')">
+                                <div class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center transition-transform active:scale-75">
+                                    <i class="fas fa-share text-2xl text-white drop-shadow-md"></i>
+                                </div>
+                                <span class="text-white text-[10px] font-bold drop-shadow-md">Share</span>
+                            </button>
+                        </div>
 
-                    <div class="absolute bottom-20 left-4 right-16 z-20 text-white flex flex-col gap-3">
-                        <div class="flex items-center gap-3">
-                            <img :src="getAvatarByUid(item?.uid, item?.user)" class="w-10 h-10 rounded-full object-cover border border-white/50 cursor-pointer" @click="openProfile(item)">
-                            <div class="flex flex-col">
-                                <div class="flex items-center gap-2">
-                                    <span class="font-bold text-sm drop-shadow-md cursor-pointer hover:underline" x-text="item.user" @click="openProfile(item)"></span>
-                                    <button x-show="item.uid !== currentUser?.uid && !isFollowingUser(item.uid)" @click.stop="toggleFollowUser(item.uid)" class="px-3 py-1.5 text-xs font-extrabold border border-white rounded-lg backdrop-blur-sm hover:bg-white hover:text-black transition-colors">Follow</button>
+                        <div class="absolute bottom-20 left-4 right-16 z-20 text-white flex flex-col gap-3">
+                            <div class="flex items-center gap-3">
+                                <img :src="getAvatarByUid(item?.uid, item?.user)" class="w-10 h-10 rounded-full object-cover border border-white/50 cursor-pointer" @click="openProfile(item)">
+                                <div class="flex flex-col">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold text-sm drop-shadow-md cursor-pointer hover:underline" x-text="item.user" @click="openProfile(item)"></span>
+                                        <button x-show="item.uid !== currentUser?.uid && !isFollowingUser(item.uid)" @click.stop="toggleFollowUser(item.uid)" class="px-3 py-1.5 text-xs font-extrabold border border-white rounded-lg backdrop-blur-sm hover:bg-white hover:text-black transition-colors">Follow</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-[15px] leading-relaxed line-clamp-3 drop-shadow-md" x-html="formatText(item.content)"></p>
+                            <div class="flex flex-wrap gap-2 items-center">
+                                <span x-show="item.location" class="text-[10px] bg-black/40 px-2 py-1 rounded-full backdrop-blur-sm flex items-center gap-1 font-bold border border-white/10 shadow-lg cursor-pointer">
+                                    <i class="fas fa-map-marker-alt text-brand-400"></i> <span x-text="item.location"></span>
+                                </span>
+                                <div x-show="item.music" class="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-full text-[10px] backdrop-blur-sm border border-white/10 shadow-lg cursor-pointer" @click="togglePlayMusic(item.music, item.id, true)">
+                                    <i class="fas fa-music text-brand-400" :class="playingMusicId === item.id ? 'animate-bounce' : ''"></i>
+                                    <span class="truncate font-bold max-w-[150px]" x-text="item.music?.trackName + ' - ' + item.music?.artistName"></span>
                                 </div>
                             </div>
                         </div>
-                        <p class="text-[15px] leading-relaxed line-clamp-3 drop-shadow-md" x-html="formatText(item.content)"></p>
-                        <div class="flex flex-wrap gap-2 items-center">
-                            <span x-show="item.location" class="text-[10px] bg-black/40 px-2 py-1 rounded-full backdrop-blur-sm flex items-center gap-1 font-bold border border-white/10 shadow-lg cursor-pointer">
-                                <i class="fas fa-map-marker-alt text-brand-400"></i> <span x-text="item.location"></span>
-                            </span>
-                            <div x-show="item.music" class="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-full text-[10px] backdrop-blur-sm border border-white/10 shadow-lg cursor-pointer" @click="togglePlayMusic(item.music, item.id, true)">
-                                <i class="fas fa-music text-brand-400" :class="playingMusicId === item.id ? 'animate-bounce' : ''"></i>
-                                <span class="truncate font-bold max-w-[150px]" x-text="item.music?.trackName + ' - ' + item.music?.artistName"></span>
+                    </div>
+                </template>
+            </template>
+            
+            <template x-if="reelsTab === 'live'">
+                <div class="w-full h-full flex flex-col pt-20 px-4 bg-slate-900 overflow-y-auto pb-24">
+                    <h2 class="text-white font-bold text-lg mb-4"><i class="fas fa-broadcast-tower text-red-500 mr-2"></i>Sedang Live</h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        <template x-for="live in mockActiveLives" :key="live.id">
+                            <div @click="joinLive(live)" class="relative rounded-2xl overflow-hidden aspect-[3/4] bg-slate-800 cursor-pointer group shadow-lg">
+                                <img :src="getAvatarByUid(live.hostId, live.hostName)" class="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity">
+                                <div class="absolute top-2 left-2 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow">LIVE</div>
+                                <div class="absolute top-2 right-2 bg-black/50 text-white text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1"><i class="fas fa-eye"></i><span x-text="live.viewers"></span></div>
+                                <div class="absolute bottom-0 left-0 w-full p-3 bg-gradient-to-t from-black/90 to-transparent">
+                                    <div class="font-bold text-white text-sm truncate" x-text="live.hostName"></div>
+                                    <div class="text-xs text-slate-300 truncate" x-text="live.title"></div>
+                                </div>
                             </div>
-                        </div>
+                        </template>
+                    </div>
+                    <div x-show="mockActiveLives.length === 0" class="flex flex-col items-center justify-center flex-1 text-slate-500">
+                        <i class="fas fa-video-slash text-4xl mb-3"></i>
+                        <p class="text-sm">Tidak ada yang sedang Live saat ini.</p>
+                        <button @click="showLiveAudienceModal = true" class="mt-4 bg-brand-500 text-white font-bold px-4 py-2 rounded-xl text-sm">Mulai Live Sekarang</button>
                     </div>
                 </div>
             </template>
-            <div x-show="isLoadingFeed" class="w-full h-full flex flex-col items-center justify-center text-white/50 relative z-10">
+
+            <div x-show="isLoadingFeed && reelsTab !== 'live'" class="w-full h-full flex flex-col items-center justify-center text-white/50 relative z-10">
                 <i class="fas fa-spinner fa-spin text-4xl mb-4"></i>
             </div>
-            <div x-show="!isLoadingFeed && getReelsItems().length === 0" class="w-full h-full flex flex-col items-center justify-center text-white/50 relative z-10">
+            <div x-show="!isLoadingFeed && getReelsItems().length === 0 && reelsTab !== 'live'" class="w-full h-full flex flex-col items-center justify-center text-white/50 relative z-10">
                 <i class="fas fa-video text-6xl mb-4"></i>
                 <p class="font-bold text-center px-4" x-text="reelsTab === 'following' ? 'Belum ada video dari pengguna yang kamu ikuti.' : 'Belum ada video/postingan.'"></p>
             </div>
@@ -278,9 +312,99 @@
         <div x-show="showTagModal" class="fixed inset-0 z-[400] bg-black/60 flex items-center justify-center p-4" x-cloak x-transition.opacity><div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl p-6" @click.outside="showTagModal = false"><div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg dark:text-white">Tag Person</h3><button @click="showTagModal=false" class="text-slate-400"><i class="fas fa-times"></i></button></div><div class="relative mb-4"><i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input type="text" x-model="tagSearchQuery" class="w-full bg-slate-100 dark:bg-slate-900 border border-transparent focus:border-brand-500 rounded-xl pl-9 pr-3 py-2.5 text-sm outline-none dark:text-white transition-colors" placeholder="Cari nama..."></div><div class="max-h-60 overflow-y-auto custom-scroll space-y-1 -mx-2 px-2"><template x-for="u in allUsers.filter(x => x.name.toLowerCase().includes(tagSearchQuery.toLowerCase()))" :key="u.uid"><div @click="addTag(u)" class="flex items-center gap-3 p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl cursor-pointer transition-colors"><img :src="getAvatarByUid(u.uid, u.name)" class="w-8 h-8 rounded-full object-cover"><span class="text-sm font-bold dark:text-white" x-text="u.name"></span></div></template><div x-show="allUsers.filter(x => x.name.toLowerCase().includes(tagSearchQuery.toLowerCase())).length === 0" class="text-center text-xs text-slate-400 py-4">User tidak ditemukan.</div></div></div></div>
         <div x-show="showMusicModal" class="fixed inset-0 z-[400] bg-black/60 flex items-center justify-center p-4" x-cloak x-transition.opacity><div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl p-6 flex flex-col max-h-[80vh]" @click.outside="showMusicModal = false"><div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg dark:text-white">Add Music</h3><button @click="showMusicModal=false" class="text-slate-400"><i class="fas fa-times"></i></button></div><div class="relative mb-4"><i class="fas fa-music absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input type="text" x-model="musicQuery" @keydown.enter="searchMusic()" class="w-full bg-slate-100 dark:bg-slate-900 border border-transparent focus:border-brand-500 rounded-xl pl-9 pr-10 py-3 text-sm outline-none dark:text-white transition-colors" placeholder="Cari lagu di iTunes..."><button x-show="musicQuery" @click="searchMusic()" class="absolute right-3 top-1/2 -translate-y-1/2 text-brand-500 font-bold text-sm">Cari</button></div><div class="flex-1 overflow-y-auto custom-scroll -mx-2 px-2 relative"><div x-show="isSearchingMusic" class="absolute inset-0 bg-white/80 dark:bg-slate-800/80 flex flex-col items-center justify-center z-10"><i class="fas fa-spinner fa-spin text-brand-500 text-3xl mb-2"></i><p class="text-xs font-bold text-slate-500">Mencari...</p></div><div class="space-y-2"><template x-for="song in musicResults" :key="song.previewUrl"><div class="flex items-center gap-3 p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors"><div class="relative cursor-pointer group shrink-0" @click="togglePlayMusic(song, 'prev_'+song.previewUrl)"><img :src="song.artworkUrl100" class="w-12 h-12 rounded-lg object-cover shadow-sm"><div class="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center text-white transition-opacity" :class="playingMusicId === 'prev_'+song.previewUrl ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'"><i class="fas" :class="playingMusicId === 'prev_'+song.previewUrl ? 'fa-pause' : 'fa-play'"></i></div></div><div class="flex-1 min-w-0"><div class="text-sm font-bold dark:text-white truncate" x-text="song.trackName"></div><div class="text-xs text-slate-500 dark:text-slate-400 truncate" x-text="song.artistName"></div></div><button @click="selectMusic(song)" class="bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-800 px-4 py-1.5 rounded-full text-xs font-bold shadow-md hover:scale-105 transition-transform">Pilih</button></div></template><div x-show="musicResults.length === 0 && !isSearchingMusic && musicQuery" class="text-center text-sm text-slate-400 py-10">Tidak ada hasil ditemukan.</div><div x-show="!musicQuery && musicResults.length === 0 && !isSearchingMusic" class="text-center text-sm text-slate-400 py-10"><i class="fas fa-music text-3xl mb-2 opacity-50 block"></i>Gunakan fitur pencarian</div></div></div></div></div>
         
-        <div x-show="showCreateSocial" class="fixed inset-0 bg-black/60 z-[300] flex items-end justify-center md:items-center md:p-4" x-cloak x-transition.opacity><div class="bg-white dark:bg-slate-800 w-full md:max-w-sm rounded-t-3xl md:rounded-3xl p-6 pb-safe transform transition-transform" @click.outside="showCreateSocial = false"><div class="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-6 md:hidden"></div><h3 class="font-bold text-xl dark:text-white mb-6 text-center">Buat Baru</h3><div class="flex justify-center gap-8 mb-4"><button @click="showCreateSocial = false; openCreatePostModal()" class="flex flex-col items-center gap-3 group"><div class="w-16 h-16 rounded-2xl bg-brand-50 text-brand-500 dark:bg-brand-900/30 dark:text-brand-400 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shadow-sm"><i class="fas fa-pen"></i></div><span class="text-xs font-bold text-slate-600 dark:text-slate-300">Feed Post</span></button><button @click="showCreateSocial = false; openCreateStoryModal()" class="flex flex-col items-center gap-3 group"><div class="w-16 h-16 rounded-2xl bg-pink-50 text-pink-500 dark:bg-pink-900/30 dark:text-pink-400 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shadow-sm"><i class="fas fa-camera"></i></div><span class="text-xs font-bold text-slate-600 dark:text-slate-300">Story</span></button></div><button @click="showCreateSocial = false" class="w-full py-3 mt-4 bg-slate-100 dark:bg-slate-700 dark:text-white rounded-xl font-bold text-sm hidden md:block hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">Batal</button></div></div>
+        <div x-show="showCreateSocial" class="fixed inset-0 bg-black/60 z-[300] flex items-end justify-center md:items-center md:p-4" x-cloak x-transition.opacity>
+            <div class="bg-white dark:bg-slate-800 w-full md:max-w-sm rounded-t-3xl md:rounded-3xl p-6 pb-safe transform transition-transform" @click.outside="showCreateSocial = false">
+                <div class="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-6 md:hidden"></div>
+                <h3 class="font-bold text-xl dark:text-white mb-6 text-center">Buat Baru</h3>
+                <div class="grid grid-cols-4 gap-4 mb-4">
+                    <button @click="showCreateSocial = false; openCreatePostModal()" class="flex flex-col items-center gap-3 group">
+                        <div class="w-16 h-16 rounded-2xl bg-brand-50 text-brand-500 dark:bg-brand-900/30 dark:text-brand-400 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shadow-sm"><i class="fas fa-pen"></i></div><span class="text-xs font-bold text-slate-600 dark:text-slate-300">Post</span>
+                    </button>
+                    <button @click="showCreateSocial = false; openCreateStoryModal()" class="flex flex-col items-center gap-3 group">
+                        <div class="w-16 h-16 rounded-2xl bg-pink-50 text-pink-500 dark:bg-pink-900/30 dark:text-pink-400 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shadow-sm"><i class="fas fa-camera"></i></div><span class="text-xs font-bold text-slate-600 dark:text-slate-300">Story</span>
+                    </button>
+                    <button @click="showCreateSocial = false; openCreateReelModal()" class="flex flex-col items-center gap-3 group">
+                        <div class="w-16 h-16 rounded-2xl bg-purple-50 text-purple-500 dark:bg-purple-900/30 dark:text-purple-400 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shadow-sm"><i class="fas fa-video"></i></div><span class="text-xs font-bold text-slate-600 dark:text-slate-300">Reels</span>
+                    </button>
+                    <button @click="showCreateSocial = false; showLiveAudienceModal = true" class="flex flex-col items-center gap-3 group">
+                        <div class="w-16 h-16 rounded-2xl bg-red-50 text-red-500 dark:bg-red-900/30 dark:text-red-400 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shadow-sm"><i class="fas fa-broadcast-tower"></i></div><span class="text-xs font-bold text-slate-600 dark:text-slate-300">Live</span>
+                    </button>
+                </div>
+                <button @click="showCreateSocial = false" class="w-full py-3 mt-4 bg-slate-100 dark:bg-slate-700 dark:text-white rounded-xl font-bold text-sm hidden md:block hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">Batal</button>
+            </div>
+            <input type="file" x-ref="reelCameraInput" accept="video/*,image/*" capture="environment" class="hidden" @change="handleFeedMedia($event); showCreatePost = true;">
+        </div>
 
-        <div x-show="showCreatePost" class="fixed inset-0 z-[350] bg-white dark:bg-slate-900 flex flex-col" x-cloak x-transition.opacity><div class="px-4 py-3 border-b dark:border-slate-800 flex justify-between items-center bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm sticky top-0 z-20"><button @click="showCreatePost=false" class="text-slate-800 dark:text-white text-2xl"><i class="fas fa-arrow-left"></i></button><h3 class="font-bold text-lg dark:text-white tracking-tight">New Post</h3><button @click="createPost()" :disabled="!newPostText && !postFileRaw" class="text-brand-500 font-bold text-base disabled:opacity-50">Share</button></div><div class="flex-1 overflow-y-auto custom-scroll p-4 relative flex flex-col"><div x-show="isUploadingMedia" class="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center"><i class="fas fa-spinner fa-spin text-brand-500 text-4xl mb-3"></i><p class="font-bold text-sm dark:text-white">Processing...</p></div><div class="flex gap-4 mb-4"><img :src="getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-12 h-12 rounded-full object-cover"><div class="flex-1 relative"><textarea x-ref="postTextarea" x-model="newPostText" @input="checkMention($event)" rows="4" class="w-full bg-transparent text-base outline-none dark:text-white resize-none" placeholder="Write a caption..."></textarea><div class="relative mt-2 mb-4 px-1"><button type="button" @click="openLocationSearch('post')" class="w-full flex items-center gap-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-left outline-none dark:text-white transition-colors hover:bg-slate-100"><i class="fas fa-map-marker-alt text-brand-500"></i><span x-text="newPostLocation || 'Add location...'" :class="!newPostLocation ? 'text-slate-400' : 'font-bold'"></span></button></div><div x-show="showMentions && mentionCandidates.length > 0" class="absolute left-0 top-full mt-1 w-full bg-white dark:bg-slate-700 shadow-xl rounded-xl border dark:border-slate-600 z-50 overflow-hidden"><template x-for="u in mentionCandidates" :key="u.uid"><div @click="insertMention(u.name)" class="p-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-600 cursor-pointer border-b dark:border-slate-600 last:border-0"><img :src="getAvatarByUid(u.uid, u.name)" class="w-8 h-8 rounded-full object-cover"><div><div class="text-xs font-bold dark:text-white" x-text="u.name"></div></div></div></template></div></div></div><div x-show="postFileRaw" class="relative mt-2 mb-4 w-full bg-slate-100 dark:bg-black rounded-2xl overflow-hidden flex-1 flex justify-center items-center min-h-[40vh]"><div class="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 text-white text-[10px] px-3 py-1 rounded-full z-20 pointer-events-none backdrop-blur-sm">(Hold/Right-click foto untuk tag orang)</div><template x-if="postFileType === 'video'"><video :src="postFileRaw" class="w-full max-h-[60vh] object-contain" controls></video></template><template x-if="postFileType === 'image'"><div class="flex overflow-x-auto snap-x snap-mandatory hide-scroll gap-2 p-2 relative w-full h-full items-center"><template x-if="!Array.isArray(postFileRaw)"><div class="relative w-full flex justify-center"><img :src="postFileRaw" @contextmenu.prevent="openTagModal($event, 0, false)" class="max-w-full max-h-[60vh] object-contain snap-center rounded-xl mx-auto select-none cursor-crosshair"><template x-for="(tag, tIdx) in (postTags || []).filter(t => t.imgIndex === 0)"><div class="absolute bg-black/80 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg z-20 transition-all flex items-center gap-1 cursor-pointer hover:bg-red-500" :style="`top: ${tag.y}%; left: ${tag.x}%; transform: translate(-50%, -50%);`" @click="removeTag(tIdx, false)"><i class="fas fa-user text-[8px]"></i> <span x-text="tag.user"></span> <i class="fas fa-times ml-1 opacity-50"></i></div></template></div></template><template x-if="Array.isArray(postFileRaw)"><template x-for="(src, idx) in postFileRaw" :key="idx"><div class="min-w-full flex-shrink-0 snap-center relative flex justify-center h-[50vh] items-center"><img :src="src" @contextmenu.prevent="openTagModal($event, idx, false)" class="max-w-full max-h-[50vh] object-contain rounded-xl select-none cursor-crosshair"><div class="absolute top-4 right-4 bg-black/60 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm shadow pointer-events-none z-10" x-text="(idx+1) + '/' + postFileRaw.length"></div><template x-for="(tag, tIdx) in (postTags || []).filter(t => t.imgIndex === idx)"><div class="absolute bg-black/80 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg z-20 transition-all flex items-center gap-1 cursor-pointer hover:bg-red-500" :style="`top: ${tag.y}%; left: ${tag.x}%; transform: translate(-50%, -50%);`" @click="removeTag(tIdx, false)"><i class="fas fa-user text-[8px]"></i> <span x-text="tag.user"></span> <i class="fas fa-times ml-1 opacity-50"></i></div></template></div></template></template></div></template><button type="button" @click.prevent="postFileRaw=null; postFilePreview=null; postFileType=''; postTags=[]; postMusic=null" class="absolute top-4 right-4 bg-black/60 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm z-30 transition-transform active:scale-90"><i class="fas fa-times text-lg"></i></button></div><div x-show="postMusic" class="bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-xl p-3 flex items-center justify-between mb-4"><div class="flex items-center gap-3"><img :src="postMusic?.artworkUrl100" class="w-10 h-10 rounded-lg object-cover"><div><div class="text-sm font-bold dark:text-white" x-text="postMusic?.trackName"></div><div class="text-xs text-slate-500 dark:text-slate-400" x-text="postMusic?.artistName"></div></div></div><button @click="postMusic = null" class="text-red-500 w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"><i class="fas fa-trash"></i></button></div><div class="border-t dark:border-slate-800 pt-4 mt-auto pb-safe flex gap-2"><input type="file" x-ref="mediaInput" class="hidden" multiple accept="image/*,video/*" @change="handleFeedMedia($event)"><button type="button" @click="$refs.mediaInput.click()" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 dark:text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700"><i class="far fa-images text-brand-500 text-lg"></i> Photo/Video</button><button type="button" @click="isStoryMusicModal = false; showMusicModal = true" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 dark:text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700"><i class="fas fa-music text-pink-500 text-lg"></i> Add Music</button></div></div></div>
+        <div x-show="showLiveAudienceModal" class="fixed inset-0 bg-black/60 z-[350] flex items-center justify-center p-4" x-cloak x-transition.opacity>
+            <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl p-6" @click.outside="showLiveAudienceModal = false">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-bold text-xl dark:text-white">Pengaturan Live</h3>
+                    <button @click="showLiveAudienceModal=false" class="text-slate-400"><i class="fas fa-times"></i></button>
+                </div>
+                <p class="text-sm text-slate-500 mb-4">Pilih siapa saja yang bisa menonton siaran langsungmu:</p>
+                <div class="space-y-3 mb-6">
+                    <label class="flex items-center justify-between p-3 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700">
+                        <div class="flex items-center gap-3"><i class="fas fa-lock text-slate-400"></i><span class="font-bold text-sm dark:text-white">Training</span></div>
+                        <input type="radio" x-model="liveAudience" value="training" class="w-4 h-4 text-brand-500 focus:ring-brand-500 border-gray-300">
+                    </label>
+                    <label class="flex items-center justify-between p-3 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700">
+                        <div class="flex items-center gap-3"><i class="fas fa-star text-green-500"></i><span class="font-bold text-sm dark:text-white">Close Friend</span></div>
+                        <input type="radio" x-model="liveAudience" value="close_friend" class="w-4 h-4 text-brand-500 focus:ring-brand-500 border-gray-300">
+                    </label>
+                    <label class="flex items-center justify-between p-3 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700">
+                        <div class="flex items-center gap-3"><i class="fas fa-user-friends text-blue-500"></i><span class="font-bold text-sm dark:text-white">Follower</span></div>
+                        <input type="radio" x-model="liveAudience" value="follower" class="w-4 h-4 text-brand-500 focus:ring-brand-500 border-gray-300">
+                    </label>
+                    <label class="flex items-center justify-between p-3 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700">
+                        <div class="flex items-center gap-3"><i class="fas fa-globe text-brand-500"></i><span class="font-bold text-sm dark:text-white">Public</span></div>
+                        <input type="radio" x-model="liveAudience" value="public" class="w-4 h-4 text-brand-500 focus:ring-brand-500 border-gray-300">
+                    </label>
+                </div>
+                <button @click="startLive()" class="w-full py-3 bg-red-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-red-500/30 flex items-center justify-center gap-2"><i class="fas fa-video"></i> Mulai Live Sekarang</button>
+            </div>
+        </div>
+
+        <div x-show="showLiveRoom" class="fixed inset-0 bg-black z-[2000] flex flex-col" x-cloak x-transition.opacity>
+            <div class="absolute top-0 left-0 w-full p-4 flex justify-between items-start z-20 bg-gradient-to-b from-black/70 to-transparent">
+                <div class="flex items-center gap-3">
+                    <div class="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded shadow animate-pulse">LIVE</div>
+                    <div class="bg-black/50 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 backdrop-blur-sm"><i class="fas fa-eye"></i><span x-text="liveRoomData?.viewers || 0"></span></div>
+                    <span x-show="isHost" class="text-white text-xs bg-black/50 px-2 py-1 rounded-full capitalize" x-text="liveRoomData?.audience"></span>
+                </div>
+                <button @click="endLive()" class="text-white text-2xl hover:text-red-400 drop-shadow-md"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="flex-1 w-full h-full relative flex items-center justify-center overflow-hidden bg-slate-900">
+                <img :src="getAvatarByUid(isHost ? currentUser?.uid : liveRoomData?.hostId, isHost ? currentUser?.name : liveRoomData?.hostName)" class="absolute inset-0 w-full h-full object-cover opacity-30 blur-sm">
+                <div class="relative z-10 flex flex-col items-center">
+                    <img :src="getAvatarByUid(isHost ? currentUser?.uid : liveRoomData?.hostId, isHost ? currentUser?.name : liveRoomData?.hostName)" class="w-24 h-24 rounded-full border-4 border-red-500 shadow-2xl mb-4 animate-bounce">
+                    <h2 class="text-white font-bold text-xl" x-text="isHost ? currentUser?.name : liveRoomData?.hostName"></h2>
+                    <p class="text-white/70 text-sm mt-1" x-text="isHost ? 'Kamu sedang live...' : 'Sedang menonton siaran...'"></p>
+                </div>
+            </div>
+
+            <div class="absolute bottom-0 left-0 w-full z-20 bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-20 pb-safe">
+                <div id="liveCommentsContainer" class="h-48 overflow-y-auto px-4 mb-4 custom-scroll space-y-2">
+                    <template x-for="(c, i) in liveComments" :key="i">
+                        <div class="flex gap-2 items-start" x-show="c">
+                            <span class="font-bold text-[12px] text-white/80 shrink-0" x-text="c.sender + ':'"></span>
+                            <span class="text-[12px] text-white break-words" x-text="c.text"></span>
+                        </div>
+                    </template>
+                </div>
+                <div class="px-4 flex gap-3 items-center">
+                    <img :src="getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-8 h-8 rounded-full border border-white/50 object-cover">
+                    <input type="text" x-model="liveCommentInput" @keydown.enter="sendLiveComment()" class="flex-1 bg-white/20 border border-white/30 rounded-full px-4 py-2 text-sm text-white placeholder-white/60 outline-none focus:border-white backdrop-blur-sm" placeholder="Tambahkan komentar...">
+                    <button x-show="liveCommentInput.trim().length > 0" @click="sendLiveComment()" class="text-white text-xl"><i class="fas fa-paper-plane"></i></button>
+                    <button @click="showHeartAnim('live')" class="text-red-500 text-2xl transition-transform active:scale-75 drop-shadow-md"><i class="fas fa-heart"></i></button>
+                </div>
+                <div x-show="heartAnimId === 'live'" class="absolute right-4 bottom-20 flex items-center justify-center pointer-events-none z-30">
+                    <i class="fas fa-heart text-red-500 text-6xl drop-shadow-2xl anim-pop-heart"></i>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="showCreatePost" class="fixed inset-0 z-[350] bg-white dark:bg-slate-900 flex flex-col" x-cloak x-transition.opacity><div class="px-4 py-3 border-b dark:border-slate-800 flex justify-between items-center bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm sticky top-0 z-20"><button @click="showCreatePost=false" class="text-slate-800 dark:text-white text-2xl"><i class="fas fa-arrow-left"></i></button><h3 class="font-bold text-lg dark:text-white tracking-tight">New Post / Reel</h3><button @click="createPost()" :disabled="!newPostText && !postFileRaw" class="text-brand-500 font-bold text-base disabled:opacity-50">Share</button></div><div class="flex-1 overflow-y-auto custom-scroll p-4 relative flex flex-col"><div x-show="isUploadingMedia" class="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center"><i class="fas fa-spinner fa-spin text-brand-500 text-4xl mb-3"></i><p class="font-bold text-sm dark:text-white">Processing...</p></div><div class="flex gap-4 mb-4"><img :src="getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-12 h-12 rounded-full object-cover"><div class="flex-1 relative"><textarea x-ref="postTextarea" x-model="newPostText" @input="checkMention($event)" rows="4" class="w-full bg-transparent text-base outline-none dark:text-white resize-none" placeholder="Write a caption..."></textarea><div class="relative mt-2 mb-4 px-1"><button type="button" @click="openLocationSearch('post')" class="w-full flex items-center gap-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-left outline-none dark:text-white transition-colors hover:bg-slate-100"><i class="fas fa-map-marker-alt text-brand-500"></i><span x-text="newPostLocation || 'Add location...'" :class="!newPostLocation ? 'text-slate-400' : 'font-bold'"></span></button></div><div x-show="showMentions && mentionCandidates.length > 0" class="absolute left-0 top-full mt-1 w-full bg-white dark:bg-slate-700 shadow-xl rounded-xl border dark:border-slate-600 z-50 overflow-hidden"><template x-for="u in mentionCandidates" :key="u.uid"><div @click="insertMention(u.name)" class="p-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-600 cursor-pointer border-b dark:border-slate-600 last:border-0"><img :src="getAvatarByUid(u.uid, u.name)" class="w-8 h-8 rounded-full object-cover"><div><div class="text-xs font-bold dark:text-white" x-text="u.name"></div></div></div></template></div></div></div><div x-show="postFileRaw" class="relative mt-2 mb-4 w-full bg-slate-100 dark:bg-black rounded-2xl overflow-hidden flex-1 flex justify-center items-center min-h-[40vh]"><div class="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 text-white text-[10px] px-3 py-1 rounded-full z-20 pointer-events-none backdrop-blur-sm">(Hold/Right-click foto untuk tag orang)</div><template x-if="postFileType === 'video'"><video :src="postFileRaw" class="w-full max-h-[60vh] object-contain" controls></video></template><template x-if="postFileType === 'image'"><div class="flex overflow-x-auto snap-x snap-mandatory hide-scroll gap-2 p-2 relative w-full h-full items-center"><template x-if="!Array.isArray(postFileRaw)"><div class="relative w-full flex justify-center"><img :src="postFileRaw" @contextmenu.prevent="openTagModal($event, 0, false)" class="max-w-full max-h-[60vh] object-contain snap-center rounded-xl mx-auto select-none cursor-crosshair"><template x-for="(tag, tIdx) in (postTags || []).filter(t => t.imgIndex === 0)"><div class="absolute bg-black/80 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg z-20 transition-all flex items-center gap-1 cursor-pointer hover:bg-red-500" :style="`top: ${tag.y}%; left: ${tag.x}%; transform: translate(-50%, -50%);`" @click="removeTag(tIdx, false)"><i class="fas fa-user text-[8px]"></i> <span x-text="tag.user"></span> <i class="fas fa-times ml-1 opacity-50"></i></div></template></div></template><template x-if="Array.isArray(postFileRaw)"><template x-for="(src, idx) in postFileRaw" :key="idx"><div class="min-w-full flex-shrink-0 snap-center relative flex justify-center h-[50vh] items-center"><img :src="src" @contextmenu.prevent="openTagModal($event, idx, false)" class="max-w-full max-h-[50vh] object-contain rounded-xl select-none cursor-crosshair"><div class="absolute top-4 right-4 bg-black/60 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm shadow pointer-events-none z-10" x-text="(idx+1) + '/' + postFileRaw.length"></div><template x-for="(tag, tIdx) in (postTags || []).filter(t => t.imgIndex === idx)"><div class="absolute bg-black/80 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg z-20 transition-all flex items-center gap-1 cursor-pointer hover:bg-red-500" :style="`top: ${tag.y}%; left: ${tag.x}%; transform: translate(-50%, -50%);`" @click="removeTag(tIdx, false)"><i class="fas fa-user text-[8px]"></i> <span x-text="tag.user"></span> <i class="fas fa-times ml-1 opacity-50"></i></div></template></div></template></template></div></template><button type="button" @click.prevent="postFileRaw=null; postFilePreview=null; postFileType=''; postTags=[]; postMusic=null" class="absolute top-4 right-4 bg-black/60 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm z-30 transition-transform active:scale-90"><i class="fas fa-times text-lg"></i></button></div><div x-show="postMusic" class="bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-xl p-3 flex items-center justify-between mb-4"><div class="flex items-center gap-3"><img :src="postMusic?.artworkUrl100" class="w-10 h-10 rounded-lg object-cover"><div><div class="text-sm font-bold dark:text-white" x-text="postMusic?.trackName"></div><div class="text-xs text-slate-500 dark:text-slate-400" x-text="postMusic?.artistName"></div></div></div><button @click="postMusic = null" class="text-red-500 w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"><i class="fas fa-trash"></i></button></div><div class="border-t dark:border-slate-800 pt-4 mt-auto pb-safe flex gap-2"><input type="file" x-ref="mediaInput" class="hidden" multiple accept="image/*,video/*" @change="handleFeedMedia($event)"><button type="button" @click="$refs.mediaInput.click()" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 dark:text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700"><i class="far fa-images text-brand-500 text-lg"></i> Photo/Video</button><button type="button" @click="isStoryMusicModal = false; showMusicModal = true" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 dark:text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700"><i class="fas fa-music text-pink-500 text-lg"></i> Add Music</button></div></div></div>
 
         <div x-show="showEditPostModal" class="fixed inset-0 z-[350] bg-white dark:bg-slate-900 flex flex-col" x-cloak x-transition.opacity><div class="px-4 py-3 border-b dark:border-slate-800 flex justify-between items-center bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm sticky top-0 z-20"><button @click="showEditPostModal=false" class="text-slate-800 dark:text-white text-2xl"><i class="fas fa-arrow-left"></i></button><h3 class="font-bold text-lg dark:text-white tracking-tight">Edit Post</h3><button @click="updatePost()" :disabled="!editPostData?.content && editMediaList.length === 0" class="text-brand-500 font-bold text-base disabled:opacity-50">Update</button></div><div class="flex-1 overflow-y-auto custom-scroll p-4 relative flex flex-col"><div x-show="isUploadingMedia" class="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center"><i class="fas fa-spinner fa-spin text-brand-500 text-4xl mb-3"></i><p class="font-bold text-sm dark:text-white">Processing...</p></div><div class="flex gap-4 mb-4"><img :src="getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-12 h-12 rounded-full object-cover"><div class="flex-1"><textarea x-model="editPostData.content" rows="4" class="w-full bg-transparent text-base outline-none dark:text-white resize-none" placeholder="Write a caption..."></textarea><div class="relative mt-2 mb-4 px-1"><button type="button" @click="openLocationSearch('edit')" class="w-full flex items-center gap-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-left outline-none dark:text-white transition-colors hover:bg-slate-100"><i class="fas fa-map-marker-alt text-brand-500"></i><span x-text="editPostData.location || 'Add location...'" :class="!editPostData.location ? 'text-slate-400' : 'font-bold'"></span></button></div></div></div><div x-show="editMediaList && editMediaList.length > 0" class="relative mt-2 mb-4 w-full bg-slate-100 dark:bg-black rounded-2xl overflow-hidden flex-1 flex justify-center items-center min-h-[40vh]"><div class="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 text-white text-[10px] px-3 py-1 rounded-full z-20 pointer-events-none backdrop-blur-sm">(Hold/Right-click foto untuk tag orang)</div><template x-if="editPostData?.mediaType === 'video'"><video :src="editMediaList[0]" class="w-full max-h-[60vh] object-contain" controls></video></template><template x-if="editPostData?.mediaType !== 'video'"><div class="flex overflow-x-auto snap-x snap-mandatory hide-scroll gap-2 p-2 relative w-full h-full items-center"><template x-for="(src, idx) in editMediaList" :key="idx"><div class="min-w-full flex-shrink-0 snap-center relative flex justify-center h-[50vh] items-center group"><img :src="src" @contextmenu.prevent="openTagModal($event, idx, true)" class="max-w-full max-h-[50vh] object-contain rounded-xl select-none cursor-crosshair"><div class="absolute top-4 left-4 bg-black/60 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm shadow z-10 pointer-events-none" x-text="(idx+1) + '/' + editMediaList.length"></div><button @click="removeEditMedia(idx)" class="absolute top-4 right-4 bg-red-500/90 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm z-30 transition-transform active:scale-90 hover:bg-red-600"><i class="fas fa-trash"></i></button><template x-for="(tag, tIdx) in (editPostData.tags || []).filter(t => t.imgIndex === idx)"><div class="absolute bg-black/80 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg z-20 transition-all flex items-center gap-1 cursor-pointer hover:bg-red-500" :style="`top: ${tag.y}%; left: ${tag.x}%; transform: translate(-50%, -50%);`" @click="removeTag(tIdx, true)"><i class="fas fa-user text-[8px]"></i> <span x-text="tag.user"></span> <i class="fas fa-times ml-1 opacity-50"></i></div></template></div></template></div></template></div><div x-show="editPostData.music" class="bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-xl p-3 flex items-center justify-between mb-4"><div class="flex items-center gap-3"><img :src="editPostData.music?.artworkUrl100" class="w-10 h-10 rounded-lg object-cover"><div><div class="text-sm font-bold dark:text-white" x-text="editPostData.music?.trackName"></div><div class="text-xs text-slate-500 dark:text-slate-400" x-text="editPostData.music?.artistName"></div></div></div><button @click="editPostData.music = null" class="text-red-500 w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"><i class="fas fa-trash"></i></button></div><div class="border-t dark:border-slate-800 pt-4 mt-auto pb-safe flex gap-2"><input type="file" x-ref="editMediaInput" class="hidden" multiple accept="image/*,video/*" @change="handleEditPostMedia($event)"><button type="button" @click="$refs.editMediaInput.click()" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 dark:text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700"><i class="far fa-images text-brand-500 text-lg"></i> Photo/Video</button><button type="button" @click="isStoryMusicModal = false; showMusicModal = true" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 dark:text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700"><i class="fas fa-music text-pink-500 text-lg"></i> Add Music</button></div></div></div>
 
@@ -329,6 +453,13 @@
                 storyMusic: null, isStoryMusicModal: false,
                 
                 showLocationSearch: false, locSearchQuery: '', locResults: [], isSearchingLoc: false, locTarget: '',
+
+                // Live Data State
+                showLiveAudienceModal: false, liveAudience: 'public', showLiveRoom: false, isHost: false, liveRoomData: null, liveComments: [], liveCommentInput: '', liveInterval: null,
+                mockActiveLives: [
+                    { id: 'live_demo_1', hostId: '123', hostName: 'Yarch Official', viewers: 1240, title: 'Menyapa pengguna baru!' },
+                    { id: 'live_demo_2', hostId: '124', hostName: 'Siska Music', viewers: 85, title: 'Latihan vokal sore 🎤' }
+                ],
 
                 get storyProgressStyle() { return `width: ${this.storyProgress}%`; },
                 getTotalComments(item) { if (!item || !item.comments) return 0; return item.comments.reduce((total, c) => total + 1 + (c.replies ? c.replies.length : 0), 0); },
@@ -391,6 +522,68 @@
                         }
                     }, 100);
                 },
+
+                // ---- Fitur Bikin Reels & Live
+                openCreateReelModal() {
+                    this.$refs.reelCameraInput.click();
+                },
+                startLive() {
+                    this.showLiveAudienceModal = false;
+                    this.isHost = true;
+                    this.liveRoomData = { hostId: this.currentUser?.uid, hostName: this.currentUser?.name || 'Me', viewers: 0, title: 'Siaran Langsung', audience: this.liveAudience };
+                    this.liveComments = [{ sender: 'System', text: 'Selamat datang di Live! Tetap patuhi panduan komunitas.' }];
+                    this.showLiveRoom = true;
+                    this.startMockLiveInteractions();
+                    
+                    // Add self to mock lives to show up in the Live tab
+                    this.mockActiveLives.unshift({ id: 'live_me_' + Date.now(), hostId: this.currentUser?.uid, hostName: this.currentUser?.name, viewers: 1, title: 'Siaran Langsung' });
+                },
+                joinLive(live) {
+                    this.isHost = false;
+                    this.liveRoomData = live;
+                    this.liveComments = [{ sender: 'System', text: `Bergabung ke Live ${live.hostName}!` }];
+                    this.showLiveRoom = true;
+                    this.startMockLiveInteractions();
+                },
+                endLive() {
+                    this.showLiveRoom = false;
+                    this.liveRoomData = null;
+                    this.isHost = false;
+                    clearInterval(this.liveInterval);
+                    // hapus diri dari mock lives jika host
+                    this.mockActiveLives = this.mockActiveLives.filter(l => !l.id.startsWith('live_me_'));
+                },
+                sendLiveComment() {
+                    if(!this.liveCommentInput.trim()) return;
+                    this.liveComments.push({ sender: this.currentUser?.name || 'Me', text: this.liveCommentInput });
+                    this.liveCommentInput = '';
+                    this.$nextTick(() => {
+                        const container = document.getElementById('liveCommentsContainer');
+                        if(container) container.scrollTop = container.scrollHeight;
+                    });
+                },
+                startMockLiveInteractions() {
+                    clearInterval(this.liveInterval);
+                    this.liveInterval = setInterval(() => {
+                        if(!this.showLiveRoom) return clearInterval(this.liveInterval);
+                        this.liveRoomData.viewers += Math.floor(Math.random() * 5) - 1;
+                        if(this.liveRoomData.viewers < 1) this.liveRoomData.viewers = 1;
+                        if(Math.random() > 0.6) {
+                            const names = ['Ahmad', 'Budi', 'Citra', 'Dewi', 'Eko', 'Rizal', 'Putri'];
+                            const msgs = ['Keren banget!', 'Halo kak 👋', 'Sapa aku dong', 'Lanjut terus!', 'Wah mantap', 'Stay safe ya', 'Suka banget sama kontennya'];
+                            this.liveComments.push({
+                                sender: names[Math.floor(Math.random() * names.length)],
+                                text: msgs[Math.floor(Math.random() * msgs.length)]
+                            });
+                            if(this.liveComments.length > 30) this.liveComments.shift();
+                            this.$nextTick(() => {
+                                const container = document.getElementById('liveCommentsContainer');
+                                if(container) container.scrollTop = container.scrollHeight;
+                            });
+                        }
+                    }, 2500);
+                },
+                // ------------------------------------
 
                 getReelsItems() {
                     const items = this.feedItems.filter(i => i.media);
