@@ -265,6 +265,9 @@
             </div>
             <div class="flex-1 overflow-y-auto p-2 custom-scroll">
                 <div x-show="isSearchingLoc" class="p-10 text-center text-brand-500"><i class="fas fa-spinner fa-spin text-3xl"></i></div>
+                <button @click="autoDetectLocationForPost()" class="w-full p-3 mb-2 bg-brand-50 dark:bg-brand-900/20 text-brand-500 rounded-xl font-bold flex items-center justify-center gap-3 transition-colors hover:bg-brand-100 dark:hover:bg-brand-900/40">
+                    <i class="fas fa-location-crosshairs text-lg"></i> Gunakan Lokasi Saat Ini
+                </button>
                 <template x-for="(loc, index) in locResults" :key="index">
                     <div @click="selectLocation(loc)" class="p-3 border-b dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex gap-4 items-center rounded-lg transition-colors">
                         <div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 shrink-0"><i class="fas fa-map-marker-alt"></i></div>
@@ -375,11 +378,16 @@
             </div>
             
             <div class="flex-1 w-full h-full relative flex items-center justify-center overflow-hidden bg-slate-900">
-                <img :src="getAvatarByUid(isHost ? currentUser?.uid : liveRoomData?.hostId, isHost ? currentUser?.name : liveRoomData?.hostName)" class="absolute inset-0 w-full h-full object-cover opacity-30 blur-sm">
-                <div class="relative z-10 flex flex-col items-center">
+                <template x-if="isHost && hostStream">
+                    <video x-ref="hostVideo" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover z-0"></video>
+                </template>
+                <template x-if="!isHost || !hostStream">
+                    <img :src="getAvatarByUid(isHost ? currentUser?.uid : liveRoomData?.hostId, isHost ? currentUser?.name : liveRoomData?.hostName)" class="absolute inset-0 w-full h-full object-cover opacity-30 blur-sm z-0">
+                </template>
+                <div class="relative z-10 flex flex-col items-center" x-show="!isHost || !hostStream">
                     <img :src="getAvatarByUid(isHost ? currentUser?.uid : liveRoomData?.hostId, isHost ? currentUser?.name : liveRoomData?.hostName)" class="w-24 h-24 rounded-full border-4 border-red-500 shadow-2xl mb-4 animate-bounce">
                     <h2 class="text-white font-bold text-xl" x-text="isHost ? currentUser?.name : liveRoomData?.hostName"></h2>
-                    <p class="text-white/70 text-sm mt-1" x-text="isHost ? 'Kamu sedang live...' : 'Sedang menonton siaran...'"></p>
+                    <p class="text-white/70 text-sm mt-1" x-text="isHost ? (hostStream ? 'Kamu sedang live...' : 'Memulai kamera...') : 'Sedang menonton siaran...'"></p>
                 </div>
             </div>
 
@@ -455,7 +463,7 @@
                 showLocationSearch: false, locSearchQuery: '', locResults: [], isSearchingLoc: false, locTarget: '',
 
                 // Live Data State
-                showLiveAudienceModal: false, liveAudience: 'public', showLiveRoom: false, isHost: false, liveRoomData: null, liveComments: [], liveCommentInput: '', liveInterval: null,
+                showLiveAudienceModal: false, liveAudience: 'public', showLiveRoom: false, isHost: false, liveRoomData: null, liveComments: [], liveCommentInput: '', liveInterval: null, hostStream: null,
                 mockActiveLives: [
                     { id: 'live_demo_1', hostId: '123', hostName: 'Yarch Official', viewers: 1240, title: 'Menyapa pengguna baru!' },
                     { id: 'live_demo_2', hostId: '124', hostName: 'Siska Music', viewers: 85, title: 'Latihan vokal sore 🎤' }
@@ -525,9 +533,17 @@
 
                 // ---- Fitur Bikin Reels & Live
                 openCreateReelModal() {
+                    this.isEditMode = false;
+                    this.newPostText = '';
+                    this.newPostLocation = '';
+                    this.postFileRaw = null;
+                    this.postFilePreview = null;
+                    this.postTags = [];
+                    this.postMusic = null;
+                    this.isStoryMusicModal = false;
                     this.$refs.reelCameraInput.click();
                 },
-                startLive() {
+                async startLive() {
                     this.showLiveAudienceModal = false;
                     this.isHost = true;
                     this.liveRoomData = { hostId: this.currentUser?.uid, hostName: this.currentUser?.name || 'Me', viewers: 0, title: 'Siaran Langsung', audience: this.liveAudience };
@@ -537,6 +553,17 @@
                     
                     // Add self to mock lives to show up in the Live tab
                     this.mockActiveLives.unshift({ id: 'live_me_' + Date.now(), hostId: this.currentUser?.uid, hostName: this.currentUser?.name, viewers: 1, title: 'Siaran Langsung' });
+
+                    try {
+                        this.hostStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                        this.$nextTick(() => {
+                            if (this.$refs.hostVideo) {
+                                this.$refs.hostVideo.srcObject = this.hostStream;
+                            }
+                        });
+                    } catch(e) {
+                        this.showToast('Gagal mengakses kamera/mic: ' + e.message, 'error');
+                    }
                 },
                 joinLive(live) {
                     this.isHost = false;
@@ -552,6 +579,12 @@
                     clearInterval(this.liveInterval);
                     // hapus diri dari mock lives jika host
                     this.mockActiveLives = this.mockActiveLives.filter(l => !l.id.startsWith('live_me_'));
+                    
+                    // Stop Camera
+                    if (this.hostStream) {
+                        this.hostStream.getTracks().forEach(track => track.stop());
+                        this.hostStream = null;
+                    }
                 },
                 sendLiveComment() {
                     if(!this.liveCommentInput.trim()) return;
@@ -615,6 +648,30 @@
                     else if(this.locTarget === 'story') this.storyLocation = name;
                     else if(this.locTarget === 'edit') this.editPostData.location = name;
                     this.showLocationSearch = false;
+                },
+                async autoDetectLocationForPost() {
+                    if(!navigator.geolocation) return this.showToast('Browser tidak mendukung GPS', 'error');
+                    this.showToast('Mendeteksi lokasi...');
+                    this.isSearchingLoc = true;
+                    navigator.geolocation.getCurrentPosition(async (pos) => {
+                        try {
+                            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
+                            const data = await res.json();
+                            const locName = data.address.city || data.address.town || data.address.state || data.address.suburb || data.display_name.split(',')[0];
+                            if(this.locTarget === 'post') this.newPostLocation = locName;
+                            else if(this.locTarget === 'story') this.storyLocation = locName;
+                            else if(this.locTarget === 'edit') this.editPostData.location = locName;
+                            this.showLocationSearch = false;
+                            this.showToast('Lokasi berhasil dideteksi!');
+                        } catch(e) {
+                            this.showToast('Gagal menarik data lokasi', 'error');
+                        } finally {
+                            this.isSearchingLoc = false;
+                        }
+                    }, () => {
+                        this.showToast('Izin akses lokasi ditolak', 'error');
+                        this.isSearchingLoc = false;
+                    }, { enableHighAccuracy: true });
                 },
 
                 openPostDetail(post, type = 'full') { 
