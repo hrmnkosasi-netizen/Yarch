@@ -12,7 +12,6 @@
     <meta name="twitter:title" content="Yarch App - Ultimate Social & Video">
     <meta name="twitter:description" content="Bagikan ceritamu, terhubung dengan teman, nikmati feed video menarik dalam satu aplikasi Yarch App.">
     <meta name="twitter:image" content="https://www.svgrepo.com/show/475656/google-color.svg">
-    
     <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22Yarch%20App%22%2C%22short_name%22%3A%22Yarch%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23ffffff%22%2C%22theme_color%22%3A%22%230ea5e9%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fwww.svgrepo.com%2Fshow%2F475656%2Fgoogle-color.svg%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -38,7 +37,6 @@
     </style>
     <script>
         if ('serviceWorker' in navigator) {
-            // FIX 5: Fungsional Service Worker PWA (Cache Asset & Network First untuk Database)
             const swCode = `const CACHE_NAME='yarch-v2'; const ASSETS=['/', 'https://cdn.tailwindcss.com', 'https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css']; self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS))); self.skipWaiting(); }); self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => { if(k !== CACHE_NAME) return caches.delete(k); })))); self.clients.claim(); }); self.addEventListener('fetch', e => { if (e.request.url.includes('firestore.googleapis.com') || e.request.url.includes('firebasestorage.googleapis.com')) { e.respondWith(fetch(e.request).catch(() => caches.match(e.request))); } else { e.respondWith(caches.match(e.request).then(res => res || fetch(e.request).then(fetchRes => caches.open(CACHE_NAME).then(c => { c.put(e.request, fetchRes.clone()); return fetchRes; })))) } });`;
             const blob = new Blob([swCode], { type: 'application/javascript' });
             navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
@@ -81,24 +79,15 @@
     </div>
 
     <main class="flex-1 overflow-hidden relative" x-show="currentUser" x-cloak>
-        
         <div x-show="currentView === 'board'" class="h-full w-full bg-black snap-y snap-mandatory overflow-y-auto hide-scroll pb-[56px] relative" x-cloak>
             <div class="fixed top-0 left-0 w-full p-4 z-30 flex justify-center items-center bg-gradient-to-b from-black/70 to-transparent pointer-events-auto">
-                <button @click="openCreateReelModal()" class="absolute left-4 top-4 text-2xl text-white drop-shadow-md transition-transform active:scale-90 hover:text-slate-300">
-                    <i class="fas fa-plus-square"></i>
-                </button>
-                
+                <button @click="openCreateReelModal()" class="absolute left-4 top-4 text-2xl text-white drop-shadow-md transition-transform active:scale-90 hover:text-slate-300"><i class="fas fa-plus-square"></i></button>
                 <div class="flex gap-4 drop-shadow-md">
                     <button @click="reelsTab = 'following'" class="font-bold text-lg transition-colors" :class="reelsTab === 'following' ? 'text-white' : 'text-white/50 hover:text-white/80'">Following</button>
                     <button @click="reelsTab = 'for_you'" class="font-bold text-lg transition-colors" :class="reelsTab === 'for_you' ? 'text-white' : 'text-white/50 hover:text-white/80'">For You</button>
-                    <button @click="reelsTab = 'live'" class="font-bold text-lg transition-colors flex items-center gap-1" :class="reelsTab === 'live' ? 'text-white' : 'text-white/50 hover:text-white/80'">
-                        Live <span x-show="mockActiveLives.length > 0" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                    </button>
+                    <button @click="reelsTab = 'live'" class="font-bold text-lg transition-colors flex items-center gap-1" :class="reelsTab === 'live' ? 'text-white' : 'text-white/50 hover:text-white/80'">Live <span x-show="mockActiveLives.length > 0" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span></button>
                 </div>
-                <button @click="switchView('messages')" class="absolute right-4 top-4 text-2xl text-white drop-shadow-md transition-transform active:scale-90 hover:text-slate-300">
-                    <i class="fab fa-facebook-messenger"></i>
-                    <span x-show="getUnreadDMCount() > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold px-1.5 min-w-[16px] h-4 flex items-center justify-center rounded-full border border-black" x-text="getUnreadDMCount()"></span>
-                </button>
+                <button @click="switchView('messages')" class="absolute right-4 top-4 text-2xl text-white drop-shadow-md transition-transform active:scale-90 hover:text-slate-300"><i class="fab fa-facebook-messenger"></i><span x-show="getUnreadDMCount() > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold px-1.5 min-w-[16px] h-4 flex items-center justify-center rounded-full border border-black" x-text="getUnreadDMCount()"></span></button>
             </div>
             
             <template x-if="reelsTab !== 'live'">
@@ -110,13 +99,9 @@
                         <template x-if="item.mediaType !== 'video' && item.media && !item.media.includes('.mp4')">
                             <img :src="Array.isArray(item.media) ? item.media[0] : item.media" class="w-full h-full object-cover">
                         </template>
-                        
                         <div x-show="heartAnimId === item.id" class="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
                             <i class="fas fa-heart text-red-500 text-8xl drop-shadow-2xl anim-pop-heart"></i>
                         </div>
-
-                        <div class="absolute bottom-0 left-0 w-full h-2/3 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10 pointer-events-none"></div>
-
                         <div class="absolute bottom-20 right-4 flex flex-col items-center gap-5 z-20">
                             <button class="flex flex-col items-center gap-1 group/btn" @click="toggleLike(item); showHeartAnim(item.id)">
                                 <div class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center transition-transform active:scale-75">
@@ -143,7 +128,6 @@
                                 <span class="text-white text-[10px] font-bold drop-shadow-md">Share</span>
                             </button>
                         </div>
-
                         <div class="absolute bottom-20 left-4 right-16 z-20 text-white flex flex-col gap-3">
                             <div class="flex items-center gap-3">
                                 <img :src="getAvatarByUid(item?.uid, item?.user)" class="w-10 h-10 rounded-full object-cover border border-white/50 cursor-pointer" @click="openProfile(item)">
@@ -156,13 +140,8 @@
                             </div>
                             <p class="text-[15px] leading-relaxed line-clamp-3 drop-shadow-md" x-html="formatText(item.content)"></p>
                             <div class="flex flex-wrap gap-2 items-center">
-                                <span x-show="item.location" class="text-[10px] bg-black/40 px-2 py-1 rounded-full backdrop-blur-sm flex items-center gap-1 font-bold border border-white/10 shadow-lg cursor-pointer">
-                                    <i class="fas fa-map-marker-alt text-brand-400"></i> <span x-text="item.location"></span>
-                                </span>
-                                <div x-show="item.music" class="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-full text-[10px] backdrop-blur-sm border border-white/10 shadow-lg cursor-pointer" @click="togglePlayMusic(item.music, item.id, true)">
-                                    <i class="fas fa-music text-brand-400" :class="playingMusicId === item.id ? 'animate-bounce' : ''"></i>
-                                    <span class="truncate font-bold max-w-[150px]" x-text="item.music?.trackName + ' - ' + item.music?.artistName"></span>
-                                </div>
+                                <span x-show="item.location" class="text-[10px] bg-black/40 px-2 py-1 rounded-full backdrop-blur-sm flex items-center gap-1 font-bold border border-white/10 shadow-lg cursor-pointer"><i class="fas fa-map-marker-alt text-brand-400"></i> <span x-text="item.location"></span></span>
+                                <div x-show="item.music" class="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-full text-[10px] backdrop-blur-sm border border-white/10 shadow-lg cursor-pointer" @click="togglePlayMusic(item.music, item.id, true)"><i class="fas fa-music text-brand-400" :class="playingMusicId === item.id ? 'animate-bounce' : ''"></i><span class="truncate font-bold max-w-[150px]" x-text="item.music?.trackName + ' - ' + item.music?.artistName"></span></div>
                             </div>
                         </div>
                     </div>
@@ -193,9 +172,7 @@
                 </div>
             </template>
 
-            <div x-show="isLoadingFeed && reelsTab !== 'live'" class="w-full h-full flex flex-col items-center justify-center text-white/50 relative z-10">
-                <i class="fas fa-spinner fa-spin text-4xl mb-4"></i>
-            </div>
+            <div x-show="isLoadingFeed && reelsTab !== 'live'" class="w-full h-full flex flex-col items-center justify-center text-white/50 relative z-10"><i class="fas fa-spinner fa-spin text-4xl mb-4"></i></div>
             <div x-show="!isLoadingFeed && getReelsItems().length === 0 && reelsTab !== 'live'" class="w-full h-full flex flex-col items-center justify-center text-white/50 relative z-10">
                 <i class="fas fa-video text-6xl mb-4"></i>
                 <p class="font-bold text-center px-4" x-text="reelsTab === 'following' ? 'Belum ada video dari pengguna yang kamu ikuti.' : 'Belum ada video/postingan.'"></p>
@@ -205,8 +182,10 @@
         <div x-show="currentView === 'feed'" class="h-full flex flex-col bg-slate-100 dark:bg-slate-950 pb-24" x-cloak>
             <div class="px-4 py-3 sticky top-0 z-20 bg-slate-100/90 dark:bg-slate-950/90 backdrop-blur-md flex justify-between items-center"><h1 class="font-extrabold text-xl dark:text-white tracking-tighter">Yarch Feed</h1><button @click="switchView('messages')" class="relative text-2xl text-slate-800 dark:text-white hover:text-slate-500 transition-colors"><i class="fab fa-facebook-messenger"></i><span x-show="getUnreadDMCount() > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold px-1.5 min-w-[16px] h-4 flex items-center justify-center rounded-full border border-white dark:border-slate-950" x-text="getUnreadDMCount()"></span></button></div>
             <div class="px-4 pb-2 bg-slate-100/90 dark:bg-slate-950/90 backdrop-blur-md border-b dark:border-slate-800 z-10 sticky top-12"><div class="bg-slate-200 dark:bg-slate-800 rounded-xl flex p-1 relative max-w-sm mx-auto"><div class="absolute inset-y-1 left-1 w-[calc(50%-4px)] bg-white dark:bg-slate-700 rounded-lg shadow-sm transition-transform duration-300" :class="feedTab === 'explore' ? 'translate-x-full' : ''"></div><button @click="feedTab = 'feed'; exploreQuery = ''" class="flex-1 py-1.5 text-xs font-bold z-10 transition-colors" :class="feedTab === 'feed' ? 'text-brand-600 dark:text-white' : 'text-slate-500'">Feed</button><button @click="feedTab = 'explore'" class="flex-1 py-1.5 text-xs font-bold z-10 transition-colors" :class="feedTab === 'explore' ? 'text-brand-600 dark:text-white' : 'text-slate-500'">Explore</button></div></div>
-            <div x-show="feedTab === 'feed'" id="feedContainer" class="flex-1 overflow-y-auto w-full custom-scroll" @scroll="if($el.scrollTop + $el.clientHeight >= $el.scrollHeight - 100) loadMoreFeed()">
-                <div class="bg-white dark:bg-slate-800 border-b md:border dark:border-slate-700 py-3 mb-2 max-w-xl mx-auto md:mt-2 md:rounded-3xl"><div class="flex overflow-x-auto gap-3 px-4 hide-scroll"><div class="flex flex-col items-center gap-1 cursor-pointer shrink-0" @click="handleMyStoryClick()"><div class="relative w-16 h-16 rounded-full border border-slate-200 dark:border-slate-700 p-0.5"><img :src="getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-full h-full rounded-full object-cover"><div class="absolute bottom-0 right-0 bg-brand-500 text-white w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-800 z-10"><i class="fas fa-plus text-[10px]"></i></div></div><span class="text-[10px] text-slate-500 dark:text-slate-300">Your story</span></div><template x-for="group in getGroupedStories()" :key="group.uid"><div class="flex flex-col items-center gap-1 cursor-pointer shrink-0" @click="openStoryViewer(group)"><div class="story-ring w-16 h-16"><img :src="getAvatarByUid(group.uid, group.userName)" class="w-full h-full rounded-full object-cover border-2 border-white dark:border-slate-800"></div><span class="text-[10px] text-slate-800 dark:text-slate-200 truncate w-16 text-center" x-text="group.userName"></span></div></template></div></div>
+            <div x-show="feedTab === 'feed'" id="feedContainer" class="flex-1 overflow-y-auto w-full custom-scroll">
+                <div class="bg-white dark:bg-slate-800 border-b md:border dark:border-slate-700 py-3 mb-2 max-w-xl mx-auto md:mt-2 md:rounded-3xl"><div class="flex overflow-x-auto gap-3 px-4 hide-scroll">
+                    <div class="flex flex-col items-center gap-1 cursor-pointer shrink-0" @click="followListTitle = 'All Users'; followListData = allUsers; showFollowModal = true;"><div class="w-16 h-16 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center border border-slate-300 dark:border-slate-700 shadow-inner"><i class="fas fa-users text-slate-500 dark:text-slate-400 text-xl"></i></div><span class="text-[10px] text-slate-500 dark:text-slate-300">View all</span></div>
+                    <div class="flex flex-col items-center gap-1 cursor-pointer shrink-0" @click="handleMyStoryClick()"><div class="relative w-16 h-16 rounded-full border border-slate-200 dark:border-slate-700 p-0.5"><img :src="getAvatarByUid(currentUser?.uid, currentUser?.name)" class="w-full h-full rounded-full object-cover"><div class="absolute bottom-0 right-0 bg-brand-500 text-white w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-800 z-10"><i class="fas fa-plus text-[10px]"></i></div></div><span class="text-[10px] text-slate-500 dark:text-slate-300">Your story</span></div><template x-for="group in getGroupedStories()" :key="group.uid"><div class="flex flex-col items-center gap-1 cursor-pointer shrink-0" @click="openStoryViewer(group)"><div class="story-ring w-16 h-16"><img :src="getAvatarByUid(group.uid, group.userName)" class="w-full h-full rounded-full object-cover border-2 border-white dark:border-slate-800"></div><span class="text-[10px] text-slate-800 dark:text-slate-200 truncate w-16 text-center" x-text="group.userName"></span></div></template></div></div>
                 <div class="max-w-xl mx-auto md:py-2">
                     <div class="py-2 bg-white dark:bg-slate-800 md:rounded-3xl shadow-sm border-y md:border dark:border-slate-700 mb-4"><div class="flex overflow-x-auto gap-4 hide-scroll px-4 py-3 snap-x-mandatory"><template x-for="user in getSuggestedUsers()" :key="user.uid"><div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border dark:border-slate-700 min-w-[130px] flex flex-col items-center text-center shrink-0 snap-center cursor-pointer" @click="openProfile(user)"><img :src="getAvatarByUid(user.uid, user.name)" class="w-14 h-14 rounded-full mb-2 object-cover"><h4 class="font-bold text-xs dark:text-white line-clamp-1 mb-1" x-text="user.name"></h4><button @click.stop="toggleFollowUser(user.uid)" class="w-full py-1.5 mt-1 text-[10px] font-bold rounded-lg transition-colors" :class="getFollowBtnClass(user.uid)" x-text="getFollowBtnText(user.uid)"></button></div></template></div></div>
                     <div class="space-y-4 md:space-y-6 pb-2">
@@ -229,7 +208,6 @@
                             </div>
                          </template>
                     </div>
-                    <div x-show="isLoadingMore" class="py-4 flex justify-center"><i class="fas fa-spinner fa-spin text-brand-500 text-2xl"></i></div>
                 </div>
             </div>
             <div x-show="feedTab === 'explore'" id="exploreContainer" class="flex-1 overflow-y-auto w-full custom-scroll flex flex-col"><div class="px-5 py-3 sticky top-0 bg-slate-100/90 dark:bg-slate-950/90 backdrop-blur-md z-[50] border-b dark:border-slate-800"><div class="relative"><i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i><input type="text" x-model="exploreQuery" class="w-full bg-white dark:bg-slate-900 rounded-2xl pl-10 pr-10 py-2.5 text-sm shadow-sm outline-none border dark:border-slate-700 dark:text-white transition-all focus:border-brand-500" placeholder="Search hashtags, users, or keywords..."><button x-show="exploreQuery" @click="exploreQuery = ''" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white"><i class="fas fa-times-circle"></i></button></div></div><div class="columns-2 gap-2 mt-2 px-2 pb-4"><template x-for="post in getFilteredExplore()" :key="post.id"><div class="break-inside-avoid mb-2 bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border dark:border-slate-700 cursor-pointer group" @click="openPostDetail(post, 'full')"><div class="relative w-full"><template x-if="post?.mediaType === 'video' || post?.media?.includes('.mp4')"><video :src="post?.media" class="w-full object-cover" muted></video></template><template x-if="post?.mediaType !== 'video' && !post?.media?.includes('.mp4')"><div class="w-full relative"><img :src="Array.isArray(post?.media) ? post.media[0] : post.media" class="w-full object-cover"><div x-show="Array.isArray(post?.media) && post.media.length > 1" class="absolute top-2 right-2 text-white bg-black/50 p-1 rounded text-[10px] shadow z-10"><i class="fas fa-clone"></i></div></div></template><div x-show="post?.mediaType === 'video' || post?.media?.includes('.mp4')" class="absolute top-2 right-2 text-white bg-black/60 w-6 h-6 rounded-full flex items-center justify-center text-[10px] shadow z-10"><i class="fas fa-play ml-0.5"></i></div><div class="absolute bottom-1 left-1 text-white bg-black/60 px-1.5 py-0.5 rounded flex items-center gap-1 text-[10px] shadow z-10"><i class="fa-regular fa-eye text-[8px]"></i><span x-text="(post?.views ? post.views.length : 0)"></span></div></div><div class="p-2"><p class="text-[11px] font-bold dark:text-white line-clamp-2 mb-1.5 leading-tight" x-text="post?.content || ''"></p><div class="flex items-center justify-between"><div class="flex items-center gap-1.5 min-w-0"><img :src="getAvatarByUid(post?.uid, post?.user)" class="w-4 h-4 rounded-full object-cover flex-shrink-0 border border-slate-200 dark:border-slate-600"><span class="text-[10px] font-bold text-slate-600 dark:text-slate-300 truncate" x-text="post?.user"></span></div><div class="flex items-center gap-1 text-[10px] text-slate-500 font-bold flex-shrink-0"><i class="far fa-heart"></i><span x-text="post?.likes ? post.likes.length : 0"></span></div></div></div></div></template></div></div>
@@ -460,10 +438,8 @@
     <script>
         function socialApp() {
             return {
-                // FIX 2: Menambahkan state feedLimit dan isLoadingMore untuk pagination
                 isLoadingFeed: true, showWelcome: true, currentUser: null, authMode: 'login', authLoading: false, loginError: '', loginForm: { email: '', password: '' }, regForm: { name: '', email: '', password: '' },
                 currentView: 'board', reelsTab: 'for_you', feedTab: 'feed', messagesTab: 'direct', feedItems: [], feedUnsubscribe: null, discussions: [], dms: [], notifications: [], stories: [], toasts: [], allUsers: [], 
-                feedLimit: 10, isLoadingMore: false,
                 myProfileData: { savedPosts: [], lastReadChats: {}, location: '' }, viewedProfile: {}, activeProfileTab: 'posts', showEditProfile: false, editProfileForm: { name: '', bio: '', website: '', avatar: '', location: '' },
                 newPostText: '', newPostLocation: '', postFileRaw: null, postFilePreview: null, postFileType: '', postTags: [], postMusic: null, showEditPostModal: false, editPostData: { tags: [], music: null, location: '' }, editMediaList: [], isUploadingMedia: false, 
                 isDarkMode: localStorage.getItem('tf_dark') === 'true', exploreQuery: '', heartAnimId: null, showMentions: false, mentionSearch: '', showCreateSocial: false, showCreatePost: false, showCreateStory: false, showStoryViewer: false, 
@@ -471,11 +447,8 @@
                 activeChat: {}, activeChatType: 'dm', showDiscussModal: false, showNewDMModal: false, newDiscussTopic: '', chatInput: '', showActionModal: false, actionForm: { title: '', desc: '' }, showInviteModal: false, inviteMode: 'chat', showFollowModal: false, 
                 followListTitle: '', followListData: [], showPostModal: false, postModalType: 'full', activePost: {}, showLogoutConfirm: false, showShareModal: false, activeSharePost: null, activeShareType: 'post', showProfileMenu: false, showAboutApp: false,   
                 showTagModal: false, pendingTag: null, tagSearchQuery: '', showingTagsForPost: null, showMusicModal: false, musicQuery: '', musicResults: [], isSearchingMusic: false, currentAudio: null, playingMusicId: null, audioObserver: null, reelObserver: null,
-                storyMusic: null, isStoryMusicModal: false,
-                
-                showLocationSearch: false, locSearchQuery: '', locResults: [], isSearchingLoc: false, locTarget: '',
+                storyMusic: null, isStoryMusicModal: false, showLocationSearch: false, locSearchQuery: '', locResults: [], isSearchingLoc: false, locTarget: '',
 
-                // Live Data State
                 showLiveAudienceModal: false, liveAudience: 'public', showLiveRoom: false, isHost: false, liveRoomData: null, liveComments: [], liveCommentInput: '', liveInterval: null, hostStream: null, liveInvitedFriends: [], toggleLiveInvite(uid) { if(this.liveInvitedFriends.includes(uid)) { this.liveInvitedFriends = this.liveInvitedFriends.filter(id => id !== uid); } else { this.liveInvitedFriends.push(uid); } },
                 mockActiveLives: [
                     { id: 'live_demo_1', hostId: '123', hostName: 'Yarch Official', viewers: 1240, title: 'Menyapa pengguna baru!' },
@@ -588,6 +561,7 @@
                     this.liveRoomData = null;
                     this.isHost = false;
                     this.liveInvitedFriends = [];
+                    this.liveCommentInput = '';
                     clearInterval(this.liveInterval);
                     this.mockActiveLives = this.mockActiveLives.filter(l => !l.id.startsWith('live_me_'));
                     
@@ -739,10 +713,9 @@
                     window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "dms"), window.fb.orderBy("updatedAt", "desc")), snap => { this.dms = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); if(this.activeChatType === 'dm' && this.activeChat?.id) { this.activeChat = this.dms.find(d => d.id === this.activeChat.id) || this.activeChat; this.scrollChat(); } });
                 },
 
-                // FIX 2: Modifikasi listenFeed untuk mematuhi feedLimit (Pagination)
                 listenFeed() {
                     if (this.feedUnsubscribe) this.feedUnsubscribe();
-                    this.feedUnsubscribe = window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "feed"), window.fb.orderBy("time", "desc"), window.fb.limit(this.feedLimit)), snap => {
+                    this.feedUnsubscribe = window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "feed"), window.fb.orderBy("time", "desc")), snap => {
                             this.feedItems = snap.docs.map(doc => {
                                 const data = doc.data();
                                 if (data.comments) { const ensureIds = (arr) => arr.map(c => { if (!c.id) c.id = 'c_' + (c.time || Date.now()) + Math.random().toString(36).substr(2, 5); if (c.replies) c.replies = ensureIds(c.replies); return c; }); data.comments = ensureIds(data.comments); }
@@ -750,17 +723,8 @@
                             });
                             if(this.activePost && this.activePost.id) { this.activePost = this.feedItems.find(p => p.id === this.activePost.id) || this.activePost; }
                             this.isLoadingFeed = false;
-                            this.isLoadingMore = false;
                         }
                     );
-                },
-
-                // FIX 2: Fungsi untuk menarik data lebih banyak saat scroll
-                loadMoreFeed() {
-                    if(this.isLoadingMore || this.feedItems.length < this.feedLimit) return;
-                    this.isLoadingMore = true;
-                    this.feedLimit += 10;
-                    this.listenFeed();
                 },
 
                 async detectLocation() {
@@ -925,7 +889,6 @@
                 getUserPosts() { const id = this.viewedProfile?.uid || this.currentUser?.uid; return this.feedItems.filter(i => i.uid === id || (!i.uid && i.user === this.viewedProfile?.name)); }, 
                 getProfileGridItems() { if (this.activeProfileTab === 'posts') return this.getUserPosts(); if (this.activeProfileTab === 'saved') { const savedIds = this.viewedProfile?.savedPosts || []; return this.feedItems.filter(i => savedIds.includes(i.id)); } if (this.activeProfileTab === 'likes') { const vUid = this.viewedProfile?.uid; const vName = this.viewedProfile?.name; return this.feedItems.filter(i => i.likes && (i.likes.includes(vUid) || i.likes.includes(vName))); } return []; }, 
                 
-                // FIX 3: Perbaikan logika pencarian (Search Algorithm) yang lebih mendalam
                 getFilteredExplore() { 
                     let posts = this.feedItems.filter(p => p.media); 
                     if (this.exploreQuery.trim() === '') return posts; 
