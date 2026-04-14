@@ -85,7 +85,7 @@
                 <div class="flex gap-4 drop-shadow-md">
                     <button @click="reelsTab = 'following'" class="font-bold text-lg transition-colors" :class="reelsTab === 'following' ? 'text-white' : 'text-white/50 hover:text-white/80'">Following</button>
                     <button @click="reelsTab = 'for_you'" class="font-bold text-lg transition-colors" :class="reelsTab === 'for_you' ? 'text-white' : 'text-white/50 hover:text-white/80'">For You</button>
-                    <button @click="reelsTab = 'live'" class="font-bold text-lg transition-colors flex items-center gap-1" :class="reelsTab === 'live' ? 'text-white' : 'text-white/50 hover:text-white/80'">Live <span x-show="mockActiveLives.length > 0" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span></button>
+                    <button @click="reelsTab = 'live'" class="font-bold text-lg transition-colors flex items-center gap-1" :class="reelsTab === 'live' ? 'text-white' : 'text-white/50 hover:text-white/80'">Live <span x-show="getActiveLives().length > 0" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span></button>
                 </div>
                 <button @click="switchView('messages')" class="absolute right-4 top-4 text-2xl text-white drop-shadow-md transition-transform active:scale-90 hover:text-slate-300"><i class="fab fa-facebook-messenger"></i><span x-show="getUnreadDMCount() > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold px-1.5 min-w-[16px] h-4 flex items-center justify-center rounded-full border border-black" x-text="getUnreadDMCount()"></span></button>
             </div>
@@ -152,7 +152,7 @@
                 <div class="w-full h-full flex flex-col pt-20 px-4 bg-slate-900 overflow-y-auto pb-24">
                     <h2 class="text-white font-bold text-lg mb-4"><i class="fas fa-broadcast-tower text-red-500 mr-2"></i>Sedang Live</h2>
                     <div class="grid grid-cols-2 gap-3">
-                        <template x-for="live in mockActiveLives" :key="live.id">
+                        <template x-for="live in getActiveLives()" :key="live.id">
                             <div @click="joinLive(live)" class="relative rounded-2xl overflow-hidden aspect-[3/4] bg-slate-800 cursor-pointer group shadow-lg">
                                 <img :src="getAvatarByUid(live.hostId, live.hostName)" class="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity">
                                 <div class="absolute top-2 left-2 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow">LIVE</div>
@@ -164,7 +164,7 @@
                             </div>
                         </template>
                     </div>
-                    <div x-show="mockActiveLives.length === 0" class="flex flex-col items-center justify-center flex-1 text-slate-500">
+                    <div x-show="getActiveLives().length === 0" class="flex flex-col items-center justify-center flex-1 text-slate-500">
                         <i class="fas fa-video-slash text-4xl mb-3"></i>
                         <p class="text-sm">Tidak ada yang sedang Live saat ini.</p>
                         <button @click="showLiveAudienceModal = true" class="mt-4 bg-brand-500 text-white font-bold px-4 py-2 rounded-xl text-sm">Mulai Live Sekarang</button>
@@ -454,6 +454,10 @@
                     { id: 'live_demo_1', hostId: '123', hostName: 'Yarch Official', viewers: 1240, title: 'Menyapa pengguna baru!' },
                     { id: 'live_demo_2', hostId: '124', hostName: 'Siska Music', viewers: 85, title: 'Latihan vokal sore 🎤' }
                 ],
+                realLives: [],
+                getActiveLives() {
+                    return [...this.realLives, ...this.mockActiveLives];
+                },
 
                 get storyProgressStyle() { return `width: ${this.storyProgress}%`; },
                 getTotalComments(item) { if (!item || !item.comments) return 0; return item.comments.reduce((total, c) => total + 1 + (c.replies ? c.replies.length : 0), 0); },
@@ -531,14 +535,24 @@
                 async startLive() {
                     this.showLiveAudienceModal = false;
                     this.isHost = true;
-                    this.liveRoomData = { hostId: this.currentUser?.uid, hostName: this.currentUser?.name || 'Me', viewers: 0, title: 'Siaran Langsung', audience: this.liveAudience };
-                    this.liveComments = [{ sender: 'System', text: 'Selamat datang di Live! Tetap patuhi panduan komunitas.' }];
                     this.showLiveRoom = true;
                     this.startMockLiveInteractions();
-                    
-                    this.mockActiveLives.unshift({ id: 'live_me_' + Date.now(), hostId: this.currentUser?.uid, hostName: this.currentUser?.name, viewers: 1, title: 'Siaran Langsung' });
 
                     try {
+                        const initialComments = [{ sender: 'System', text: 'Selamat datang di Live! Tetap patuhi panduan komunitas.' }];
+                        const docRef = await window.fb.addDoc(window.fb.collection(window.fb.db, "live_rooms"), {
+                            hostId: this.currentUser?.uid,
+                            hostName: this.currentUser?.name || 'Me',
+                            viewers: 1,
+                            title: 'Siaran Langsung',
+                            audience: this.liveAudience,
+                            comments: initialComments,
+                            createdAt: Date.now()
+                        });
+                        
+                        this.liveRoomData = { id: docRef.id, hostId: this.currentUser?.uid, hostName: this.currentUser?.name, viewers: 1, title: 'Siaran Langsung', audience: this.liveAudience };
+                        this.liveComments = initialComments;
+
                         this.hostStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                         this.$nextTick(() => {
                             if (this.$refs.hostVideo) {
@@ -546,46 +560,81 @@
                             }
                         });
                     } catch(e) {
-                        this.showToast('Gagal mengakses kamera/mic: ' + e.message, 'error');
+                        this.showToast('Gagal memulai Live: ' + e.message, 'error');
                     }
                 },
-                joinLive(live) {
+                async joinLive(live) {
                     this.isHost = false;
                     this.liveRoomData = live;
-                    this.liveComments = [{ sender: 'System', text: `Bergabung ke Live ${live.hostName}!` }];
+                    this.liveComments = live.comments || [{ sender: 'System', text: `Bergabung ke Live ${live.hostName}!` }];
                     this.showLiveRoom = true;
                     this.startMockLiveInteractions();
+
+                    if (live.id && !live.id.startsWith('live_demo')) {
+                        try {
+                            await window.fb.updateDoc(window.fb.doc(window.fb.db, "live_rooms", live.id), {
+                                viewers: live.viewers + 1
+                            });
+                        } catch(e) {}
+                    }
                 },
-                endLive() {
+                async endLive() {
+                    const wasHost = this.isHost;
+                    const roomId = this.liveRoomData?.id;
+                    const currentViewers = this.liveRoomData?.viewers || 1;
+
                     this.showLiveRoom = false;
-                    this.liveRoomData = null;
                     this.isHost = false;
+                    this.liveRoomData = null;
                     this.liveInvitedFriends = [];
                     this.liveCommentInput = '';
                     clearInterval(this.liveInterval);
-                    this.mockActiveLives = this.mockActiveLives.filter(l => !l.id.startsWith('live_me_'));
                     
                     if (this.hostStream) {
                         this.hostStream.getTracks().forEach(track => track.stop());
                         this.hostStream = null;
                     }
+
+                    if (roomId && !roomId.startsWith('live_demo')) {
+                        if (wasHost) {
+                            try {
+                                await window.fb.deleteDoc(window.fb.doc(window.fb.db, "live_rooms", roomId));
+                            } catch(e) {}
+                        } else {
+                            try {
+                                await window.fb.updateDoc(window.fb.doc(window.fb.db, "live_rooms", roomId), {
+                                    viewers: Math.max(1, currentViewers - 1)
+                                });
+                            } catch(e) {}
+                        }
+                    }
                 },
-                sendLiveComment() {
+                async sendLiveComment() {
                     if(!this.liveCommentInput.trim()) return;
-                    this.liveComments.push({ sender: this.currentUser?.name || 'Me', text: this.liveCommentInput });
+                    const comment = { sender: this.currentUser?.name || 'Me', text: this.liveCommentInput };
+                    
+                    if (this.liveRoomData && this.liveRoomData.id && !this.liveRoomData.id.startsWith('live_demo')) {
+                        try {
+                            await window.fb.updateDoc(window.fb.doc(window.fb.db, "live_rooms", this.liveRoomData.id), {
+                                comments: window.fb.arrayUnion(comment)
+                            });
+                        } catch(e) {}
+                    } else {
+                        this.liveComments.push(comment);
+                        this.$nextTick(() => {
+                            const container = document.getElementById('liveCommentsContainer');
+                            if(container) container.scrollTop = container.scrollHeight;
+                        });
+                    }
                     this.liveCommentInput = '';
-                    this.$nextTick(() => {
-                        const container = document.getElementById('liveCommentsContainer');
-                        if(container) container.scrollTop = container.scrollHeight;
-                    });
                 },
                 startMockLiveInteractions() {
                     clearInterval(this.liveInterval);
                     this.liveInterval = setInterval(() => {
                         if(!this.showLiveRoom) return clearInterval(this.liveInterval);
-                        this.liveRoomData.viewers += Math.floor(Math.random() * 5) - 1;
                         if(this.liveRoomData.viewers < 1) this.liveRoomData.viewers = 1;
-                        if(Math.random() > 0.6) {
+                        if(Math.random() > 0.6 && this.liveRoomData && this.liveRoomData.id && this.liveRoomData.id.startsWith('live_demo')) {
+                            this.liveRoomData.viewers += Math.floor(Math.random() * 5) - 1;
                             const names = ['Ahmad', 'Budi', 'Citra', 'Dewi', 'Eko', 'Rizal', 'Putri'];
                             const msgs = ['Keren banget!', 'Halo kak 👋', 'Sapa aku dong', 'Lanjut terus!', 'Wah mantap', 'Stay safe ya', 'Suka banget sama kontennya'];
                             this.liveComments.push({
@@ -711,6 +760,26 @@
                     window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "stories"), window.fb.orderBy("time", "desc")), snap => { this.stories = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); });
                     window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "notifications"), window.fb.orderBy("time", "desc")), snap => { this.notifications = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); });
                     window.fb.onSnapshot(window.fb.query(window.fb.collection(window.fb.db, "dms"), window.fb.orderBy("updatedAt", "desc")), snap => { this.dms = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); if(this.activeChatType === 'dm' && this.activeChat?.id) { this.activeChat = this.dms.find(d => d.id === this.activeChat.id) || this.activeChat; this.scrollChat(); } });
+                    
+                    window.fb.onSnapshot(window.fb.collection(window.fb.db, "live_rooms"), snap => {
+                        this.realLives = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        if (this.showLiveRoom && this.liveRoomData && this.liveRoomData.id && !this.liveRoomData.id.startsWith('live_demo')) {
+                            const currentRoom = this.realLives.find(r => r.id === this.liveRoomData.id);
+                            if (currentRoom) {
+                                this.liveRoomData.viewers = currentRoom.viewers;
+                                if (currentRoom.comments) {
+                                    this.liveComments = currentRoom.comments;
+                                    this.$nextTick(() => {
+                                        const container = document.getElementById('liveCommentsContainer');
+                                        if(container) container.scrollTop = container.scrollHeight;
+                                    });
+                                }
+                            } else if (!this.isHost) {
+                                this.showToast('Siaran telah diakhiri oleh host.');
+                                this.endLive();
+                            }
+                        }
+                    });
                 },
 
                 listenFeed() {
