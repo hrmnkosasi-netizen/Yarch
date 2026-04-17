@@ -504,6 +504,7 @@
                     this.$watch('currentView', v => { this.stopAudio(); });
                     this.$watch('feedTab', v => { this.stopAudio(); }); this.setupAudioObserver();
 
+
                     const checkFb = setInterval(() => {
                         if (window.fb && window.fb.auth) {
                             clearInterval(checkFb);
@@ -533,36 +534,53 @@
                     this.$refs.reelCameraInput.click();
                 },
                 async startLive() {
-                    this.showLiveAudienceModal = false;
-                    this.isHost = true;
-                    this.showLiveRoom = true;
-                    this.startMockLiveInteractions();
+    this.showLiveAudienceModal = false;
+    this.isHost = true;
+    this.showLiveRoom = true;
+    this.startMockLiveInteractions();
 
-                    try {
-                        const initialComments = [{ sender: 'System', text: 'Selamat datang di Live! Tetap patuhi panduan komunitas.' }];
-                        const docRef = await window.fb.addDoc(window.fb.collection(window.fb.db, "live_rooms"), {
-                            hostId: this.currentUser?.uid,
-                            hostName: this.currentUser?.name || 'Me',
-                            viewers: 1,
-                            title: 'Siaran Langsung',
-                            audience: this.liveAudience,
-                            comments: initialComments,
-                            createdAt: Date.now()
-                        });
-                        
-                        this.liveRoomData = { id: docRef.id, hostId: this.currentUser?.uid, hostName: this.currentUser?.name, viewers: 1, title: 'Siaran Langsung', audience: this.liveAudience };
-                        this.liveComments = initialComments;
+    try {
+        const initialComments = [{ sender: 'System', text: 'Selamat datang di Live!' }];
+        
+        // SOLUSI UTAMA: Gunakan setDoc dengan ID = UID User agar tidak dobel
+        const roomRef = window.fb.doc(window.fb.db, "live_rooms", this.currentUser.uid);
+        
+        await window.fb.setDoc(roomRef, {
+            hostId: this.currentUser.uid,
+            hostName: this.currentUser.name,
+            viewers: 1,
+            title: 'Siaran Langsung',
+            audience: this.liveAudience,
+            comments: initialComments,
+            createdAt: Date.now()
+        });
+        
+        this.liveRoomData = { 
+            id: this.currentUser.uid, 
+            hostId: this.currentUser.uid, 
+            hostName: this.currentUser.name, 
+            viewers: 1 
+        };
+        this.liveComments = initialComments;
 
-                        this.hostStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                        this.$nextTick(() => {
-                            if (this.$refs.hostVideo) {
-                                this.$refs.hostVideo.srcObject = this.hostStream;
-                            }
-                        });
-                    } catch(e) {
-                        this.showToast('Gagal memulai Live: ' + e.message, 'error');
-                    }
-                },
+        // PERBAIKAN CAMERA: Menghapus batasan resolusi agar tidak Zoom-In otomatis di Android
+        this.hostStream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: "user" }, // Biarkan browser menentukan resolusi terbaik
+            audio: { echoCancellation: true, noiseSuppression: true } 
+        });
+        
+        this.$nextTick(() => {
+            if (this.$refs.hostVideo) {
+                this.$refs.hostVideo.srcObject = this.hostStream;
+                this.$refs.hostVideo.play().catch(e => console.warn("Autoplay ditunda", e));
+            }
+        });
+    } catch(e) {
+        this.showToast('Gagal Kamera: ' + e.message, 'error');
+        this.endLive(); // Reset tampilan jika kamera gagal
+    }
+},
+                    
                 async joinLive(live) {
                     this.isHost = false;
                     this.liveRoomData = live;
@@ -579,36 +597,28 @@
                     }
                 },
                 async endLive() {
-                    const wasHost = this.isHost;
-                    const roomId = this.liveRoomData?.id;
-                    const currentViewers = this.liveRoomData?.viewers || 1;
+    const roomId = this.liveRoomData?.id || this.currentUser?.uid;
 
-                    this.showLiveRoom = false;
-                    this.isHost = false;
-                    this.liveRoomData = null;
-                    this.liveInvitedFriends = [];
-                    this.liveCommentInput = '';
-                    clearInterval(this.liveInterval);
-                    
-                    if (this.hostStream) {
-                        this.hostStream.getTracks().forEach(track => track.stop());
-                        this.hostStream = null;
-                    }
+    this.showLiveRoom = false;
+    this.isHost = false;
+    this.liveRoomData = null;
+    clearInterval(this.liveInterval);
+    
+    if (this.hostStream) {
+        this.hostStream.getTracks().forEach(track => track.stop());
+        this.hostStream = null;
+    }
 
-                    if (roomId && !roomId.startsWith('live_demo')) {
-                        if (wasHost) {
-                            try {
-                                await window.fb.deleteDoc(window.fb.doc(window.fb.db, "live_rooms", roomId));
-                            } catch(e) {}
-                        } else {
-                            try {
-                                await window.fb.updateDoc(window.fb.doc(window.fb.db, "live_rooms", roomId), {
-                                    viewers: Math.max(1, currentViewers - 1)
-                                });
-                            } catch(e) {}
-                        }
-                    }
-                },
+    // Menghapus data room berdasarkan ID (UID)
+    if (roomId && this.isHost) {
+        try {
+            await window.fb.deleteDoc(window.fb.doc(window.fb.db, "live_rooms", roomId));
+        } catch(e) {
+            console.error("Gagal hapus room:", e);
+        }
+    }
+},
+         
                 async sendLiveComment() {
                     if(!this.liveCommentInput.trim()) return;
                     const comment = { sender: this.currentUser?.name || 'Me', text: this.liveCommentInput };
