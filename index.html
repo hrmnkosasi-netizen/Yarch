@@ -91,9 +91,9 @@ window.fb = { auth: getAuth(app), db: getFirestore(app), signInWithEmailAndPassw
     <div x-show="currentView === 'messages'" class="h-full flex flex-col bg-white dark:bg-slate-900 pb-24" x-cloak><div class="p-4 border-b dark:border-slate-800 sticky top-0 z-10 flex justify-between items-center bg-white/90 dark:bg-slate-900/90 backdrop-blur-md"><div class="flex items-center gap-3"><button @click="switchView('board')" class="text-xl text-slate-800 dark:text-white"><i class="fas fa-arrow-left"></i></button><h2 class="font-bold text-xl dark:text-white tracking-tight" x-text="currentUser?.name"></h2></div><button @click="messagesTab === 'direct' ? showNewDMModal = true : showDiscussModal=true" class="text-xl text-slate-800 dark:text-white"><i class="fas fa-pen-to-square"></i></button></div><div class="flex border-b dark:border-slate-800 px-4 pt-2"><button @click="messagesTab = 'direct'" class="flex-1 py-3 text-sm font-bold border-b-2 transition-colors flex items-center justify-center gap-2" :class="messagesTab === 'direct' ? 'border-slate-800 dark:border-white text-slate-800 dark:text-white' : 'border-transparent text-slate-400'">Direct Messages <span x-show="getTotalUnreadDMs() > 0" class="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full" x-text="getTotalUnreadDMs()"></span></button><button @click="messagesTab = 'groups'" class="flex-1 py-3 text-sm font-bold border-b-2 transition-colors flex items-center justify-center gap-2" :class="messagesTab === 'groups' ? 'border-slate-800 dark:border-white text-slate-800 dark:text-white' : 'border-transparent text-slate-400'">Discussions <span x-show="getTotalUnreadGroups() > 0" class="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full" x-text="getTotalUnreadGroups()"></span></button></div><div class="flex-1 overflow-y-auto custom-scroll"><div x-show="messagesTab === 'direct'"><template x-for="chat in getVisibleDMs()" :key="chat.id"><div @click="openChatModal(chat, 'dm')" class="px-5 py-4 border-b dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex items-center gap-4"><img :src="getAvatarByUid(getOtherMember(chat).uid, getOtherMember(chat).name)" class="w-12 h-12 rounded-full border dark:border-slate-700 object-cover"><div class="flex-1 min-w-0"><h3 class="text-sm truncate" :class="hasUnread(chat) ? 'font-extrabold text-brand-600 dark:text-brand-400' : 'font-bold dark:text-white'" x-text="getOtherMember(chat).name"></h3><p class="text-xs truncate mt-0.5" :class="hasUnread(chat) ? 'text-slate-800 font-bold dark:text-white' : 'text-slate-500'" x-text="(chat?.messages && chat.messages.length > 0) ? (chat.messages[chat.messages.length-1].isAction ? 'Mengirim Form Persetujuan' : (chat.messages[chat.messages.length-1].isAudio ? 'Pesan Suara' : (chat.messages[chat.messages.length-1].isImage ? 'Sent a photo' : chat.messages[chat.messages.length-1].text))) : 'Tap to chat'"></p></div><div x-show="hasUnread(chat)" class="w-2.5 h-2.5 bg-brand-500 rounded-full shadow-sm"></div></div></template><div x-show="getVisibleDMs().length === 0" class="text-center py-20 text-slate-400 text-sm">No direct messages yet.</div></div><div x-show="messagesTab === 'groups'"><template x-for="chat in getVisibleDiscussions()" :key="chat.id"><div @click="openChatModal(chat, 'group')" class="px-5 py-4 border-b dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex items-center gap-4"><div class="flex -space-x-3 shrink-0 mr-2"><template x-for="mUid in (chat.members || []).slice(0, 3)"><img :src="getAvatarByUid(mUid, getUserName(mUid))" class="w-10 h-10 rounded-full border-2 border-white dark:border-slate-800 object-cover"></template></div><div class="flex-1 min-w-0"><h3 class="text-sm truncate" :class="hasUnread(chat) ? 'font-extrabold text-brand-600 dark:text-brand-400' : 'font-bold dark:text-white'" x-text="chat?.topic"></h3><p class="text-xs truncate mt-0.5" :class="hasUnread(chat) ? 'text-slate-800 font-bold dark:text-white' : 'text-slate-500'" x-text="(chat?.messages && chat.messages.length > 0) ? (chat.messages[chat.messages.length-1].sender + ': ' + (chat.messages[chat.messages.length-1].isAction ? 'Mengirim Form Persetujuan' : (chat.messages[chat.messages.length-1].isAudio ? 'Pesan Suara' : (chat.messages[chat.messages.length-1].isImage ? 'Sent a photo' : chat.messages[chat.messages.length-1].text)))) : 'No messages'"></p></div><div x-show="hasUnread(chat)" class="w-2.5 h-2.5 bg-brand-500 rounded-full shadow-sm mr-2"></div><div class="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded font-bold" x-text="(chat?.members ? chat.members.length : 1) + ' ppl'"></div></div></template><div x-show="getVisibleDiscussions().length === 0" class="text-center py-20 text-slate-400 text-sm">No discussions yet.</div></div></div></div>
 
     <div x-show="activeChat?.id" class="fixed inset-0 z-[200] bg-white dark:bg-slate-900 flex flex-col" x-transition.opacity x-cloak><div class="px-4 py-3 border-b dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shadow-sm"><div class="flex items-center gap-3"><button @click="activeChat = {}" class="text-slate-800 dark:text-white text-lg"><i class="fas fa-arrow-left"></i></button><img x-show="activeChatType === 'dm'" :src="getAvatarByUid(getOtherMember(activeChat).uid, getOtherMember(activeChat).name)" class="w-8 h-8 rounded-full object-cover"><h3 class="font-bold text-sm dark:text-white" x-text="activeChatType === 'dm' ? getOtherMember(activeChat).name : (activeChat?.topic || '')"></h3></div><div class="flex gap-3 items-center"><button x-show="activeChatType === 'group' && activeChat?.createdByUid === currentUser?.uid" @click="inviteMode='chat'; showInviteModal=true" class="text-slate-800 dark:text-white text-lg hover:text-brand-500" title="Manage Members"><i class="fas fa-users-cog"></i></button><button x-show="activeChatType === 'group' && activeChat?.createdByUid !== currentUser?.uid" @click="leaveGroup(activeChat?.id)" class="text-red-500 text-lg hover:text-red-600" title="Leave Discussion"><i class="fas fa-sign-out-alt"></i></button></div></div><div class="flex-1 bg-slate-50 dark:bg-slate-950 p-4 space-y-4 overflow-y-auto chat-container custom-scroll" id="chatContainer"><template x-if="activeChat?.id"><template x-for="(msg, index) in (activeChat?.messages || [])" :key="index"><div class="flex gap-2 group" :class="msg?.sender === currentUser?.name ? 'flex-row-reverse' : ''"><img x-show="activeChatType === 'group' || msg?.sender !== currentUser?.name" :src="getAvatarByUid(null, msg?.sender)" class="w-8 h-8 rounded-full object-cover self-end"><template x-if="!msg?.isAction"><div class="p-3 rounded-2xl max-w-[75%] shadow-sm relative" :class="msg?.sender === currentUser?.name ? 'bg-brand-500 text-white rounded-br-none' : 'bg-white dark:bg-slate-800 dark:text-white rounded-bl-none'"><p x-show="activeChatType === 'group' && msg?.sender !== currentUser?.name" class="text-[10px] font-bold mb-1 opacity-60" x-text="msg?.sender"></p><template x-if="msg?.isImage"><div class="space-y-1"><img :src="msg?.text" class="rounded-lg w-full"><div class="text-[9px] opacity-70" x-text="msg?.fileName"></div></div></template><template x-if="msg?.isAudio"><audio :src="msg?.text" controls class="max-w-full h-10 mt-1 rounded-full"></audio></template><p class="text-sm whitespace-pre-wrap" x-text="msg?.text" x-show="!msg?.isImage && !msg?.isAudio && !msg?.isPostShare"></p><p class="text-sm whitespace-pre-wrap" x-text="msg?.text" x-show="msg?.isPostShare"></p><div x-show="msg?.isPostShare" class="mt-2 rounded-xl overflow-hidden border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5"><template x-if="msg?.sharedPostMedia"><img :src="msg.sharedPostMedia" class="w-full h-32 object-cover"></template><button @click="openSharedPost(msg.sharedPostId)" class="text-[10px] font-bold text-brand-600 dark:text-brand-300 px-3 py-2 hover:bg-black/5 dark:hover:bg-white/10 transition-colors w-full text-center border-t border-black/10 dark:border-white/10">Lihat Postingan</button></div><template x-if="msg?.sender === currentUser?.name && index === activeChat.messages.length - 1"><div class="text-[9px] text-right mt-0.5 absolute bottom-1 right-2" :class="hasUnread(activeChat) ? 'text-white/60' : 'text-blue-200'"><i class="fas fa-check-double"></i></div></template></div></template><template x-if="msg?.isAction"><div class="p-3 rounded-2xl w-[250px] max-w-[85%] shadow-md border dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white relative z-10" :class="msg?.sender === currentUser?.name ? 'rounded-br-none' : 'rounded-bl-none'"><div class="flex items-center gap-2 mb-2 text-brand-600 dark:text-brand-400 font-bold border-b dark:border-slate-700 pb-2"><i class="fas fa-file-signature text-lg"></i> <span x-text="msg.title" class="text-sm"></span></div><p class="text-xs mb-3 whitespace-pre-wrap" x-text="msg.text"></p>
-                <div x-show="msg.actionStatus === 'pending'" class="flex gap-2 mt-2 relative z-50">
-                    <button type="button" x-show="msg.sender !== currentUser?.name" @click.stop.prevent="updateActionStatus(index, 'approved')" class="flex-1 bg-emerald-500 text-white text-[10px] font-bold py-2 rounded-lg shadow-sm hover:bg-emerald-600 transition active:scale-95 cursor-pointer">APPROVE</button>
-                    <button type="button" x-show="msg.sender !== currentUser?.name" @click.stop.prevent="updateActionStatus(index, 'rejected')" class="flex-1 bg-red-500 text-white text-[10px] font-bold py-2 rounded-lg shadow-sm hover:bg-red-600 transition active:scale-95 cursor-pointer">REJECT</button>
+                <div x-show="msg.actionStatus === 'pending'" class="flex gap-2 mt-2 relative z-[99] pointer-events-auto">
+                    <button type="button" x-show="msg.sender !== currentUser?.name" @click.stop.prevent="updateActionStatus(index, 'approved')" class="flex-1 bg-emerald-500 text-white text-[10px] font-bold py-2 rounded-lg shadow-sm hover:bg-emerald-600 transition active:scale-95 cursor-pointer pointer-events-auto relative z-[100]">APPROVE</button>
+                    <button type="button" x-show="msg.sender !== currentUser?.name" @click.stop.prevent="updateActionStatus(index, 'rejected')" class="flex-1 bg-red-500 text-white text-[10px] font-bold py-2 rounded-lg shadow-sm hover:bg-red-600 transition active:scale-95 cursor-pointer pointer-events-auto relative z-[100]">REJECT</button>
                     <div x-show="msg.sender === currentUser?.name" class="w-full text-center text-[10px] text-slate-400 italic py-1">Menunggu persetujuan...</div>
                 </div>
                 <div x-show="msg.actionStatus !== 'pending'" class="mt-2 text-center text-[10px] font-bold py-1.5 px-2 rounded-lg flex items-center justify-center gap-1" :class="msg.actionStatus === 'approved' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'"><i class="fas" :class="msg.actionStatus === 'approved' ? 'fa-check-circle' : 'fa-times-circle'"></i><span x-text="'STATUS: ' + msg.actionStatus.toUpperCase()"></span></div></div></template><button x-show="msg?.sender === currentUser?.name" @click="deleteChatMessage(activeChat?.id, index)" class="text-red-400 opacity-0 group-hover:opacity-100 transition-opacity text-xs self-center px-2 cursor-pointer" title="Delete Message"><i class="fas fa-trash"></i></button></div></template></template></div><div x-show="activeChatType === 'dm' && Math.random() > 0.6 && chatInput.length === 0" class="text-[10px] text-slate-400 italic px-4 pb-1 bg-white dark:bg-slate-900">Sedang mengetik...</div><div class="p-3 border-t dark:border-slate-800 flex gap-2 items-center bg-white dark:bg-slate-900 pb-safe"><button class="text-slate-800 dark:text-white text-xl px-1 hover:text-brand-500 transition-colors" @click="showActionModal = true"><i class="fas fa-file-contract"></i></button><input type="file" multiple x-ref="chatFile" class="hidden" @change="handleChatUpload($event)"><button class="text-slate-800 dark:text-white text-2xl px-1 hover:text-slate-500" @click="$refs.chatFile.click()"><i class="far fa-image"></i></button><div class="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center px-4 py-1.5 border dark:border-slate-700"><input type="text" x-model="chatInput" @keydown.enter="sendChatMessage()" class="flex-1 bg-transparent text-sm outline-none dark:text-white py-1" placeholder="Message..."><button x-show="chatInput.trim().length > 0" @click="sendChatMessage()" class="text-brand-500 font-bold text-sm ml-2">Send</button><button x-show="chatInput.trim().length === 0 && !isRecording" @click="startAudioRecord()" class="text-slate-500 hover:text-brand-500 ml-2 text-lg transition-transform active:scale-90"><i class="fas fa-microphone"></i></button><button x-show="isRecording" @click="stopAudioRecord()" class="text-red-500 animate-pulse ml-2 text-lg"><i class="fas fa-stop-circle"></i></button></div></div></div>
@@ -124,19 +124,18 @@ window.fb = { auth: getAuth(app), db: getFirestore(app), signInWithEmailAndPassw
                 <div x-show="viewedProfile?.location" class="text-xs text-slate-500 dark:text-slate-400 mt-1.5 flex items-center gap-1.5 font-medium"><i class="fas fa-map-marker-alt text-brand-500"></i> <span x-text="viewedProfile?.location"></span></div>
             </div>
 
-            <div class="grid grid-cols-3 gap-2 mb-6" x-show="!viewedProfile?.uid || viewedProfile?.uid === currentUser?.uid">
-                <button @click="openEditProfile()" class="py-2 bg-slate-100 dark:bg-slate-800 font-bold text-xs md:text-sm rounded-xl dark:text-white border dark:border-slate-700 shadow-sm flex items-center justify-center gap-1 md:gap-2"><i class="fas fa-edit"></i> Edit</button>
-                <button @click="showCreatorTools = true" class="py-2 bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 font-bold text-xs md:text-sm rounded-xl border border-brand-200 dark:border-brand-800 shadow-sm flex items-center justify-center gap-1 md:gap-2"><i class="fas fa-chart-line"></i> Creator</button>
-                <button @click="resetHighlights()" class="py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-bold text-xs md:text-sm rounded-xl border border-red-200 dark:border-red-800 shadow-sm flex items-center justify-center gap-1 md:gap-2"><i class="fas fa-trash-alt"></i> Reset HL</button>
-                </div>
+            <div class="grid grid-cols-2 gap-2 mb-6" x-show="!viewedProfile?.uid || viewedProfile?.uid === currentUser?.uid">
+                <button @click="openEditProfile()" class="py-2 bg-slate-100 dark:bg-slate-800 font-bold text-sm rounded-xl dark:text-white border dark:border-slate-700 shadow-sm flex items-center justify-center gap-2"><i class="fas fa-edit"></i> Edit profile</button>
+                <button @click="showCreatorTools = true" class="py-2 bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 font-bold text-sm rounded-xl border border-brand-200 dark:border-brand-800 shadow-sm flex items-center justify-center gap-2"><i class="fas fa-chart-line"></i> Creator Tools</button>
+            </div>
 
             <div class="flex gap-2 mb-6" x-show="viewedProfile?.uid && viewedProfile?.uid !== currentUser?.uid">
                 <button @click="toggleFollowUser(viewedProfile?.uid)" class="flex-1 py-2 font-bold text-sm rounded-xl transition-colors border" :class="getFollowBtnClass(viewedProfile?.uid)" x-text="getFollowBtnText(viewedProfile?.uid)"></button>
                 <button @click="startDM(viewedProfile)" class="flex-1 py-2 font-bold text-sm rounded-xl bg-slate-100 dark:bg-slate-800 dark:text-white border dark:border-slate-700">Message</button>
             </div>
 
-            <div class="mb-4 pb-6">
-                <div class="flex overflow-x-auto gap-4 py-4 hide-scroll px-4">
+            <div class="mb-2 pb-2">
+                <div class="flex overflow-x-auto gap-3 py-2 hide-scroll px-4">
                     <template x-if="!viewedProfile?.uid || viewedProfile?.uid === currentUser?.uid">
                         <div class="flex flex-col items-center gap-1 cursor-pointer shrink-0" @click="showCreateHighlight = true">
                             <div class="w-16 h-16 rounded-full border-2 border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors bg-slate-50 dark:bg-slate-800">
@@ -147,6 +146,11 @@ window.fb = { auth: getAuth(app), db: getFirestore(app), signInWithEmailAndPassw
                     </template>
                     <template x-for="hl in (viewedProfile?.highlights || myProfileData?.highlights || [])" :key="hl.id">
                         <div class="flex flex-col items-center gap-1 cursor-pointer group shrink-0 relative" @click="playHighlight(hl)">
+                            <button x-show="!viewedProfile?.uid || viewedProfile?.uid === currentUser?.uid" 
+                                    @click.stop="openEditHighlight(hl)" 
+                                    class="absolute -top-1 left-0 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center z-10 text-[10px] hover:bg-blue-600 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                <i class="fas fa-edit"></i>
+                            </button>
                             <button x-show="!viewedProfile?.uid || viewedProfile?.uid === currentUser?.uid" 
                                     @click.stop="deleteHighlight(hl.id)" 
                                     class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center z-10 text-[10px] hover:bg-red-600 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
@@ -163,9 +167,9 @@ window.fb = { auth: getAuth(app), db: getFirestore(app), signInWithEmailAndPassw
                             <span class="text-[10px] font-medium text-slate-700 dark:text-slate-300 w-16 text-center truncate" x-text="hl.title"></span>
                         </div>
                     </template>
-                    </div>
+                </div>
             </div>
-        </div>
+            </div>
 
         <div class="flex border-t border-b dark:border-slate-800">
             <button @click="activeProfileTab = 'posts'" class="flex-1 py-3" :class="activeProfileTab === 'posts' ? 'text-brand-500 border-b-2 border-brand-500' : 'text-slate-400'"><i class="fas fa-th text-lg"></i></button>
@@ -231,6 +235,27 @@ window.fb = { auth: getAuth(app), db: getFirestore(app), signInWithEmailAndPassw
         </div>
     </div>
 
+    <div x-show="showEditHighlightModal" class="fixed inset-0 bg-black/60 z-[400] flex items-center justify-center p-4" x-cloak x-transition.opacity>
+        <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl p-6 shadow-2xl" @click.outside="showEditHighlightModal = false">
+            <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg dark:text-white">Edit Highlight</h3><button @click="showEditHighlightModal=false" class="text-slate-400"><i class="fas fa-times"></i></button></div>
+            <input type="text" x-model="editHighlightData.title" placeholder="Nama Highlight..." class="w-full bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3 text-sm font-bold outline-none dark:text-white mb-4 focus:border-brand-500 transition-colors">
+            <div class="mb-4 text-xs font-bold text-slate-500 dark:text-slate-400">Pilih/Hapus dari arsip Story:</div>
+            <div class="flex gap-2 overflow-x-auto hide-scroll pb-2 mb-2">
+                <template x-for="story in (myProfileData?.archivedStories || [])" :key="story.id">
+                    <div class="w-20 h-32 shrink-0 rounded-lg overflow-hidden relative cursor-pointer border-2 transition-colors" :class="editHighlightData.stories.includes(story.id) ? 'border-brand-500' : 'border-transparent'" @click="toggleEditHighlightStory(story.id)">
+                        <template x-if="story.media && (story.media.includes('video') || story.media.includes('mp4') || story.media.startsWith('data:video'))">
+                            <video :src="story.media" class="w-full h-full object-cover bg-black"></video>
+                        </template>
+                        <template x-if="!(story.media && (story.media.includes('video') || story.media.includes('mp4') || story.media.startsWith('data:video')))">
+                            <img :src="story.media" class="w-full h-full object-cover bg-black">
+                        </template>
+                        <div x-show="editHighlightData.stories.includes(story.id)" class="absolute top-1 right-1 bg-brand-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow-md"><i class="fas fa-check"></i></div>
+                    </div>
+                </template>
+            </div>
+            <button @click="saveEditedHighlight()" :disabled="!editHighlightData.title || editHighlightData.stories.length === 0" class="w-full py-3 bg-brand-500 text-white rounded-xl font-bold text-sm shadow-md transition-colors hover:bg-brand-600 disabled:opacity-50">Simpan Perubahan</button>
+        </div>
+    </div>
     <div x-show="showAboutApp" class="fixed inset-0 bg-black/60 z-[400] flex items-center justify-center p-4" x-cloak x-transition.opacity><div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl p-6 text-center" @click.outside="showAboutApp=false"><div class="w-16 h-16 rounded-3xl bg-brand-500 text-white flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg transform rotate-3"><i class="fas fa-cubes"></i></div><h3 class="font-extrabold text-xl mb-1 dark:text-white">Yarch App</h3><p class="text-sm text-slate-500 mb-6">Versi 1.1.0 (PWA Ready)</p><div class="bg-brand-50 dark:bg-slate-900 p-4 rounded-2xl mb-6 border border-brand-100 dark:border-slate-700"><p class="font-bold text-xs text-brand-600 dark:text-brand-400 uppercase tracking-wider mb-1">Dikembangkan oleh</p><p class="font-extrabold text-xl text-slate-800 dark:text-white">Herman Kosasi</p></div><button @click="showAboutApp=false" class="w-full py-3 bg-slate-100 dark:bg-slate-700 dark:text-white rounded-xl font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">Tutup</button></div></div>
 
     <div x-show="showLocationSearch" class="fixed inset-0 z-[500] bg-white dark:bg-slate-900 flex flex-col" x-cloak x-transition.opacity><div class="px-4 py-3 border-b dark:border-slate-800 flex items-center gap-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm sticky top-0 z-20"><button @click="showLocationSearch=false" class="text-slate-800 dark:text-white text-xl"><i class="fas fa-arrow-left"></i></button><div class="relative flex-1"><i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input type="text" x-model="locSearchQuery" @input.debounce.600ms="searchLoc()" class="w-full bg-slate-100 dark:bg-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-sm outline-none dark:text-white focus:border-brand-500 border border-transparent transition-all" placeholder="Cari lokasi (Cafe, Resto, Kota)..."></div></div><div class="flex-1 overflow-y-auto p-2 custom-scroll"><div x-show="isSearchingLoc" class="p-10 text-center text-brand-500"><i class="fas fa-spinner fa-spin text-3xl"></i></div><button @click="autoDetectLocationForPost()" class="w-full p-3 mb-2 bg-brand-50 dark:bg-brand-900/20 text-brand-500 rounded-xl font-bold flex items-center justify-center gap-3 transition-colors hover:bg-brand-100 dark:hover:bg-brand-900/40"><i class="fas fa-location-crosshairs text-lg"></i> Gunakan Lokasi Saat Ini</button><template x-for="(loc, index) in locResults" :key="index"><div @click="selectLocation(loc)" class="p-3 border-b dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex gap-4 items-center rounded-lg transition-colors"><div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 shrink-0"><i class="fas fa-map-marker-alt"></i></div><div class="flex-1 min-w-0"><div class="text-sm font-bold dark:text-white line-clamp-1" x-text="loc.properties.name || loc.properties.city || loc.properties.state"></div><div class="text-xs text-slate-500 line-clamp-1" x-text="[loc.properties.street, loc.properties.city, loc.properties.state, loc.properties.country].filter(Boolean).join(', ')"></div></div></div></template><div x-show="locResults.length === 0 && !isSearchingLoc && locSearchQuery.length > 2" class="text-center py-10 text-slate-400 text-sm">Lokasi tidak ditemukan.</div><div x-show="!locSearchQuery && !isSearchingLoc" class="text-center py-10 text-slate-400 flex flex-col items-center"><i class="fas fa-map-marker-alt text-4xl mb-3 opacity-30"></i><p class="text-sm">Ketik untuk mencari lokasi</p></div></div></div>
@@ -271,7 +296,6 @@ window.fb = { auth: getAuth(app), db: getFirestore(app), signInWithEmailAndPassw
 <div class="fixed top-5 right-5 z-[1000] flex flex-col gap-2 pointer-events-none"><template x-for="toast in toasts" :key="toast.id"><div class="px-4 py-3 rounded-lg shadow-lg text-white font-bold text-xs" :class="toast.type==='error'?'bg-red-500':'bg-slate-800'" x-text="toast.message"></div></template></div>
 
 <script>
-// Biarkan function socialApp() Anda dari pesan sebelumnya di sini
 function socialApp() {
     return {
         isLoadingFeed: true, showWelcome: true, currentUser: null, authMode: 'login', authLoading: false, loginError: '', loginForm: { email: '', password: '' }, regForm: { name: '', email: '', password: '' },
@@ -281,11 +305,13 @@ function socialApp() {
         isDarkMode: localStorage.getItem('tf_dark') === 'true', exploreQuery: '', heartAnimId: null, showMentions: false, mentionSearch: '', showCreateSocial: false, showCreatePost: false, showCreateStory: false, showStoryViewer: false, 
         storyFilesRaw: [], storyFilesPreview: [], storyLocation: '', activeStoryGroup: null, activeStoryData: null, activeStoryIndex: 0, storyTimer: null, storyProgress: 0, storyReplyText: '', replaceStoryIndex: null, storyFileType: '',
         activeChat: {}, activeChatType: 'dm', showDiscussModal: false, showNewDMModal: false, newDiscussTopic: '', chatInput: '', showActionModal: false, actionForm: { title: '', desc: '' }, showInviteModal: false, inviteMode: 'chat', showFollowModal: false, 
-        followListTitle: '', followListData: [], showPostModal: false, postModalType: 'full', activePost: {}, showLogoutConfirm: false, showShareModal: false, activeSharePost: null, activeShareType: 'post', showProfileMenu: false, showAboutApp: false,   
+        followListTitle: '', followListData: [], showPostModal: false, postModalType: 'full', activePost: {}, showLogoutConfirm: false, showShareModal: false, activeSharePost: null, activeShareType: 'post', showProfileMenu: false, showAboutApp: false,    
         showTagModal: false, pendingTag: null, tagSearchQuery: '', showingTagsForPost: null, showMusicModal: false, musicQuery: '', musicResults: [], isSearchingMusic: false, currentAudio: null, playingMusicId: null, audioObserver: null, reelObserver: null,
         storyMusic: null, isStoryMusicModal: false, showLocationSearch: false, locSearchQuery: '', locResults: [], isSearchingLoc: false, locTarget: '', isRecording: false, mediaRecorder: null, audioChunks: [],
         showCreatorTools: false, showCreateHighlight: false, newHighlightTitle: '', selectedHighlightStories: [],
+        showEditHighlightModal: false, editHighlightData: { id: '', title: '', stories: [] },
         showLiveAudienceModal: false, liveAudience: 'public', showLiveRoom: false, isHost: false, liveRoomData: null, liveComments: [], liveCommentInput: '', liveInterval: null, hostStream: null, liveInvitedFriends: [], 
+        
         toggleLiveInvite(uid) { if(this.liveInvitedFriends.includes(uid)) { this.liveInvitedFriends = this.liveInvitedFriends.filter(id => id !== uid); } else { this.liveInvitedFriends.push(uid); } },
         mockActiveLives: [ { id: 'live_demo_1', hostId: '123', hostName: 'Yarch Official', viewers: 1240, title: 'Menyapa pengguna baru!' }, { id: 'live_demo_2', hostId: '124', hostName: 'Siska Music', viewers: 85, title: 'Latihan vokal sore 🎤' } ], realLives: [], getActiveLives() { return [...this.realLives, ...this.mockActiveLives]; },
 
@@ -301,6 +327,7 @@ function socialApp() {
 
         async recordView(item) { if (!this.currentUser || !item.id) return; if (item.views && item.views.includes(this.currentUser.uid)) return; try { await window.fb.updateDoc(window.fb.doc(window.fb.db, "feed", item.id), { views: window.fb.arrayUnion(this.currentUser.uid) }); } catch(e) {} },
         compressImage(file) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = (event) => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const max = 1080; if(w > h) { if(w > max) { h *= max/w; w = max; } } else { if(h > max) { w *= max/h; h = max; } } canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); resolve(canvas.toDataURL('image/jpeg', 0.6)); }; img.onerror = reject; img.src = event.target.result; }; reader.onerror = reject; }); },
+
         initApp() {
             this.$watch('isDarkMode', v => localStorage.setItem('tf_dark', v));
             this.$watch('showMusicModal', v => { if(v && this.musicResults.length === 0) { this.loadDefaultMusic(); } if(!v) { this.stopAudio(); }});
@@ -323,6 +350,16 @@ function socialApp() {
                     });
                 }
             }, 100);
+        },
+
+        // --- FUNGSI HELPER UNTUK VIDEO AGAR TIDAK HITAM ---
+        readAsDataURL(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
         },
 
         hasActiveStory(uid) {
@@ -476,7 +513,30 @@ function socialApp() {
         async updatePost() { if(!this.editPostData.id) return; this.isUploadingMedia = true; try { const payload = { content: this.editPostData.content, tags: this.editPostData.tags || [], music: this.editPostData.music || null, location: this.editPostData.location || '' }; if (this.editMediaList.length === 0) { payload.media = null; payload.mediaType = null; } else if (this.editMediaList.length === 1) { payload.media = this.editMediaList[0]; payload.mediaType = this.editPostData.mediaType || 'image'; } else { payload.media = this.editMediaList; payload.mediaType = 'image'; } await window.fb.updateDoc(window.fb.doc(window.fb.db, "feed", this.editPostData.id), payload); this.showToast('Post updated'); this.showEditPostModal = false; } catch(e) { this.showToast('Error updating', 'error'); } finally { this.isUploadingMedia = false; } },
         
         openCreateStoryModal() { this.storyFilesRaw = []; this.storyFilesPreview = []; this.storyLocation = ''; this.storyMusic = null; this.showCreateStory = true; },
-        async handleStoryMedia(e) { const files = Array.from(e.target.files); if (!files.length) return; this.isUploadingMedia = true; try { for(let f of files) { const compressed = await this.compressImage(f); this.storyFilesRaw.push(compressed); this.storyFilesPreview.push(compressed); } } catch(err) { this.showToast('Error processing images', 'error'); } finally { this.isUploadingMedia = false; } },
+        async handleStoryMedia(e) { 
+            const files = Array.from(e.target.files); 
+            if (!files.length) return; 
+            this.isUploadingMedia = true; 
+            try { 
+                for(let f of files) { 
+                    if (f.type.startsWith('video/')) {
+                        this.storyFileType = 'video';
+                        const dataUrl = await this.readAsDataURL(f);
+                        this.storyFilesRaw.push(dataUrl);
+                        this.storyFilesPreview.push(dataUrl);
+                    } else {
+                        this.storyFileType = 'image';
+                        const compressed = await this.compressImage(f); 
+                        this.storyFilesRaw.push(compressed); 
+                        this.storyFilesPreview.push(compressed); 
+                    }
+                } 
+            } catch(err) { 
+                this.showToast('Error processing media', 'error'); 
+            } finally { 
+                this.isUploadingMedia = false; 
+            } 
+        },
         
         replaceStoryItem(index) {
             this.replaceStoryIndex = index;
@@ -488,9 +548,15 @@ function socialApp() {
             this.isUploadingMedia = true;
             try {
                 const f = files[0];
-                const compressed = await this.compressImage(f);
-                this.storyFilesRaw[this.replaceStoryIndex] = compressed;
-                this.storyFilesPreview[this.replaceStoryIndex] = compressed;
+                if (f.type.startsWith('video/')) {
+                    const dataUrl = await this.readAsDataURL(f);
+                    this.storyFilesRaw[this.replaceStoryIndex] = dataUrl;
+                    this.storyFilesPreview[this.replaceStoryIndex] = dataUrl;
+                } else {
+                    const compressed = await this.compressImage(f);
+                    this.storyFilesRaw[this.replaceStoryIndex] = compressed;
+                    this.storyFilesPreview[this.replaceStoryIndex] = compressed;
+                }
             } catch(err) {
                 this.showToast('Error ubah foto', 'error');
             } finally {
@@ -510,7 +576,6 @@ function socialApp() {
                     newArchived.push({ id: docRef.id, ...storyData });
                 } 
                 
-                // Ambil data user terbaru untuk mencegah data tertimpa
                 const userRef = window.fb.doc(window.fb.db, "users", this.currentUser.uid);
                 const userSnap = await window.fb.getDoc(userRef);
                 const currentArchived = userSnap.data().archivedStories || [];
@@ -553,6 +618,7 @@ function socialApp() {
         async toggleStoryLike(story) { if(!this.currentUser || !story?.id) return; const r = window.fb.doc(window.fb.db, "stories", story.id); const hasLiked = story.likes && story.likes.includes(this.currentUser.uid); if(!story.likes) story.likes = []; if(hasLiked) { story.likes = story.likes.filter(id => id !== this.currentUser.uid); await window.fb.updateDoc(r, { likes: window.fb.arrayRemove(this.currentUser.uid) }); } else { story.likes.push(this.currentUser.uid); await window.fb.updateDoc(r, { likes: window.fb.arrayUnion(this.currentUser.uid) }); this.pushNotification(story.uid, 'like', 'menyukai ceritamu.', { storyId: story.id }); } },
         async sendStoryReply() { if(!this.storyReplyText.trim() || !this.currentUser || !this.activeStoryData) return; const targetUser = this.allUsers.find(u => u.uid === this.activeStoryData.uid); if (!targetUser) return; const txt = `Membalas cerita kamu:\n"${this.storyReplyText}"`; const chatId = this.currentUser.uid < targetUser.uid ? `${this.currentUser.uid}_${targetUser.uid}` : `${targetUser.uid}_${this.currentUser.uid}`; const existingChat = this.dms.find(d => d.id === chatId); if (!existingChat) { await window.fb.setDoc(window.fb.doc(window.fb.db, "dms", chatId), { members: [this.currentUser.uid, targetUser.uid], messages: [], updatedAt: Date.now() }); } const payload = { messages: window.fb.arrayUnion({ sender: this.currentUser.name, text: txt, isImage: false, isPostShare: true, sharedPostId: this.activeStoryData.id, sharedPostMedia: this.activeStoryData.media, timestamp: Date.now() }), updatedAt: Date.now() }; await window.fb.updateDoc(window.fb.doc(window.fb.db, "dms", chatId), payload); this.pushNotification(targetUser.uid, 'message', 'Membalas cerita kamu', { chatId: chatId, chatType: 'dm' }); this.storyReplyText = ''; this.showToast('Pesan terkirim ke DM!'); this.closeStoryViewer(); },
 
+        // --- FUNGSI HIGHLIGHT (TERMASUK FUNGSI EDIT DAN DELETE YANG DIPERBARUI) ---
         async saveHighlight() {
             if(!this.newHighlightTitle || this.selectedHighlightStories.length === 0 || !this.currentUser) return;
             const allArchived = this.myProfileData.archivedStories || [];
@@ -568,12 +634,50 @@ function socialApp() {
         toggleHighlightStory(storyId) {
             if(this.selectedHighlightStories.includes(storyId)) { this.selectedHighlightStories = this.selectedHighlightStories.filter(id => id !== storyId); } else { this.selectedHighlightStories.push(storyId); }
         },
+        
+        openEditHighlight(hl) {
+            this.editHighlightData = { id: hl.id, title: hl.title, stories: [...(hl.stories || [])] };
+            this.showEditHighlightModal = true;
+        },
+        toggleEditHighlightStory(storyId) {
+            if (this.editHighlightData.stories.includes(storyId)) {
+                this.editHighlightData.stories = this.editHighlightData.stories.filter(id => id !== storyId);
+            } else {
+                this.editHighlightData.stories.push(storyId);
+            }
+        },
+        async saveEditedHighlight() {
+            if (!this.editHighlightData.title || this.editHighlightData.stories.length === 0) return;
+            const hlIndex = this.myProfileData.highlights.findIndex(h => h.id === this.editHighlightData.id);
+            if (hlIndex > -1) {
+                const firstStoryId = this.editHighlightData.stories[0];
+                const coverStory = this.myProfileData.archivedStories.find(s => s.id === firstStoryId);
+                
+                this.myProfileData.highlights[hlIndex].title = this.editHighlightData.title;
+                this.myProfileData.highlights[hlIndex].stories = [...this.editHighlightData.stories];
+                if (coverStory) this.myProfileData.highlights[hlIndex].cover = coverStory.media;
+                
+                await window.fb.updateDoc(window.fb.doc(window.fb.db, "users", this.currentUser.uid), {
+                    highlights: this.myProfileData.highlights
+                });
+                
+                if (this.viewedProfile && this.viewedProfile.uid === this.currentUser.uid) {
+                    this.viewedProfile.highlights = this.myProfileData.highlights;
+                }
+                
+                this.showEditHighlightModal = false;
+                this.showToast('Highlight berhasil diperbarui!');
+            }
+        },
         async deleteHighlight(hlId) {
             if (!confirm('Hapus highlight ini?')) return;
             try { 
                 const updatedHighlights = (this.myProfileData.highlights || []).filter(h => h.id !== hlId);
                 await window.fb.updateDoc(window.fb.doc(window.fb.db, "users", this.currentUser.uid), { highlights: updatedHighlights }); 
                 this.myProfileData.highlights = updatedHighlights;
+                if (this.viewedProfile && this.viewedProfile.uid === this.currentUser.uid) {
+                    this.viewedProfile.highlights = updatedHighlights;
+                }
                 this.showToast('Highlight dihapus'); 
             } catch (e) { this.showToast('Gagal menghapus highlight', 'error'); }
         },
